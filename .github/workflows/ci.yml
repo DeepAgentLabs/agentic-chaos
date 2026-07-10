@@ -6,27 +6,15 @@ on:
   pull_request:
 
 jobs:
-  test:
+  # Proves agentic-chaos works with zero agenticlens installed: no sibling
+  # checkout, no [tool.uv.sources] override in play, just the core package.
+  test-core:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13"]
     steps:
-      # Both checkouts land as siblings under $GITHUB_WORKSPACE
-      # (.../agentic-chaos and .../agenticlens) so agentic-chaos's
-      # `[tool.uv.sources] agenticlens = { path = "../agenticlens" }`
-      # resolves correctly. actions/checkout refuses paths outside the
-      # workspace, so a literal `../agenticlens` path doesn't work here.
-      - name: Check out agentic-chaos
-        uses: actions/checkout@v4
-        with:
-          path: agentic-chaos
-
-      - name: Check out agenticlens (local dependency)
-        uses: actions/checkout@v4
-        with:
-          repository: DeepAgentLabs/agenticlens
-          path: agenticlens
+      - uses: actions/checkout@v4
 
       - name: Install uv
         uses: astral-sh/setup-uv@v3
@@ -36,19 +24,54 @@ jobs:
       - name: Set up Python ${{ matrix.python-version }}
         run: uv python install ${{ matrix.python-version }}
 
-      - name: Install dependencies
-        working-directory: agentic-chaos
+      - name: Install dependencies (no agenticlens extra)
         run: uv sync --extra dev --python ${{ matrix.python-version }}
 
       - name: Lint (ruff check)
-        working-directory: agentic-chaos
         run: uv run ruff check .
 
       - name: Format check (ruff format)
-        working-directory: agentic-chaos
         run: uv run ruff format --check .
 
       - name: Type check (mypy)
+        run: uv run mypy
+
+      - name: Test (pytest) -- agenticlens integration tests auto-skip via importorskip
+        run: uv run pytest
+
+  # Covers agentic_chaos.integrations.agenticlens, which needs the optional
+  # extra installed. Both checkouts land as siblings under $GITHUB_WORKSPACE
+  # (.../agentic-chaos and .../agenticlens) so agentic-chaos's
+  # `[tool.uv.sources] agenticlens = { path = "../agenticlens" }` resolves
+  # correctly. actions/checkout refuses paths outside the workspace, so a
+  # literal `../agenticlens` path doesn't work here.
+  test-agenticlens-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out agentic-chaos
+        uses: actions/checkout@v4
+        with:
+          path: agentic-chaos
+
+      - name: Check out agenticlens (local dependency, not yet published with chaos_events support)
+        uses: actions/checkout@v4
+        with:
+          repository: DeepAgentLabs/agenticlens
+          path: agenticlens
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install dependencies (with the optional agenticlens extra)
+        working-directory: agentic-chaos
+        run: uv sync --extra dev --extra agenticlens --python 3.12
+
+      - name: Type check (mypy) -- exercises the integration module against the real package
         working-directory: agentic-chaos
         run: uv run mypy
 
@@ -56,19 +79,13 @@ jobs:
         working-directory: agentic-chaos
         run: uv run pytest
 
+  # Proves the built distribution's own metadata has no hard agenticlens
+  # dependency -- built with only the core dev extra, no sibling checkout.
   package:
     runs-on: ubuntu-latest
-    needs: test
+    needs: [test-core, test-agenticlens-integration]
     steps:
-      - name: Check out agentic-chaos
-        uses: actions/checkout@v4
-        with:
-          path: agentic-chaos
-      - name: Check out agenticlens (local dependency)
-        uses: actions/checkout@v4
-        with:
-          repository: DeepAgentLabs/agenticlens
-          path: agenticlens
+      - uses: actions/checkout@v4
       - name: Install uv
         uses: astral-sh/setup-uv@v3
         with:
@@ -76,10 +93,8 @@ jobs:
       - name: Set up Python
         run: uv python install 3.12
       - name: Install dependencies
-        working-directory: agentic-chaos
         run: uv sync --extra dev --python 3.12
       - name: Build distributions
-        working-directory: agentic-chaos
         run: |
           uv run python -m build
           uv run python -m twine check dist/*

@@ -1,23 +1,23 @@
-"""End-to-end demo of the agentic-chaos <-> agenticlens interop loop.
+"""Standalone demo -- no other library required.
 
 Run under chaos and save a report:
 
     uv run agentic-chaos chaos run examples/chaos_customer_support_demo.py \\
         --inject rate_limit_storm,token_timeout,silent_degradation --save chaos_run.json
 
-Then hand that report to AgenticLens's analysis engine:
+This script never imports agenticlens; `agentic_chaos` works against plain
+Python callables. If you *also* have agenticlens installed and want its
+step()/profile() instrumentation and cost/latency reporting merged with chaos
+events into one file, see `chaos_with_agenticlens_demo.py`.
 
-    uv run agenticlens analyze chaos_run.json
-
-This script can also be run directly (`python examples/chaos_customer_support_demo.py`)
+Can also be run directly (`python examples/chaos_customer_support_demo.py`)
 -- when no CLI-managed `chaos_session()` is active, it starts one itself with
 fast, demo-friendly fault parameters so `chaos_call()` isn't a no-op.
 """
 
 import time
+from collections.abc import Callable
 from typing import Any
-
-from agenticlens import StepHandle, profile, step
 
 from agentic_chaos.chaos import (
     RateLimitStormError,
@@ -31,22 +31,8 @@ from agentic_chaos.chaos import (
 )
 
 
-class FakeUsage:
-    def __init__(self, prompt_tokens: int, completion_tokens: int) -> None:
-        self.prompt_tokens = prompt_tokens
-        self.completion_tokens = completion_tokens
-
-
-class FakeResponse:
-    def __init__(self, prompt_tokens: int, completion_tokens: int, content: str) -> None:
-        self.usage = FakeUsage(prompt_tokens, completion_tokens)
-        self.content = content
-
-
-def call_planner(prompt: str) -> FakeResponse:
-    return FakeResponse(
-        prompt_tokens=300, completion_tokens=80, content="Plan: look up the order, then answer."
-    )
+def call_planner(prompt: str) -> str:
+    return "Plan: look up the order, then answer."
 
 
 def call_retriever(query: str) -> list[str]:
@@ -56,18 +42,22 @@ def call_retriever(query: str) -> list[str]:
     ]
 
 
-def call_final_answer(prompt: str) -> FakeResponse:
-    return FakeResponse(
-        prompt_tokens=500,
-        completion_tokens=120,
-        content="Refunds are processed to the original payment method within 5-10 business days.",
-    )
+def call_final_answer(prompt: str) -> str:
+    return "Refunds are processed to the original payment method within 5-10 business days."
 
 
-def _call_with_retry(fn: Any, *args: Any, step: StepHandle, max_attempts: int) -> FakeResponse:
+def _call_with_retry(
+    fn: Callable[..., str], *args: Any, step_id: str, step_name: str, max_attempts: int
+) -> str:
     for attempt in range(1, max_attempts + 1):
         try:
-            return chaos_call(fn, *args, step=step, faults=["rate_limit_storm"])
+            return chaos_call(
+                fn,
+                *args,
+                step_id=step_id,
+                step_name=step_name,
+                faults=["rate_limit_storm"],
+            )
         except RateLimitStormError as exc:
             print(
                 f"Planner call rate-limited (attempt {attempt}/{max_attempts}); "
@@ -78,42 +68,43 @@ def _call_with_retry(fn: Any, *args: Any, step: StepHandle, max_attempts: int) -
 
 
 def run_workflow() -> None:
-    with profile("Chaos Demo -- Customer Support Agent"):
-        # Planner: hit by a rate-limit storm. The app retries through it and
-        # recovers, so this step still succeeds -- but the saved chaos_events
-        # will show the failed attempts along the way.
-        with step("Planner", type="planner", provider="openai", model="gpt-4o-mini") as s:
-            response = _call_with_retry(
-                call_planner, "What does the user need?", step=s, max_attempts=5
-            )
-            s.record(response)
+    # Planner: hit by a rate-limit storm. We retry through it and recover, so
+    # the call still succeeds -- but the saved chaos_events show the failed
+    # attempts along the way.
+    plan = _call_with_retry(
+        call_planner,
+        "What does the user need?",
+        step_id="planner",
+        step_name="Planner",
+        max_attempts=5,
+    )
+    print(f"Plan: {plan}")
 
-        # Retriever: hit by a token timeout. Nothing in this demo retries it, so
-        # it fails outright -- an unhandled failure ChaosImpactRecommender flags
-        # as critical.
-        with step("Retriever", type="retriever", chunk_count=2) as s:
-            try:
-                chunks = chaos_call(
-                    call_retriever, "refund policy", step=s, faults=["token_timeout"]
-                )
-            except TokenTimeoutError:
-                print("Retriever timed out under chaos -- degrading to 0 chunks, no fallback.")
-                chunks = []
+    # Retriever: hit by a token timeout. Nothing here retries it, so it fails
+    # outright -- an unhandled failure a resilience report should flag.
+    try:
+        chunks = chaos_call(
+            call_retriever,
+            "refund policy",
+            step_id="retriever",
+            step_name="Retriever",
+            faults=["token_timeout"],
+        )
+    except TokenTimeoutError:
+        print("Retriever timed out under chaos -- degrading to 0 chunks, no fallback.")
+        chunks = []
 
-        # Final Response: hit by silent degradation. The call "succeeds" with
-        # normal latency and token usage, but its content is corrupted -- the
-        # class of failure cost/latency monitoring alone can't see.
-        with step(
-            "Final Response", type="final_response", provider="openai", model="gpt-4o-mini"
-        ) as s:
-            response = chaos_call(
-                call_final_answer,
-                "Answer the user's question using: " + " ".join(chunks),
-                step=s,
-                faults=["silent_degradation"],
-            )
-            s.record(response)
-            print(f"Final answer returned to user: {response.content!r}")
+    # Final Response: hit by silent degradation. The call "succeeds" -- but
+    # its content is corrupted, the class of failure cost/latency monitoring
+    # alone can't see.
+    answer = chaos_call(
+        call_final_answer,
+        "Answer the user's question using: " + " ".join(chunks),
+        step_id="final_response",
+        step_name="Final Response",
+        faults=["silent_degradation"],
+    )
+    print(f"Final answer returned to user: {answer!r}")
 
 
 def main() -> None:

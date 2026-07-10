@@ -1,6 +1,5 @@
 from contextvars import ContextVar
-
-from agenticlens.models import Workflow
+from typing import Any
 
 from agentic_chaos.chaos.faults import BaseFault
 from agentic_chaos.models.chaos_event import ChaosEvent
@@ -14,11 +13,12 @@ class ChaosSession:
         self.faults = faults
         self.events: list[ChaosEvent] = []
 
-    def apply_to(self, workflow: Workflow) -> None:
-        """Append this session's recorded events onto `workflow.chaos_events`,
-        serialized per the workflow.json v1.1 schema (see agenticlens's
-        docs/workflow-schema-spec.md)."""
-        workflow.chaos_events.extend(event.model_dump(mode="json") for event in self.events)
+    def events_as_json(self) -> list[dict[str, Any]]:
+        """JSON-serialized events, ready to drop into any `chaos_events` array
+        -- this package's own `ChaosReport`, or (via the optional
+        `agentic_chaos.integrations.agenticlens` adapter) an AgenticLens
+        `Workflow`'s `chaos_events` field (schema v1.1)."""
+        return [event.model_dump(mode="json") for event in self.events]
 
     def select_faults(self, names: list[str] | None) -> list[BaseFault]:
         """Return the configured faults matching `names`, or all of them if

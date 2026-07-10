@@ -1,5 +1,16 @@
 # agentic-chaos — Roadmap & Architecture
 
+> **Update:** `agentic-chaos` is a standalone package with **no required
+> dependency on `agenticlens`** (or vice versa) -- `pip install agentic-chaos`
+> works against any plain Python callable with nothing else installed. The
+> "shared workflow.json format" described below is real, but it's an
+> *optional* integration (`pip install agentic-chaos[agenticlens]`,
+> `agentic_chaos.integrations.agenticlens`), not a hard dependency baked into
+> either package's core. See the README's Installation and "Optional:
+> AgenticLens Integration" sections for the current shape. The rest of this
+> document is the original architecture plan and is still directionally
+> accurate, but written from before that decoupling.
+
 ## What We're Building
 
 **One new package**, `agentic-chaos`, that sits alongside your existing

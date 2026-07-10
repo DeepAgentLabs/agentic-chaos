@@ -1,7 +1,8 @@
-from agenticlens.models import Workflow
 from rich import box
 from rich.console import Console
 from rich.table import Table
+
+from agentic_chaos.models.chaos_event import ChaosEvent
 
 _OUTCOME_STYLES = {
     "errored": "red",
@@ -10,9 +11,8 @@ _OUTCOME_STYLES = {
 }
 
 
-def render_chaos_events(console: Console, workflow: Workflow) -> None:
-    """Render the `chaos_events` recorded on a workflow as a table."""
-    events = workflow.chaos_events
+def render_chaos_events(console: Console, events: list[ChaosEvent]) -> None:
+    """Render recorded `ChaosEvent`s as a table."""
     if not events:
         console.print("[green]No faults triggered.[/green]")
         return
@@ -24,17 +24,13 @@ def render_chaos_events(console: Console, workflow: Workflow) -> None:
     table.add_column("Message")
 
     for event in events:
-        outcome = str(event.get("outcome", "unknown"))
-        style = _OUTCOME_STYLES.get(outcome, "white")
+        style = _OUTCOME_STYLES.get(event.outcome, "white")
         table.add_row(
-            str(event.get("step_name") or event.get("step_id") or "n/a"),
-            str(event.get("fault_type", "unknown")),
-            f"[{style}]{outcome}[/{style}]",
-            str(event.get("message", "")),
+            event.step_name or event.step_id or "n/a",
+            event.fault_type,
+            f"[{style}]{event.outcome}[/{style}]",
+            event.message,
         )
 
     console.print(table)
-    console.print(
-        f"\n[bold]{len(events)}[/bold] chaos event(s) recorded. "
-        "Run `agenticlens analyze` on the saved file for a full impact report."
-    )
+    console.print(f"\n[bold]{len(events)}[/bold] chaos event(s) recorded.")

@@ -1,14 +1,14 @@
 import runpy
+from datetime import datetime, timezone
 from pathlib import Path
 
 import typer
-from agenticlens.exporters import JSONExporter
-from agenticlens.profiler.context import completed_workflows
 from rich.console import Console
 
 from agentic_chaos.chaos.faults import FAULT_REGISTRY, resolve_faults
 from agentic_chaos.chaos.session import chaos_session
 from agentic_chaos.cli.render import render_chaos_events
+from agentic_chaos.models.report import ChaosReport
 
 app = typer.Typer(
     name="agentic-chaos",
@@ -37,10 +37,8 @@ console = Console()
 def chaos_run(
     script: Path = typer.Argument(
         ...,
-        help=(
-            "Path to a Python script instrumented with agenticlens.profile()/step() "
-            "and agentic_chaos.chaos_call()."
-        ),
+        help="Path to a Python script that calls agentic_chaos.chaos_call(). No other "
+        "library is required -- this works on any plain Python script.",
     ),
     inject: str = typer.Option(
         ...,
@@ -48,10 +46,16 @@ def chaos_run(
         help="Comma-separated fault names to enable, e.g. 'token_timeout,rate_limit_storm'.",
     ),
     save: Path | None = typer.Option(
-        None, "--save", help="Save the resulting workflow (with chaos_events) to this file."
+        None, "--save", help="Save the resulting chaos report to this file."
     ),
 ) -> None:
-    """Run a script with the requested faults active, then report what happened."""
+    """Run a script with the requested faults active, then report what happened.
+
+    Saves this package's own standalone `ChaosReport` -- if you also have
+    AgenticLens installed and want a merged workflow.json with cost/latency
+    data too, use `agentic_chaos.integrations.agenticlens.attach_events()` in
+    your own script instead of relying on this command's --save.
+    """
     if not script.exists():
         console.print(f"[red]Script not found:[/red] {script}")
         raise typer.Exit(code=1)
@@ -62,26 +66,32 @@ def chaos_run(
         console.print(f"[red]{exc}[/red]")
         raise typer.Exit(code=1) from exc
 
-    before = len(completed_workflows)
+    started_at = datetime.now(timezone.utc)
+    crashed: Exception | None = None
     with chaos_session(inject) as session:
-        runpy.run_path(str(script), run_name="__main__")
+        try:
+            runpy.run_path(str(script), run_name="__main__")
+        except Exception as exc:  # the whole point is observing how the script fails
+            crashed = exc
+    ended_at = datetime.now(timezone.utc)
 
-    new_workflows = completed_workflows[before:]
-    if not new_workflows:
-        console.print(
-            "[yellow]No workflow was profiled.[/yellow] "
-            "Did the script call `agenticlens.profile()`?"
-        )
-        raise typer.Exit(code=1)
+    if crashed is not None:
+        console.print(f"[red]Script raised under chaos:[/red] {crashed!r}")
 
-    workflow = new_workflows[-1]
-    session.apply_to(workflow)
-    render_chaos_events(console, workflow)
+    render_chaos_events(console, session.events)
 
     if save is not None:
-        JSONExporter().export(workflow, save)
-        console.print(f"\nSaved workflow (with chaos_events) to {save}")
-        console.print(f"Next: [bold]agenticlens analyze {save}[/bold]")
+        report = ChaosReport(
+            name=script.stem,
+            start_time=started_at,
+            end_time=ended_at,
+            chaos_events=session.events_as_json(),
+        )
+        save.write_text(report.model_dump_json(indent=2), encoding="utf-8")
+        console.print(f"\nSaved chaos report to {save}")
+
+    if crashed is not None:
+        raise typer.Exit(code=1)
 
 
 @chaos_app.command("list-faults")

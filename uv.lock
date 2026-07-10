@@ -11,13 +11,15 @@ name = "agentic-chaos"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
-    { name = "agenticlens" },
     { name = "pydantic" },
     { name = "rich" },
     { name = "typer" },
 ]
 
 [package.optional-dependencies]
+agenticlens = [
+    { name = "agenticlens" },
+]
 dev = [
     { name = "build" },
     { name = "mypy" },
@@ -29,7 +31,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "agenticlens", editable = "../agenticlens" },
+    { name = "agenticlens", marker = "extra == 'agenticlens'", editable = "../agenticlens" },
     { name = "build", marker = "extra == 'dev'", specifier = ">=1.2" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.10" },
     { name = "pydantic", specifier = ">=2.0,<3" },
@@ -40,7 +42,7 @@ requires-dist = [
     { name = "twine", marker = "extra == 'dev'", specifier = ">=5.1" },
     { name = "typer", specifier = ">=0.12" },
 ]
-provides-extras = ["dev"]
+provides-extras = ["agenticlens", "dev"]
 
 [[package]]
 name = "agenticlens"

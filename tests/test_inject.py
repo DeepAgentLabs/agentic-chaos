@@ -1,9 +1,4 @@
-from datetime import datetime, timezone
-
 import pytest
-from agenticlens import step
-from agenticlens.models import Metrics, Step, StepType, Workflow
-from agenticlens.profiler.context import current_workflow
 
 from agentic_chaos.chaos.faults import RateLimitStormError, TokenTimeoutFault
 from agentic_chaos.chaos.inject import chaos_call
@@ -51,21 +46,26 @@ def test_nested_chaos_session_raises() -> None:
         pass
 
 
-def test_chaos_call_correlates_step_id_via_step_handle() -> None:
-    workflow = Workflow(name="Test", start_time=datetime.now(timezone.utc))
-    token = current_workflow.set(workflow)
-    try:
-        with (
-            chaos_session([TokenTimeoutFault(hang_seconds=0.0)]) as session,
-            step("Planner", type="planner") as s,
-            pytest.raises(Exception),  # noqa: B017
-        ):
-            chaos_call(lambda: "x", step=s)
-    finally:
-        current_workflow.reset(token)
+def test_chaos_call_correlates_plain_step_id_and_name() -> None:
+    with (
+        chaos_session([TokenTimeoutFault(hang_seconds=0.0)]) as session,
+        pytest.raises(Exception),  # noqa: B017
+    ):
+        chaos_call(lambda: "x", step_id="s1", step_name="Planner")
 
-    assert session.events[0].step_id == workflow.steps[0].id
+    assert session.events[0].step_id == "s1"
     assert session.events[0].step_name == "Planner"
+
+
+def test_chaos_call_without_step_id_leaves_correlation_unset() -> None:
+    with (
+        chaos_session([TokenTimeoutFault(hang_seconds=0.0)]) as session,
+        pytest.raises(Exception),  # noqa: B017
+    ):
+        chaos_call(lambda: "x")
+
+    assert session.events[0].step_id is None
+    assert session.events[0].step_name is None
 
 
 def test_rate_limit_storm_retry_loop_recovers_within_session() -> None:
@@ -90,15 +90,16 @@ def test_rate_limit_storm_retry_loop_recovers_within_session() -> None:
     assert len(session.events) == 3  # default burst_count
 
 
-def test_session_apply_to_extends_workflow_chaos_events() -> None:
-    workflow = Workflow(name="Test", start_time=datetime.now(timezone.utc))
-    workflow.steps.append(Step(id="s1", name="Planner", type=StepType.PLANNER, metrics=Metrics()))
+def test_session_events_as_json_serializes_recorded_events() -> None:
+    with (
+        chaos_session([TokenTimeoutFault(hang_seconds=0.0)]) as session,
+        pytest.raises(Exception),  # noqa: B017
+    ):
+        chaos_call(lambda: "x", faults=["token_timeout"], step_id="s1", step_name="Planner")
 
-    with chaos_session([TokenTimeoutFault(hang_seconds=0.0)]) as session:
-        with pytest.raises(Exception):  # noqa: B017
-            chaos_call(lambda: "x", faults=["token_timeout"])
-        session.apply_to(workflow)
+    events = session.events_as_json()
 
-    assert len(workflow.chaos_events) == 1
-    assert workflow.chaos_events[0]["fault_type"] == "token_timeout"
-    assert isinstance(workflow.chaos_events[0]["timestamp"], str)  # JSON-mode serialized
+    assert len(events) == 1
+    assert events[0]["fault_type"] == "token_timeout"
+    assert events[0]["step_id"] == "s1"
+    assert isinstance(events[0]["timestamp"], str)  # JSON-mode serialized
