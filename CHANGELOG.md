@@ -4,6 +4,12 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Added
+
+- `.github/workflows/release-pypi.yml`: publishes to PyPI on a `v*` tag push
+  or a published GitHub Release, via Trusted Publishing (OIDC) against the
+  `pypi` environment -- no stored API token.
+
 ### Fixed
 
 - `uv sync --extra dev` (and CI) failed outright for anyone without a sibling
