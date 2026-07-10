@@ -4,7 +4,7 @@
 workflows. It deliberately breaks your app — hung completions, provider
 rate-limit storms, silently corrupted output — and records what happened in
 the same `workflow.json` format that
-[AgenticLens](https://github.com/agenticlens/agenticlens) already knows how to
+[AgenticLens](https://github.com/DeepAgentLabs/agenticlens) already knows how to
 report and analyze. Run chaos, then hand the file straight to
 `agenticlens analyze` for a resilience report alongside the cost/latency
 findings it already produces.
@@ -22,8 +22,8 @@ This package depends on `agenticlens`, which is not yet published — install
 both from source with `uv`, as sibling checkouts:
 
 ```bash
-git clone https://github.com/agenticlens/agenticlens.git
-git clone https://github.com/agenticlens/agentic-chaos.git
+git clone https://github.com/DeepAgentLabs/agenticlens.git
+git clone https://github.com/pramodbn27/agentic-chaos.git
 cd agentic-chaos
 uv sync --extra dev
 ```
@@ -90,7 +90,7 @@ This is the core value loop, and it works the same way regardless of which
 
 The `chaos_events` schema extension is documented as part of AgenticLens's
 data contract in
-[`docs/workflow-schema-spec.md`](https://github.com/agenticlens/agenticlens/blob/main/docs/workflow-schema-spec.md)
+[`docs/workflow-schema-spec.md`](https://github.com/DeepAgentLabs/agenticlens/blob/main/docs/workflow-schema-spec.md)
 (agenticlens repo) — any tool that appends well-formed entries to that list
 gets recommendation support for free.
 

@@ -42,10 +42,10 @@ dev = [
 agentic-chaos = "agentic_chaos.cli.main:app"
 
 [project.urls]
-Homepage = "https://github.com/agenticlens/agentic-chaos"
-Repository = "https://github.com/agenticlens/agentic-chaos"
-Issues = "https://github.com/agenticlens/agentic-chaos/issues"
-Changelog = "https://github.com/agenticlens/agentic-chaos/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/pramodbn27/agentic-chaos"
+Repository = "https://github.com/pramodbn27/agentic-chaos"
+Issues = "https://github.com/pramodbn27/agentic-chaos/issues"
+Changelog = "https://github.com/pramodbn27/agentic-chaos/blob/main/CHANGELOG.md"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/agentic_chaos"]
