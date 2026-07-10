@@ -24,20 +24,25 @@ jobs:
       - name: Set up Python ${{ matrix.python-version }}
         run: uv python install ${{ matrix.python-version }}
 
+      # --frozen: uv.lock resolves the agenticlens extra too (a local path
+      # source), so a normal `uv sync`/`uv run` tries to validate/refresh that
+      # entry even when the extra isn't requested -- and fails here since
+      # there's no sibling agenticlens checkout in this job. --frozen installs
+      # straight from the committed lock without touching it.
       - name: Install dependencies (no agenticlens extra)
-        run: uv sync --extra dev --python ${{ matrix.python-version }}
+        run: uv sync --extra dev --frozen --python ${{ matrix.python-version }}
 
       - name: Lint (ruff check)
-        run: uv run ruff check .
+        run: uv run --frozen ruff check .
 
       - name: Format check (ruff format)
-        run: uv run ruff format --check .
+        run: uv run --frozen ruff format --check .
 
       - name: Type check (mypy)
-        run: uv run mypy
+        run: uv run --frozen mypy
 
       - name: Test (pytest) -- agenticlens integration tests auto-skip via importorskip
-        run: uv run pytest
+        run: uv run --frozen pytest
 
   # Covers agentic_chaos.integrations.agenticlens, which needs the optional
   # extra installed. Both checkouts land as siblings under $GITHUB_WORKSPACE
@@ -92,9 +97,11 @@ jobs:
           enable-cache: true
       - name: Set up Python
         run: uv python install 3.12
+      # --frozen: see the comment on the same flag in test-core -- no sibling
+      # agenticlens checkout here, and the agenticlens extra isn't requested.
       - name: Install dependencies
-        run: uv sync --extra dev --python 3.12
+        run: uv sync --extra dev --frozen --python 3.12
       - name: Build distributions
         run: |
-          uv run python -m build
-          uv run python -m twine check dist/*
+          uv run --frozen python -m build
+          uv run --frozen python -m twine check dist/*

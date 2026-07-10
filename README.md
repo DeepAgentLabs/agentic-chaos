@@ -32,11 +32,20 @@ or, from source with `uv`:
 ```bash
 git clone https://github.com/DeepAgentLabs/agentic-chaos.git
 cd agentic-chaos
-uv sync --extra dev
+uv sync --extra dev --frozen
 ```
 
 That's it — no other package required. (If you want the optional AgenticLens
 integration too, see [below](#optional-agenticlens-integration).)
+
+`--frozen` matters here: `pyproject.toml` points the (currently unpublished)
+`agenticlens` extra at a sibling checkout via `[tool.uv.sources]`, and `uv
+sync` without `--frozen` tries to validate/refresh the *entire* lock — every
+extra, including ones you didn't ask for — which fails if that sibling
+directory doesn't exist. `--frozen` installs straight from the committed
+`uv.lock` instead. Drop it (and check out `agenticlens` as a sibling
+directory) only if you're working on the optional integration itself — see
+[Development](#development).
 
 ## Quickstart
 
@@ -202,18 +211,29 @@ dependency in either direction.
 
 ## Development
 
+Without a sibling `agenticlens` checkout, use `--frozen` (see
+[Installation](#installation) for why):
+
 ```bash
-uv sync --extra dev
-uv run pytest
-uv run ruff check .
-uv run ruff format .
-uv run mypy
+uv sync --extra dev --frozen
+uv run --frozen pytest
+uv run --frozen ruff check .
+uv run --frozen ruff format .
+uv run --frozen mypy
 ```
 
 Tests covering `agentic_chaos.integrations.agenticlens` skip automatically if
-`agenticlens` isn't installed. To run the full suite including those, install
-the optional extra too: `uv sync --extra dev --extra agenticlens` (see
-[`[tool.uv.sources]`](pyproject.toml) for the local sibling-checkout override
+`agenticlens` isn't installed. To run the full suite including those, clone
+`agenticlens` as a sibling directory and sync with the optional extra
+(dropping `--frozen`, since now you *want* the lock to pick it up):
+
+```bash
+git clone https://github.com/DeepAgentLabs/agenticlens.git ../agenticlens
+uv sync --extra dev --extra agenticlens
+uv run pytest
+```
+
+(see [`[tool.uv.sources]`](pyproject.toml) for the local sibling-checkout override
 used until `agenticlens` publishes a release with `chaos_events` support).
 
 ## License

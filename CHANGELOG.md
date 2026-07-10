@@ -4,6 +4,16 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Fixed
+
+- `uv sync --extra dev` (and CI) failed outright for anyone without a sibling
+  `agenticlens` checkout: `[tool.uv.sources]`'s local path override for the
+  optional `agenticlens` extra made `uv` try to validate/refresh that extra
+  on *every* sync, even when it wasn't requested. Fixed by using `--frozen`
+  wherever the sibling checkout isn't guaranteed (README's plain install
+  instructions, CI's `test-core` and `package` jobs) -- see README's
+  Installation/Development sections.
+
 ### Changed
 
 - **`agenticlens` is no longer a required dependency.** `agentic_chaos.chaos`
