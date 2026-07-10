@@ -25,6 +25,11 @@ All notable changes to this project are documented here.
 
 ### Added
 
+- `examples/chaos_advanced_faults_demo.py`: `TokenTimeoutFault(mode="delay")`
+  and a custom `SilentDegradationFault(degrade_fn=...)`, the two fault
+  options that weren't demonstrated anywhere outside the tests. README's
+  Fault Types section links to it and the other examples now have an index
+  table.
 - `agentic_chaos.integrations.agenticlens` (optional, `pip install
   agentic-chaos[agenticlens]`): `attach_events()` merges a chaos session's
   events onto an AgenticLens `Workflow`; `step_kwargs()` extracts

@@ -100,6 +100,19 @@ When more than one fault is configured for a session, `chaos_call()` requires
 you to pass `faults=[...]` at each call site to say which one applies there —
 silently picking one for you would be surprising.
 
+Two options worth knowing about that don't show up in the table above (see
+[`examples/chaos_advanced_faults_demo.py`](examples/chaos_advanced_faults_demo.py)
+for both, runnable):
+
+- `TokenTimeoutFault(mode="delay")` — the call still succeeds, just late,
+  instead of raising `TokenTimeoutError`. Recorded outcome is `"delayed"`.
+  Useful for testing whether a slow-but-successful call degrades UX on its
+  own, separate from outright failure.
+- `SilentDegradationFault(degrade_fn=my_fn)` — swap in your own corruption
+  logic (`my_fn(result) -> corrupted_result`) instead of the built-in text
+  garbler, e.g. to simulate a narrower, more realistic bug than wholesale
+  noise.
+
 ## CLI Reference
 
 ```bash
@@ -117,18 +130,21 @@ agentic-chaos chaos list-faults
 the v0.2 and v0.3 modules — running them today prints a pointer to
 [ROADMAP.md](ROADMAP.md).
 
-## Example
+## Examples
+
+| Script | Needs | Shows |
+| --- | --- | --- |
+| [`examples/chaos_customer_support_demo.py`](examples/chaos_customer_support_demo.py) | nothing but `agentic_chaos` | All three faults' default behavior in one flow: a rate-limit storm the app retries through and recovers from, a token timeout it doesn't handle (fails outright), and a silent degradation (normal-looking call, corrupted output). |
+| [`examples/chaos_advanced_faults_demo.py`](examples/chaos_advanced_faults_demo.py) | nothing but `agentic_chaos` | `TokenTimeoutFault(mode="delay")` and a custom `SilentDegradationFault(degrade_fn=...)`. |
+| [`examples/chaos_with_agenticlens_demo.py`](examples/chaos_with_agenticlens_demo.py) | `agentic-chaos[agenticlens]` | The optional integration: `attach_events()` + `step_kwargs()` merging chaos events onto a real AgenticLens `Workflow`. |
+
+Run any of them directly (`uv run python examples/...`), or the first two
+under the CLI:
 
 ```bash
 uv run agentic-chaos chaos run examples/chaos_customer_support_demo.py \
     --inject rate_limit_storm,token_timeout,silent_degradation --save /tmp/chaos_run.json
 ```
-
-The example wraps a Planner (rate-limit storm the app retries through and
-recovers from), a Retriever (token timeout the app doesn't handle, so it
-fails outright), and a Final Response (silent degradation — a normal-looking
-call with corrupted output) — the three shapes of chaos this module injects.
-It imports nothing but `agentic_chaos`.
 
 ## Optional: AgenticLens Integration
 
