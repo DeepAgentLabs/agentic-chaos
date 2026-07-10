@@ -21,7 +21,7 @@ def render_chaos_events(console: Console, workflow: Workflow) -> None:
     table.add_column("Step")
     table.add_column("Fault")
     table.add_column("Outcome")
-    table.add_column("Detail")
+    table.add_column("Message")
 
     for event in events:
         outcome = str(event.get("outcome", "unknown"))

@@ -44,7 +44,7 @@ provides-extras = ["dev"]
 
 [[package]]
 name = "agenticlens"
-version = "0.1.2"
+version = "0.1.3"
 source = { editable = "../agenticlens" }
 dependencies = [
     { name = "pydantic" },

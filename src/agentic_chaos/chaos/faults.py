@@ -1,4 +1,5 @@
 import random
+import re
 import time
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Sequence
@@ -173,20 +174,23 @@ _GARBLE_ALPHABET = "abcdefghijklmnopqrstuvwxyz"
 
 
 def garble_text(text: str, rng: random.Random | None = None) -> str:
-    """Replace each alphabetic word with random letters of the same length.
+    """Replace each run of alphabetic characters with random letters.
 
-    Preserves whitespace, punctuation-only tokens, and overall length, so
-    downstream token/latency metrics look unchanged -- only the content is
-    garbage. This is what makes silent degradation the hardest fault to
-    detect from cost/latency monitoring alone.
+    Preserves whitespace, punctuation, and overall length, so downstream
+    token/latency metrics look unchanged -- only the content is garbage. This
+    is what makes silent degradation the hardest fault to detect from
+    cost/latency monitoring alone.
+
+    Operates on alphabetic *runs*, not whole whitespace-split tokens, so
+    words with attached punctuation (`"fox,"`, `"well."`, `'"hello"'`) still
+    get garbled instead of passing through untouched.
     """
     rng = rng or random.Random()
-    words = text.split(" ")
-    garbled = [
-        "".join(rng.choice(_GARBLE_ALPHABET) for _ in word) if word.isalpha() else word
-        for word in words
-    ]
-    return " ".join(garbled)
+
+    def _replace(match: re.Match[str]) -> str:
+        return "".join(rng.choice(_GARBLE_ALPHABET) for _ in match.group())
+
+    return re.sub(r"[A-Za-z]+", _replace, text)
 
 
 def _default_degrade(result: Any, rng: random.Random) -> Any:
@@ -209,7 +213,7 @@ def _default_degrade(result: Any, rng: random.Random) -> Any:
                 object.__setattr__(result, attr, garble_text(value, rng))
                 return result
             except (AttributeError, TypeError):
-                break
+                continue
 
     return result
 

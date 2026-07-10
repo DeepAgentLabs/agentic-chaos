@@ -18,8 +18,9 @@ See [ROADMAP.md](ROADMAP.md) for the full plan.
 
 ## Installation
 
-This package depends on `agenticlens`, which is not yet published — install
-both from source with `uv`, as sibling checkouts:
+This package depends on `agenticlens>=0.1.3` for `chaos_events` support. That
+version isn't released yet — PyPI currently has `agenticlens` 0.1.2, which
+predates it — so install both from source with `uv`, as sibling checkouts:
 
 ```bash
 git clone https://github.com/DeepAgentLabs/agenticlens.git
@@ -29,8 +30,9 @@ uv sync --extra dev
 ```
 
 `pyproject.toml` points `uv` at `../agenticlens` for local development (see
-`[tool.uv.sources]`); once both packages are on PyPI that override goes away
-and `pip install agentic-chaos` will pull `agenticlens` transitively.
+`[tool.uv.sources]`); once `agenticlens` publishes a release with
+`chaos_events` support, that override goes away and `pip install agentic-chaos`
+will pull it transitively.
 
 ## Quickstart
 

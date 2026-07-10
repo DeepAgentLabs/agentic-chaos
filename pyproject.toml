@@ -22,7 +22,9 @@ classifiers = [
   "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
-  "agenticlens>=0.1.2",
+  # 0.1.2 is on PyPI but predates chaos_events/ChaosImpactRecommender support --
+  # this needs the not-yet-released version that adds it. See [tool.uv.sources].
+  "agenticlens>=0.1.3",
   "pydantic>=2.0,<3",
   "typer>=0.12",
   "rich>=13.0",
@@ -51,8 +53,9 @@ Changelog = "https://github.com/pramodbn27/agentic-chaos/blob/main/CHANGELOG.md"
 packages = ["src/agentic_chaos"]
 
 [tool.uv.sources]
-# agenticlens isn't published yet -- resolve it from the sibling checkout during
-# local development. Remove once both packages are on PyPI.
+# PyPI's agenticlens is stuck on 0.1.2, which predates chaos_events support --
+# resolve from the sibling checkout instead during local development. Remove
+# once agenticlens>=0.1.3 (or whatever adds chaos_events) is released.
 agenticlens = { path = "../agenticlens", editable = true }
 
 [tool.ruff]

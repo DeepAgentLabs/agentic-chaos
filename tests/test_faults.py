@@ -81,8 +81,26 @@ def test_garble_text_preserves_shape() -> None:
 
     assert len(garbled) == len(original)
     assert garbled.split(" ") != original.split(" ")
-    # Punctuation-only / non-alpha tokens pass through untouched.
+    # Punctuation itself (not the letters attached to it) passes through untouched.
     assert garbled.endswith("!")
+    assert not garbled.split(",")[0].endswith(",")
+
+
+def test_garble_text_garbles_words_with_attached_punctuation() -> None:
+    # Regression: word.isalpha() used to skip "fox," and "jumps!" entirely,
+    # since trailing punctuation makes the whole token non-alphabetic.
+    rng = random.Random(0)
+    garbled = garble_text("fox, jumps!", rng)
+
+    assert not garbled.startswith("fox")
+    assert "jumps" not in garbled
+    assert garbled.endswith("!")
+    assert garbled[3] == ","
+
+
+def test_garble_text_pure_punctuation_token_untouched() -> None:
+    rng = random.Random(0)
+    assert garble_text("- ... --", rng) == "- ... --"
 
 
 def test_silent_degradation_corrupts_string_result() -> None:
@@ -108,6 +126,23 @@ def test_silent_degradation_corrupts_content_attribute() -> None:
 
     assert outcome.result.content != "genuine content"
     assert outcome.result.other == "untouched"
+
+
+def test_silent_degradation_falls_back_to_text_when_content_is_read_only() -> None:
+    # Regression: a failed .content write used to abort the fallback chain
+    # entirely (via `break`) instead of trying .text next.
+    class Response:
+        def __init__(self) -> None:
+            self.text = "genuine text"
+
+        @property
+        def content(self) -> str:
+            return "read-only content"
+
+    fault = SilentDegradationFault(seed=3)
+    outcome = fault.trigger(lambda: Response(), step_id=None, step_name=None)
+
+    assert outcome.result.text != "genuine text"
 
 
 def test_silent_degradation_custom_degrade_fn() -> None:
