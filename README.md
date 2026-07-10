@@ -24,7 +24,7 @@ predates it — so install both from source with `uv`, as sibling checkouts:
 
 ```bash
 git clone https://github.com/DeepAgentLabs/agenticlens.git
-git clone https://github.com/pramodbn27/agentic-chaos.git
+git clone https://github.com/DeepAgentLabs/agentic-chaos.git
 cd agentic-chaos
 uv sync --extra dev
 ```
