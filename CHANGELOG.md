@@ -4,6 +4,10 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-07-10
+
+Initial release.
+
 ### Added
 
 - `.github/workflows/release-pypi.yml`: publishes to PyPI on a `v*` tag push
