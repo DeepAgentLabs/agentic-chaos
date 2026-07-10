@@ -4,6 +4,12 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-07-10
+
+### Changed
+
+- Testing release; version bump to 0.1.1.
+
 ## [0.1.0] - 2026-07-10
 
 Initial release.
