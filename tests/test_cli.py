@@ -134,10 +134,107 @@ def test_chaos_run_saves_report_even_when_script_crashes(tmp_path: Path) -> None
     assert len(data["chaos_events"]) == 1
 
 
-def test_agent_run_not_implemented() -> None:
-    result = runner.invoke(app, ["agent", "run"])
+def test_agent_run_requires_inject_option() -> None:
+    result = runner.invoke(app, ["agent", "run", "dummy.py"])
+    assert result.exit_code == 2  # missing required --inject
+
+
+def test_agent_run_missing_script() -> None:
+    result = runner.invoke(
+        app, ["agent", "run", "does-not-exist.py", "--inject", "tool_failure"]
+    )
     assert result.exit_code == 1
-    assert "v0.2" in result.output
+    assert "not found" in result.output.lower()
+
+
+_AGENT_WITH_TOPOLOGY_SCRIPT = """
+from agentic_chaos import ToolCallFailureFault, TopologyTracker, chaos_call, wrap_tool
+from agentic_chaos.agents.faults import ToolCallFailureError
+
+
+def search(query):
+    return f"result for {query}"
+
+
+tracker = TopologyTracker()
+tracker.register_node("Agent", type="agent")
+wrapped_search = wrap_tool(search, tool_name="search", tracker=tracker, caller_node="Agent")
+
+try:
+    wrapped_search("hello")
+except ToolCallFailureError:
+    pass
+"""
+
+
+def test_agent_run_includes_topology_in_report(tmp_path: Path) -> None:
+    script = tmp_path / "agent_topo.py"
+    script.write_text(_AGENT_WITH_TOPOLOGY_SCRIPT)
+    out = tmp_path / "report.json"
+
+    result = runner.invoke(
+        app, ["agent", "run", str(script), "--inject", "tool_failure", "--save", str(out)]
+    )
+
+    assert result.exit_code == 0
+    assert out.exists()
+    data = json.loads(out.read_text())
+    assert data["agent_topology"] is not None
+    assert len(data["agent_topology"]["nodes"]) == 2  # Agent + search
+    assert len(data["agent_topology"]["edges"]) == 1  # Agent -> search
+
+
+def test_agent_run_renders_topology_output(tmp_path: Path) -> None:
+    script = tmp_path / "agent_topo.py"
+    script.write_text(_AGENT_WITH_TOPOLOGY_SCRIPT)
+
+    result = runner.invoke(
+        app, ["agent", "run", str(script), "--inject", "tool_failure"]
+    )
+
+    assert result.exit_code == 0
+    assert "Agent" in result.output
+    assert "search" in result.output
+    assert "tool_call" in result.output
+
+
+_PLAIN_SCRIPT_NO_TOPOLOGY = """
+from agentic_chaos.chaos import chaos_call
+from agentic_chaos.agents.faults import ToolCallFailureError
+
+def my_fn():
+    return "ok"
+
+try:
+    chaos_call(my_fn, faults=["tool_failure"], step_name="plain")
+except ToolCallFailureError:
+    pass
+"""
+
+
+def test_agent_run_no_topology_leak_across_invocations(tmp_path: Path) -> None:
+    """Bug fix: a TopologyTracker from one invocation must NOT leak into
+    the next invocation's report."""
+    script1 = tmp_path / "with_topo.py"
+    script1.write_text(_AGENT_WITH_TOPOLOGY_SCRIPT)
+    script2 = tmp_path / "no_topo.py"
+    script2.write_text(_PLAIN_SCRIPT_NO_TOPOLOGY)
+    out1 = tmp_path / "report1.json"
+    out2 = tmp_path / "report2.json"
+
+    # First run — has topology
+    runner.invoke(
+        app, ["agent", "run", str(script1), "--inject", "tool_failure", "--save", str(out1)]
+    )
+    # Second run — no topology in this script
+    runner.invoke(
+        app, ["agent", "run", str(script2), "--inject", "tool_failure", "--save", str(out2)]
+    )
+
+    data1 = json.loads(out1.read_text())
+    data2 = json.loads(out2.read_text())
+    assert data1["agent_topology"] is not None  # first has topology
+    assert data2["agent_topology"] is None  # second must NOT have leaked topology
 
 
 def test_drift_snapshot_not_implemented() -> None:

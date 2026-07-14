@@ -193,29 +193,39 @@ def garble_text(text: str, rng: random.Random | None = None) -> str:
     return re.sub(r"[A-Za-z]+", _replace, text)
 
 
-def _default_degrade(result: Any, rng: random.Random) -> Any:
-    """Best-effort content corruption across common LLM response shapes."""
+def mutate_text_attrs(result: Any, mutator: Callable[[str], str]) -> Any:
+    """Apply `mutator` to the first text attribute found on `result`.
+
+    Probes `.content` and `.text` on dicts and objects. Returns the (possibly
+    mutated) result. Shared utility to avoid duplicating the attribute-probing
+    pattern across fault implementations.
+    """
     if isinstance(result, str):
-        return garble_text(result, rng)
+        return mutator(result)
 
     if isinstance(result, dict):
-        degraded = dict(result)
+        mutated = dict(result)
         for key in ("content", "text"):
-            if isinstance(degraded.get(key), str):
-                degraded[key] = garble_text(degraded[key], rng)
-                return degraded
-        return degraded
+            if isinstance(mutated.get(key), str):
+                mutated[key] = mutator(mutated[key])
+                return mutated
+        return mutated
 
     for attr in ("content", "text"):
         value = getattr(result, attr, None)
         if isinstance(value, str):
             try:
-                object.__setattr__(result, attr, garble_text(value, rng))
+                object.__setattr__(result, attr, mutator(value))
                 return result
             except (AttributeError, TypeError):
                 continue
 
     return result
+
+
+def _default_degrade(result: Any, rng: random.Random) -> Any:
+    """Best-effort content corruption across common LLM response shapes."""
+    return mutate_text_attrs(result, lambda text: garble_text(text, rng))
 
 
 class SilentDegradationFault(BaseFault):

@@ -152,7 +152,11 @@ def test_silent_degradation_custom_degrade_fn() -> None:
 
 
 def test_fault_registry_has_all_three_v01_faults() -> None:
-    assert set(FAULT_REGISTRY) == {"token_timeout", "rate_limit_storm", "silent_degradation"}
+    assert {"token_timeout", "rate_limit_storm", "silent_degradation"}.issubset(FAULT_REGISTRY)
+
+
+def test_fault_registry_has_v02_agent_faults() -> None:
+    assert {"tool_failure", "memory_corruption", "infinite_loop"}.issubset(FAULT_REGISTRY)
 
 
 def test_resolve_faults_from_comma_string() -> None:

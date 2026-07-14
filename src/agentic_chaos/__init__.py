@@ -1,3 +1,11 @@
+from agentic_chaos.agents import (
+    InfiniteLoopFault,
+    MemoryCorruptionFault,
+    ToolCallFailureFault,
+    TopologyTracker,
+    wrap_node,
+    wrap_tool,
+)
 from agentic_chaos.chaos import (
     RateLimitStormFault,
     SilentDegradationFault,
@@ -6,13 +14,18 @@ from agentic_chaos.chaos import (
     chaos_session,
 )
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 __all__ = [
+    "InfiniteLoopFault",
+    "MemoryCorruptionFault",
     "RateLimitStormFault",
     "SilentDegradationFault",
     "TokenTimeoutFault",
+    "TopologyTracker",
     "__version__",
     "chaos_call",
     "chaos_session",
+    "wrap_node",
+    "wrap_tool",
 ]

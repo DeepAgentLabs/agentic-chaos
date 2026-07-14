@@ -4,6 +4,37 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-07-13
+
+### Added
+
+- **Agent Failure Injector (v0.2)** — three new agent-level fault types:
+  - `ToolCallFailureFault` — force tool calls to error, timeout, or return
+    empty data. Supports `tool_name` filtering to target specific tools.
+    Modes: `"error"`, `"timeout"`, `"empty"`.
+  - `MemoryCorruptionFault` — corrupt shared agent state by truncating,
+    injecting garbage, or garbling text content. Modes: `"truncate"`,
+    `"inject"`, `"garble"`.
+  - `InfiniteLoopFault` — force agents to loop past their normal termination
+    point for a configurable number of extra turns, then pass through.
+- **Agent topology tracking** — `TopologyTracker` class and `AgentTopology` /
+  `AgentNode` / `AgentEdge` models for recording which agents, tools, and
+  memory stores communicated during a chaos run.
+- **LangGraph adapter** — `wrap_tool()` and `wrap_node()` helpers that
+  transparently inject chaos into tool/node functions with optional topology
+  tracking. No LangGraph dependency required.
+- **`agentic-chaos agent run` CLI command** — run agent scripts with
+  agent-level faults active. Accepts `--inject`, `--framework`, and `--save`.
+- `ChaosReport.agent_topology` field (schema v1.2) — optional topology data
+  embedded in chaos reports.
+- New `"looped"` outcome type for `ChaosEvent`.
+- All v0.2 faults registered in the global `FAULT_REGISTRY` — discoverable
+  via `agentic-chaos chaos list-faults` and `resolve_faults()`.
+- New example: `examples/chaos_agent_failure_demo.py` — demonstrates all
+  three agent faults, `wrap_tool()`, and `TopologyTracker`.
+- 38 new tests covering agent faults, topology, and integration with
+  `chaos_session` / `chaos_call`.
+
 ## [0.1.1] - 2026-07-10
 
 ### Changed
