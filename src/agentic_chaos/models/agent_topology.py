@@ -24,7 +24,7 @@ class AgentEdge(BaseModel):
     source_id: str
     target_id: str
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    message_type: str = "call"  # "tool_call", "tool_result", "memory_read", "memory_write", "handoff"
+    message_type: str = "call"  # "tool_call", "tool_result", "memory_read", etc.
 
 
 class AgentTopology(BaseModel):

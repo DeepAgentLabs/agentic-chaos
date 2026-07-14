@@ -22,6 +22,7 @@ __all__ = [
     "RateLimitStormFault",
     "SilentDegradationFault",
     "TokenTimeoutFault",
+    "ToolCallFailureFault",
     "TopologyTracker",
     "__version__",
     "chaos_call",

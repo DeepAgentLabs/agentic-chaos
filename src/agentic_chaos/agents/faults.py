@@ -21,7 +21,6 @@ from agentic_chaos.chaos.faults import (
 )
 from agentic_chaos.models.chaos_event import ChaosEvent
 
-
 # ---------------------------------------------------------------------------
 # Error classes
 # ---------------------------------------------------------------------------

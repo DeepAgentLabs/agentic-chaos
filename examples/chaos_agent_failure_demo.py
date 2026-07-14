@@ -23,7 +23,6 @@ from agentic_chaos import (
 )
 from agentic_chaos.agents.faults import ToolCallFailureError
 
-
 # ---------------------------------------------------------------------------
 # Mock agent components (replace these with your real agent code)
 # ---------------------------------------------------------------------------

@@ -1,4 +1,3 @@
-import random
 
 import pytest
 
@@ -11,7 +10,6 @@ from agentic_chaos.agents.faults import (
 from agentic_chaos.chaos.faults import FAULT_REGISTRY, resolve_faults
 from agentic_chaos.chaos.inject import chaos_call
 from agentic_chaos.chaos.session import chaos_session
-
 
 # ---------------------------------------------------------------------------
 # ToolCallFailureFault

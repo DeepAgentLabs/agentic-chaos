@@ -23,7 +23,7 @@ chaos_app = typer.Typer(
     no_args_is_help=True,
 )
 agent_app = typer.Typer(
-    help="Agent-orchestration chaos: inject faults at the multi-agent level (tools, memory, loops).",
+    help="Agent-orchestration chaos: inject faults at the multi-agent level.",
     no_args_is_help=True,
 )
 drift_app = typer.Typer(
