@@ -65,6 +65,5 @@ def render_topology(console: Console, topology: AgentTopology) -> None:
         console.print(edge_table)
 
     console.print(
-        f"\n[bold]{len(topology.nodes)}[/bold] node(s), "
-        f"[bold]{len(topology.edges)}[/bold] edge(s)."
+        f"\n[bold]{len(topology.nodes)}[/bold] node(s), [bold]{len(topology.edges)}[/bold] edge(s)."
     )

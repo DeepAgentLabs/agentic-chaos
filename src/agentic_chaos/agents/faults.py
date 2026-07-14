@@ -92,9 +92,7 @@ class ToolCallFailureFault(BaseFault):
         if self.mode == "timeout":
             time.sleep(self.timeout_seconds)
             detail["timeout_seconds"] = self.timeout_seconds
-            message = (
-                f"tool timed out after {self.timeout_seconds:.1f}s: {self.error_message}"
-            )
+            message = f"tool timed out after {self.timeout_seconds:.1f}s: {self.error_message}"
             event = ChaosEvent(
                 fault_type=self.name,
                 step_id=step_id,
@@ -274,8 +272,7 @@ class InfiniteLoopFault(BaseFault):
             step_name=step_name,
             outcome="looped",
             message=(
-                f"forced extra turn {self._fired}/{self.force_turns} "
-                f"(original result replaced)"
+                f"forced extra turn {self._fired}/{self.force_turns} (original result replaced)"
             ),
             detail={
                 "forced_turn": self._fired,

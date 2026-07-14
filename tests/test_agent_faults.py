@@ -1,4 +1,3 @@
-
 import pytest
 
 from agentic_chaos.agents.faults import (

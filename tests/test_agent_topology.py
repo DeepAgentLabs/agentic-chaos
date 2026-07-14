@@ -145,6 +145,7 @@ class TestTopologyTracker:
         assert len(dumped["agent_topology"]["nodes"]) == 2
         assert len(dumped["agent_topology"]["edges"]) == 1
 
+
 class TestTopologyTrackerContextvar:
     def test_auto_activate_registers_in_contextvar(self) -> None:
         from agentic_chaos.agents.topology import get_active_tracker, reset_active_tracker

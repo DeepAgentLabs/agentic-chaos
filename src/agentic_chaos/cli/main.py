@@ -151,7 +151,9 @@ def agent_run(
         help="Agent framework hint (generic, langgraph, crewai, autogen). Currently informational.",
     ),
     save: Path | None = typer.Option(
-        None, "--save", help="Save the resulting chaos report to this file. If the script "
+        None,
+        "--save",
+        help="Save the resulting chaos report to this file. If the script "
         "uses TopologyTracker, topology data is included automatically.",
     ),
 ) -> None:

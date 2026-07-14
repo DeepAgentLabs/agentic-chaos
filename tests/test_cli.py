@@ -140,9 +140,7 @@ def test_agent_run_requires_inject_option() -> None:
 
 
 def test_agent_run_missing_script() -> None:
-    result = runner.invoke(
-        app, ["agent", "run", "does-not-exist.py", "--inject", "tool_failure"]
-    )
+    result = runner.invoke(app, ["agent", "run", "does-not-exist.py", "--inject", "tool_failure"])
     assert result.exit_code == 1
     assert "not found" in result.output.lower()
 
@@ -188,9 +186,7 @@ def test_agent_run_renders_topology_output(tmp_path: Path) -> None:
     script = tmp_path / "agent_topo.py"
     script.write_text(_AGENT_WITH_TOPOLOGY_SCRIPT)
 
-    result = runner.invoke(
-        app, ["agent", "run", str(script), "--inject", "tool_failure"]
-    )
+    result = runner.invoke(app, ["agent", "run", str(script), "--inject", "tool_failure"])
 
     assert result.exit_code == 0
     assert "Agent" in result.output

@@ -13,9 +13,7 @@ from contextvars import ContextVar, Token
 
 from agentic_chaos.models.agent_topology import AgentEdge, AgentNode, AgentTopology
 
-_active_tracker: ContextVar["TopologyTracker | None"] = ContextVar(
-    "_active_tracker", default=None
-)
+_active_tracker: ContextVar["TopologyTracker | None"] = ContextVar("_active_tracker", default=None)
 
 
 def get_active_tracker() -> "TopologyTracker | None":

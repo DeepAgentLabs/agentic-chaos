@@ -62,9 +62,7 @@ def wrap_tool(
                     source_type="agent",
                     target_type="tool",
                 )
-        return chaos_call(
-            fn, *args, step_id=name, step_name=name, faults=faults, **kwargs
-        )
+        return chaos_call(fn, *args, step_id=name, step_name=name, faults=faults, **kwargs)
 
     return wrapped
 
@@ -103,8 +101,6 @@ def wrap_node(
                     source_type="agent",
                     target_type=node_type,
                 )
-        return chaos_call(
-            fn, *args, step_id=name, step_name=name, faults=faults, **kwargs
-        )
+        return chaos_call(fn, *args, step_id=name, step_name=name, faults=faults, **kwargs)
 
     return wrapped
