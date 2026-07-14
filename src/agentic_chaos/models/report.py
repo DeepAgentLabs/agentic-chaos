@@ -24,3 +24,4 @@ class ChaosReport(BaseModel):
     start_time: datetime
     end_time: datetime | None = None
     chaos_events: list[dict[str, Any]] = Field(default_factory=list)
+    agent_topology: dict[str, Any] | None = None

@@ -16,10 +16,9 @@ tools that happen to compose.
 
 ## Status
 
-`agentic-chaos` is early-stage software (v0.1 — the **LLM Chaos Toolkit**).
-Two more modules are planned: an **Agent Failure Injector** for
-LangGraph/CrewAI/AutoGen (v0.2), and a **Prompt/Model Drift Detector** (v0.3).
-See [ROADMAP.md](ROADMAP.md) for the full plan.
+`agentic-chaos` is early-stage software. The **LLM Chaos Toolkit** (v0.1) and
+**Agent Failure Injector** (v0.2) are shipped. Planned next: a **Prompt/Model
+Drift Detector** (v0.3). See [ROADMAP.md](ROADMAP.md) for the full plan.
 
 ## Installation
 
@@ -125,26 +124,62 @@ for both, runnable):
 ## CLI Reference
 
 ```bash
-# Run a script with chaos active and print a chaos-events report.
+# Run a script with LLM-level chaos active and print a chaos-events report.
 agentic-chaos chaos run my_app.py --inject token_timeout,rate_limit_storm
 
 # Same, saving the resulting standalone report for later inspection.
 agentic-chaos chaos run my_app.py --inject silent_degradation --save chaos_run.json
 
-# List available fault types.
+# Run a script with agent-level faults.
+agentic-chaos agent run my_agent.py --inject tool_failure,memory_corruption --save report.json
+
+# List all available fault types (v0.1 + v0.2).
 agentic-chaos chaos list-faults
 ```
 
-`agentic-chaos agent ...` and `agentic-chaos drift ...` are placeholders for
-the v0.2 and v0.3 modules — running them today prints a pointer to
-[ROADMAP.md](ROADMAP.md).
+`agentic-chaos drift ...` is a placeholder for the v0.3 module — running it
+today prints a pointer to [ROADMAP.md](ROADMAP.md).
+
+## Agent Failure Injector (v0.2)
+
+Three agent-level fault types for testing multi-agent resilience:
+
+| Fault | `--inject` name | What it does |
+| --- | --- | --- |
+| Tool-call failure | `tool_failure` | Forces a tool call to error (`"error"`), timeout (`"timeout"`), or return null (`"empty"`). Use `tool_name="search"` to target a specific tool; `None` targets all. |
+| Memory corruption | `memory_corruption` | Corrupts shared agent state: `"truncate"` cuts to half, `"inject"` inserts garbage, `"garble"` replaces text with random letters. |
+| Infinite loop | `infinite_loop` | Replaces the agent's return value with a "continue" signal for `force_turns` calls, then passes through. Tests whether your agent has turn-limit safeguards. |
+
+### wrap_tool() / wrap_node() + TopologyTracker
+
+Wrap tool and node functions for transparent chaos injection and topology
+recording:
+
+```python
+from agentic_chaos import (
+    ToolCallFailureFault, TopologyTracker, chaos_session, wrap_tool
+)
+
+tracker = TopologyTracker()
+tracker.register_node("SupportAgent", type="agent")
+
+search = wrap_tool(search_fn, tool_name="search", tracker=tracker, caller_node="SupportAgent")
+refund = wrap_tool(refund_fn, tool_name="refund", tracker=tracker, caller_node="SupportAgent")
+
+with chaos_session([ToolCallFailureFault(tool_name="search")]):
+    search("order #123")   # fault fires — tool_name matches
+    refund("123")           # passes through — different tool
+
+print(tracker.topology.as_json())  # nodes + edges
+```
 
 ## Examples
 
 | Script | Needs | Shows |
 | --- | --- | --- |
-| [`examples/chaos_customer_support_demo.py`](examples/chaos_customer_support_demo.py) | nothing but `agentic_chaos` | All three faults' default behavior in one flow: a rate-limit storm the app retries through and recovers from, a token timeout it doesn't handle (fails outright), and a silent degradation (normal-looking call, corrupted output). |
+| [`examples/chaos_customer_support_demo.py`](examples/chaos_customer_support_demo.py) | nothing but `agentic_chaos` | All three v0.1 faults' default behavior in one flow: a rate-limit storm the app retries through and recovers from, a token timeout it doesn't handle (fails outright), and a silent degradation (normal-looking call, corrupted output). |
 | [`examples/chaos_advanced_faults_demo.py`](examples/chaos_advanced_faults_demo.py) | nothing but `agentic_chaos` | `TokenTimeoutFault(mode="delay")` and a custom `SilentDegradationFault(degrade_fn=...)`. |
+| [`examples/chaos_agent_failure_demo.py`](examples/chaos_agent_failure_demo.py) | nothing but `agentic_chaos` | All three v0.2 agent faults: tool-call failure, memory corruption, infinite loop. Plus `wrap_tool()` and `TopologyTracker`. |
 | [`examples/chaos_with_agenticlens_demo.py`](examples/chaos_with_agenticlens_demo.py) | `agentic-chaos[agenticlens]` | The optional integration: `attach_events()` + `step_kwargs()` merging chaos events onto a real AgenticLens `Workflow`. |
 
 Run any of them directly (`uv run python examples/...`), or the first two

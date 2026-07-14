@@ -10,6 +10,7 @@ from agentic_chaos.chaos.faults import (
     TokenTimeoutError,
     TokenTimeoutFault,
     garble_text,
+    mutate_text_attrs,
 )
 from agentic_chaos.chaos.inject import chaos_call
 from agentic_chaos.chaos.session import chaos_session
@@ -29,4 +30,5 @@ __all__ = [
     "chaos_session",
     "garble_text",
     "get_active_session",
+    "mutate_text_attrs",
 ]

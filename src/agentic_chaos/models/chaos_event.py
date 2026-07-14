@@ -4,7 +4,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
-Outcome = Literal["errored", "degraded", "delayed"]
+Outcome = Literal["errored", "degraded", "delayed", "looped"]
 
 
 class ChaosEvent(BaseModel):

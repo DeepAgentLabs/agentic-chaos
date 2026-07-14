@@ -1,5 +1,19 @@
 # agentic-chaos — Roadmap & Architecture
 
+## Release Status
+
+- **v0.1** ✅ Complete — LLM Chaos Toolkit (3 faults, CLI, AgenticLens adapter)
+- **v0.2** ✅ Complete — Agent Failure Injector (3 agent faults, topology tracking, LangGraph adapter) — shipped 2026-07-13
+- **v0.3** 🚧 Planned — Prompt/Model Drift Detector
+- **v0.4** 🚧 Planned — Streaming Faults, Provider Patching & Chaos Profiles
+- **v0.5** 🚧 Planned — Pytest Plugin & Assertions
+- **v0.6** 🚧 Planned — Fault Cascades, Adaptive Intensity & Response Poisoning
+- **v0.7** 🚧 Planned — Chaos Workflows, Declarative Experiments & Explosion Radius
+- **v0.8** 🚧 Planned — Resilience Probes & Resilience Score
+- **v0.9** 🚧 Planned — ChaosHub (Shared Experiment Registry)
+
+---
+
 > **Update:** `agentic-chaos` is a standalone package with **no required
 > dependency on `agenticlens`** (or vice versa) -- `pip install agentic-chaos`
 > works against any plain Python callable with nothing else installed. The
@@ -173,10 +187,10 @@ workflow level, not just the single-call level.
 stretch goals.
 
 **Deliverables:**
-- [ ] `agentic-chaos.agents` module (LangGraph adapter)
-- [ ] `agent_topology` schema extension
+- [x] `agentic-chaos.agents` module (LangGraph adapter)
+- [x] `agent_topology` schema extension
 - [ ] AgenticLens `AgentResilienceRecommender` adapter + resilience score
-- [ ] README section + 1 example (LangGraph multi-agent demo) + demo GIF
+- [x] README section + 1 example (LangGraph multi-agent demo) + demo GIF
 
 ### v0.3 — Prompt/Model Drift Detector (`agentic-chaos.drift`)
 Different shape (monitoring/snapshotting vs. one-off fault injection), but
@@ -196,6 +210,325 @@ lives in the same package and reuses the same export layer.
 - [ ] Local snapshot/baseline storage (simple JSON to start)
 - [ ] AgenticLens `DriftRecommender` adapter
 - [ ] README section + example (scheduled drift check in CI) + demo GIF
+
+### v0.4 — Streaming Faults, Provider Patching & Chaos Profiles
+
+Closes the biggest remaining gaps in fault coverage and adoption friction.
+
+**Streaming faults (new fault classes):**
+- `StreamCutFault` — terminate a streaming response mid-way through generation
+- `StreamHangFault` — hang the stream without sending data (simulates frozen connection)
+- `SlowTTFTFault` — delay time-to-first-token to simulate cold-start / queue backup
+- `SlowChunksFault` — slow inter-chunk delivery to simulate degraded throughput
+
+**Provider auto-patching (opt-in helpers):**
+- `patch_openai(faults=[...])` — monkey-patch the OpenAI client so all calls
+  are automatically wrapped; no need to change every call site to `chaos_call()`
+- `patch_anthropic(faults=[...])` — same for Anthropic/Claude
+- `patch_google(faults=[...])` — same for Google Gemini
+- Patches are reversible and scoped to `chaos_session()` lifetime
+
+**Chaos profiles (named presets via `chaos.toml`):**
+```toml
+[profiles.production-like]
+faults = ["rate_limit_storm", "token_timeout"]
+probability = 0.1
+
+[profiles.stress-test]
+faults = ["rate_limit_storm", "silent_degradation", "token_timeout"]
+probability = 0.8
+```
+```bash
+agentic-chaos chaos run my_app.py --profile production-like
+```
+
+**Probabilistic triggers:**
+- All faults gain a `probability` parameter (0.0–1.0) — fault fires randomly
+  per call instead of deterministically, enabling more realistic chaos runs
+
+**Additional LLM faults:**
+- `AuthErrorFault` — simulate 401/403 authentication failures
+- `ContextLengthFault` — simulate context-length-exceeded errors
+
+**Deliverables:**
+- [ ] 4 streaming fault classes
+- [ ] Provider patching helpers (OpenAI, Anthropic, Gemini)
+- [ ] `chaos.toml` profile loader + `--profile` CLI flag
+- [ ] `probability` parameter on all fault classes
+- [ ] `AuthErrorFault` + `ContextLengthFault`
+- [ ] README section + example + demo GIF
+
+### v0.5 — Pytest Plugin & Assertions
+
+Makes chaos a first-class part of CI/CD — not a separate manual step.
+
+**Pytest plugin (`pytest-agentic-chaos`):**
+```python
+@pytest.mark.chaos(faults=["rate_limit_storm"], must_recover=True)
+def test_agent_handles_rate_limits():
+    result = my_agent("What's the weather?")
+    assert result is not None
+```
+```bash
+pytest --chaos   # enables chaos markers; without flag, tests run normally
+```
+
+**Built-in assertions (pass/fail contracts):**
+- `CompletesWithin(timeout_s)` — call finishes within time budget
+- `NoUnhandledError()` — no unhandled exceptions escaped
+- `MaxRetries(n)` — agent didn't exceed retry limit
+- `RecoveredAfterFailure()` — agent produced a valid result despite injected fault
+- `MaxCostImpact(factor)` — cost under chaos didn't exceed N× baseline
+
+**Deliverables:**
+- [ ] `pytest-agentic-chaos` plugin (separate small package or entry point)
+- [ ] 5 assertion classes in `agentic_chaos.assertions`
+- [ ] `--chaos` pytest flag for opt-in activation
+- [ ] README section + CI example (GitHub Actions) + demo GIF
+
+### v0.6 — Fault Cascades, Adaptive Intensity & Response Poisoning
+
+Advanced chaos capabilities — models real-world compound failures and
+automates threshold discovery.
+
+**Fault cascades (chained failures):**
+```python
+cascade(
+    first=RateLimitStormFault(burst_count=3),
+    then=TokenTimeoutFault(hang_seconds=10),
+    delay_between=2.0
+)
+```
+Models real production patterns where one failure triggers another (e.g.,
+429 storm → timeouts as the queue backs up).
+
+**Adaptive fault intensity (breaking-point finder):**
+```python
+result = find_breaking_point(
+    my_app,
+    fault=RateLimitStormFault,
+    param="burst_count",
+    range=(1, 20),
+)
+# → "Agent breaks at burst_count=7 (no recovery after 7 consecutive 429s)"
+```
+Binary-searches fault severity to find the exact threshold where the agent
+fails — useful for capacity planning and SLA definition.
+
+**LLM response poisoning (adversarial injection):**
+```python
+PoisonedResponseFault(
+    strategy="confident_wrong",    # wrong answer, high confidence
+    # or "partial_hallucination"   # mostly correct, one wrong fact
+    # or "format_violation"        # correct content, broken JSON/format
+)
+```
+Tests whether downstream validation/guardrails catch plausible-looking bad
+output — more realistic than random text garbling.
+
+**Cost-of-failure estimation (pre-run):**
+```bash
+agentic-chaos estimate my_app.py --fault rate_limit_storm --retries 3
+# → "Estimated cost impact: +$0.12/call (+140%), 3 extra LLM calls"
+```
+
+**Deliverables:**
+- [ ] `cascade()` API + cascade scheduling engine
+- [ ] `find_breaking_point()` binary-search utility
+- [ ] `PoisonedResponseFault` with 3 strategies
+- [ ] `agentic-chaos estimate` CLI subcommand
+- [ ] README section + examples + demo GIF
+
+### v0.7 — Chaos Workflows, Declarative Experiments & Explosion Radius
+
+Inspired by Chaos Mesh's orchestration model — adapted for AI agents instead
+of Kubernetes pods.
+
+**Chaos workflows (serial/parallel experiment orchestration):**
+
+Define multi-step chaos *campaigns* with health checks between stages,
+modeling progressive failure escalation:
+```python
+from agentic_chaos.workflows import ChaosWorkflow, Step, HealthCheck
+
+workflow = ChaosWorkflow("resilience-suite", steps=[
+    Step("warm-up", faults=[RateLimitStormFault(burst_count=2)]),
+    HealthCheck(fn=my_agent, query="Are you working?", expect_success=True),
+    Step("escalate", faults=[RateLimitStormFault(burst_count=5), TokenTimeoutFault()]),
+    HealthCheck(fn=my_agent, query="Are you working?", expect_success=True),
+    Step("full-blast", faults=[cascade(...)]),
+])
+report = workflow.run(my_app)
+```
+Workflows compose multiple fault types in sequence with status verification
+between stages — models how real outages escalate.
+
+**CLI:**
+```bash
+agentic-chaos chaos workflow run chaos_workflow.yaml --save report.json
+```
+
+**Declarative experiment definitions (YAML):**
+
+Separates experiment *definition* from *execution* so non-developers (SREs,
+QA) can author chaos experiments without writing Python:
+```yaml
+# experiments/rate-limit-recovery.yaml
+name: rate-limit-recovery
+target: my_app.py
+faults:
+  - type: rate_limit_storm
+    burst_count: 5
+    retry_after: 1.0
+  - type: token_timeout
+    hang_seconds: 3.0
+    probability: 0.3
+assertions:
+  - completes_within: 30
+  - max_retries: 5
+  - recovered_after_failure: true
+schedule:
+  cron: "0 2 * * *"  # nightly
+```
+YAML experiments can be version-controlled alongside application code and
+run via CLI or CI.
+
+**Explosion radius control (scoped targeting):**
+
+Scope faults to specific steps, tools, or LLM providers — prevents
+accidental chaos in critical paths (safety checks, auth):
+```python
+RateLimitStormFault(
+    burst_count=3,
+    scope=Scope(
+        steps=["retriever", "planner"],     # only these steps
+        providers=["openai"],                # only OpenAI calls
+        exclude_steps=["safety_check"],      # never touch this
+    )
+)
+```
+
+**Deliverables:**
+- [ ] `agentic_chaos.workflows` module (`ChaosWorkflow`, `Step`, `HealthCheck`)
+- [ ] `agentic-chaos chaos workflow run` CLI subcommand
+- [ ] YAML experiment loader + schema validation
+- [ ] `Scope` class for fault targeting (steps, providers, excludes)
+- [ ] Cron-based scheduling support for continuous chaos testing
+- [ ] README section + workflow example + demo GIF
+
+### v0.8 — Resilience Probes & Resilience Score
+
+Inspired by LitmusChaos's resilience probes and scoring — adapted for AI
+agents. Moves agentic-chaos from "observe what happened" to "measure how
+resilient the agent actually is."
+
+**Resilience probes (reusable steady-state validators):**
+
+Probes are plug-and-play health checks, separate from faults, that verify
+agent steady-state *before*, *during*, and *after* chaos injection:
+```python
+from agentic_chaos.probes import Probe, HttpProbe, ResponseQualityProbe, LatencyProbe
+
+# Define once, reuse across all experiments
+probes = [
+    HttpProbe(url="http://localhost:8080/health", expect_status=200),
+    ResponseQualityProbe(
+        fn=my_agent,
+        query="What is 2+2?",
+        expect_contains="4",
+    ),
+    LatencyProbe(fn=my_agent, query="Hello", max_ms=3000),
+]
+
+# Probes run before, during, and after chaos injection
+report = chaos_run(my_app, faults=[...], probes=probes)
+# → "Pre-chaos: all probes passed. Post-chaos: ResponseQualityProbe FAILED"
+```
+
+Key difference from v0.5 assertions: assertions check *during* a chaos run;
+probes check whether the agent **recovered to normal** after chaos stopped.
+
+**Resilience score (quantified 0–100 metric):**
+
+A single number summarizing agent resilience across all experiments — usable
+as a CI gate, dashboard metric, and trend tracker:
+```
+Resilience Report: my_support_agent
+═══════════════════════════════════
+  Overall Score: 72/100
+
+  Rate-limit recovery:     ██████████░░  85/100  (retried, recovered)
+  Token timeout handling:  ████████░░░░  65/100  (recovered but slow)
+  Silent degradation:      ██████░░░░░░  50/100  (no detection)
+  Tool failure recovery:   █████████░░░  90/100  (graceful fallback)
+
+  Trend: ↑ +8 from last run (was 64)
+```
+
+```python
+report = chaos_run(my_app, faults=[...], probes=probes)
+print(report.resilience_score)  # 72
+assert report.resilience_score >= 70  # CI gate
+```
+
+Score is computed from: fault recovery rate, probe pass rate, latency impact,
+retry efficiency, and cost overhead.
+
+**Deliverables:**
+- [ ] `agentic_chaos.probes` module (`Probe`, `HttpProbe`, `ResponseQualityProbe`, `LatencyProbe`)
+- [ ] Pre/during/post probe execution lifecycle
+- [ ] Resilience score computation engine
+- [ ] Score trend tracking (compare against previous runs)
+- [ ] Rich terminal report with per-fault breakdown + bar chart
+- [ ] `--min-score` CLI flag for CI gating
+- [ ] README section + CI example + demo GIF
+
+### v0.9 — ChaosHub (Shared Experiment Registry)
+
+A community-contributed library of pre-built fault recipes for common agent
+patterns — lowers the "what should I even test?" barrier.
+
+**CLI:**
+```bash
+# Browse available experiments
+agentic-chaos hub list
+agentic-chaos hub search "rag"
+
+# Pull a community experiment
+agentic-chaos hub pull rag-retriever-failure
+agentic-chaos hub pull react-loop-resilience
+
+# Run it against your app
+agentic-chaos chaos run my_app.py --experiment rag-retriever-failure
+
+# Contribute your own
+agentic-chaos hub push my_experiment.yaml
+```
+
+**Bundled experiment recipes (ships with the package):**
+
+| Recipe | Pattern | Faults injected |
+|---|---|---|
+| `rag-retriever-failure` | RAG agents | Embedding timeout, vector DB empty results, retriever returns stale data |
+| `rag-context-poisoning` | RAG agents | Retrieved context contains contradictory or hallucinated information |
+| `react-loop-resilience` | ReAct agents | Tool chain failure mid-reasoning, observation corruption |
+| `multi-agent-coordinator-down` | Multi-agent | Coordinator agent timeout, inter-agent message loss |
+| `support-escalation-failure` | Customer support | Escalation path failure, knowledge base corruption |
+| `api-cascade-storm` | Tool-heavy agents | Multiple tools fail in sequence, simulating downstream outage |
+
+**Architecture:**
+- **Local hub**: Bundled YAML experiments shipped with the package (works offline)
+- **Remote hub**: GitHub-hosted registry for community contributions (opt-in,
+  requires network)
+- Experiments are standard YAML files (same format as v0.7 declarative experiments)
+
+**Deliverables:**
+- [ ] `agentic_chaos.hub` module (list, search, pull, push)
+- [ ] `agentic-chaos hub` CLI subcommand group
+- [ ] 6+ bundled experiment recipes (RAG, ReAct, multi-agent, support)
+- [ ] GitHub-hosted remote registry with contribution workflow
+- [ ] `--experiment` flag on `chaos run` to use hub recipes directly
+- [ ] README section + "getting started in 30 seconds" guide + demo GIF
 
 ---
 
@@ -223,5 +556,17 @@ reference implementation of it.
 | 4 | PyPI release v0.2 | ongoing |
 | 5 | v0.3 — Drift Detector | 2–4 weeks |
 | 6 | PyPI release v0.3, publish the schema spec doc | ongoing |
-| 7 | Blog post / talk: "one schema, one chaos toolkit, full AI-infra reliability stack" | after v0.3 ships |
+| 7 | v0.4 — Streaming Faults, Provider Patching & Chaos Profiles | 3–5 weeks |
+| 8 | PyPI release v0.4 | ongoing |
+| 9 | v0.5 — Pytest Plugin & Assertions | 2–4 weeks |
+| 10 | PyPI release v0.5 | ongoing |
+| 11 | v0.6 — Fault Cascades, Adaptive Intensity & Response Poisoning | 4–6 weeks |
+| 12 | PyPI release v0.6 | ongoing |
+| 13 | v0.7 — Chaos Workflows, Declarative Experiments & Explosion Radius | 4–6 weeks |
+| 14 | PyPI release v0.7 | ongoing |
+| 15 | v0.8 — Resilience Probes & Resilience Score | 3–5 weeks |
+| 16 | PyPI release v0.8 | ongoing |
+| 17 | v0.9 — ChaosHub (Shared Experiment Registry) | 3–5 weeks |
+| 18 | PyPI release v0.9 | ongoing |
+| 19 | Blog post / talk: "one schema, one chaos toolkit, full AI-infra reliability stack" | after v0.9 ships |
 
