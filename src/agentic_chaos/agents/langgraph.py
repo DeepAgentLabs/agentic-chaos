@@ -48,7 +48,7 @@ def wrap_tool(
         search("query")  # fault fires here
     ```
     """
-    name = tool_name or getattr(fn, "__name__", "unknown_tool")
+    name: str = tool_name if tool_name is not None else getattr(fn, "__name__", "unknown_tool")
 
     @wraps(fn)
     def wrapped(*args: Any, **kwargs: Any) -> T:
@@ -87,7 +87,7 @@ def wrap_node(
     planner = wrap_node(planner_fn, node_name="Planner", tracker=tracker, caller_node="Router")
     ```
     """
-    name = node_name or getattr(fn, "__name__", "unknown_node")
+    name: str = node_name if node_name is not None else getattr(fn, "__name__", "unknown_node")
 
     @wraps(fn)
     def wrapped(*args: Any, **kwargs: Any) -> T:

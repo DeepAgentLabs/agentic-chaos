@@ -158,13 +158,13 @@ def _inject_garbage(result: Any, rng: random.Random) -> Any:
         return result[:pos] + f" [INJECTED: {garbage}] " + result[pos:]
     if isinstance(result, list):
         pos = rng.randint(0, len(result))
-        injected = list(result)
-        injected.insert(pos, f"__garbage_{garbage}__")
-        return injected
+        list_copy = list(result)
+        list_copy.insert(pos, f"__garbage_{garbage}__")
+        return list_copy
     if isinstance(result, dict):
-        injected = dict(result)
-        injected[f"__injected_{rng.randint(0, 999)}__"] = garbage
-        return injected
+        dict_copy = dict(result)
+        dict_copy[f"__injected_{rng.randint(0, 999)}__"] = garbage
+        return dict_copy
 
     def _inject_into_text(text: str) -> str:
         pos = rng.randint(0, max(0, len(text)))
