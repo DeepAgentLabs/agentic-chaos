@@ -4,149 +4,91 @@
 
 - **v0.1** ✅ Complete — LLM Chaos Toolkit (3 faults, CLI, AgenticLens adapter)
 - **v0.2** ✅ Complete — Agent Failure Injector (3 agent faults, topology tracking, LangGraph adapter) — shipped 2026-07-13
-- **v0.3** 🚧 Planned — Prompt/Model Drift Detector
-- **v0.4** 🚧 Planned — Streaming Faults, Provider Patching & Chaos Profiles
-- **v0.5** 🚧 Planned — Pytest Plugin & Assertions
-- **v0.6** 🚧 Planned — Fault Cascades, Adaptive Intensity & Response Poisoning
-- **v0.7** 🚧 Planned — Chaos Workflows, Declarative Experiments & Explosion Radius
-- **v0.8** 🚧 Planned — Resilience Probes & Resilience Score
-- **v0.9** 🚧 Planned — ChaosHub (Shared Experiment Registry)
+- **v0.3** 🚧 Planned — Fidelity Judges & Handoff Chaos
+- **v0.4** 🚧 Planned — Prompt/Model Drift Detector
+- **v0.5** 🚧 Planned — Streaming Faults, Provider Patching & Chaos Profiles
+- **v0.6** 🚧 Planned — Pytest Plugin & Assertions
+- **v0.7** 🚧 Planned — Fault Cascades, Adaptive Intensity & Response Poisoning
+- **v0.8** 🚧 Planned — Chaos Workflows, Declarative Experiments & Explosion Radius
+- **v0.9** 🚧 Planned — Resilience Probes & Resilience Score
+- **v1.0** 🚧 Planned — ChaosHub (Shared Experiment Registry)
 
 ---
 
-> **Update:** `agentic-chaos` is a standalone package with **no required
-> dependency on `agenticlens`** (or vice versa) -- `pip install agentic-chaos`
-> works against any plain Python callable with nothing else installed. The
-> "shared workflow.json format" described below is real, but it's an
-> *optional* integration (`pip install agentic-chaos[agenticlens]`,
-> `agentic_chaos.integrations.agenticlens`), not a hard dependency baked into
-> either package's core. See the README's Installation and "Optional:
-> AgenticLens Integration" sections for the current shape. The rest of this
-> document is the original architecture plan and is still directionally
-> accurate, but written from before that decoupling.
+## Architecture
 
-## What We're Building
+`agentic-chaos` is a **standalone** fault-injection toolkit — `pip install
+agentic-chaos` works against any plain Python callable with no other package
+required. AgenticLens integration is optional (`pip install
+agentic-chaos[agenticlens]`).
 
-**One new package**, `agentic-chaos`, that sits alongside your existing
-`agenticlens` (profiler/reporting engine — already built, extended only
-additively for interop: a `chaos_events` field and a `ChaosImpactRecommender`).
+The package contains the following modules (shipped and planned):
 
-`agentic-chaos` contains **three feature modules** in a single package:
+| Module | Status | Purpose |
+|--------|--------|---------|
+| `agentic_chaos.chaos` | ✅ Shipped (v0.1) | LLM-level fault injection — `TokenTimeoutFault`, `RateLimitStormFault`, `SilentDegradationFault` |
+| `agentic_chaos.agents` | ✅ Shipped (v0.2) | Agent-level fault injection — `ToolCallFailureFault`, `MemoryCorruptionFault`, `InfiniteLoopFault`, LangGraph adapter, topology tracking |
+| `agentic_chaos.judges` | 🚧 Planned (v0.3) | Fidelity Judges — LLM-as-judge scoring to determine if corrupted output is actually worse |
+| `agentic_chaos.drift` | 🚧 Planned (v0.4) | Prompt/model drift detection — snapshot, compare, detect silent changes |
+| `agentic_chaos.integrations` | ✅ Shipped (v0.1) | Optional AgenticLens adapter (`attach_events()`, `step_kwargs()`) |
 
-1. **LLM Chaos Toolkit** — inject faults at the single LLM-call level
-2. **Agent Failure Injector** — inject faults at the multi-agent orchestration
-   level (LangGraph, CrewAI, AutoGen)
-3. **Prompt/Model Drift Detector** — snapshot + detect silent drift over time
-
-All three modules write data in AgenticLens's existing `workflow.json` format
-(with small, additive schema extensions), so your existing `agenticlens`
-package can analyze and report on all of it without you rebuilding any
-reporting/cost logic. `agenticlens` becomes the shared "brain"; `agentic-chaos`
-is the one new tool that produces richer data for it to analyze.
-
-```
-                    ┌───────────────────────────┐
-                    │   workflow.json format    │
-                    │  (shared data contract)   │
-                    └─────────────┬─────────────┘
-                 ┌────────────────┴─────────────────┐
-                 │                                  │
-           agentic-chaos                         agenticlens
-     (ONE package, 3 modules:                (existing — profiler,
-      chaos / agent-guard /                   cost engine, reporting,
-      driftwatch submodules)                  recommendations)
-```
-
----
-
-## Package Layout
+## Package Layout (current)
 
 ```
 agentic-chaos/
-  src/agentic-chaos/
-    chaos/            # Module 1: LLM Chaos Toolkit
-      faults.py       # TokenTimeout, RateLimitStorm, SilentDegradation, etc.
-      inject.py
-    agents/           # Module 2: Agent Failure Injector
-      langgraph.py    # framework-specific adapters
-      crewai.py
-      autogen.py
-      faults.py       # ToolFailure, MemoryCorruption, InfiniteLoop
-    drift/            # Module 3: Prompt/Model Drift Detector
-      snapshot.py
-      compare.py
-    cli/              # single CLI, subcommands per module
-    models/           # schema extensions to workflow.json (chaos_events, etc.)
+  src/agentic_chaos/
+    chaos/              # LLM Chaos Toolkit (v0.1)
+      faults.py         # TokenTimeout, RateLimitStorm, SilentDegradation
+      inject.py         # chaos_call()
+      context.py        # ChaosSession
+      session.py
+    agents/             # Agent Failure Injector (v0.2)
+      faults.py         # ToolCallFailure, MemoryCorruption, InfiniteLoop
+      langgraph.py      # wrap_tool(), wrap_node()
+      topology.py       # TopologyTracker, AgentTopology
+    drift/              # Placeholder (v0.4)
+    integrations/       # Optional adapters
+      agenticlens.py    # attach_events(), step_kwargs()
+    cli/                # CLI entry point
+    models/             # ChaosReport, ChaosEvent, schema extensions
 ```
 
-One repo, one PyPI package (`pip install agentic-chaos`), one CLI with
-subcommands — not three separate installs.
+One repo, one PyPI package, one CLI with subcommands.
 
 ---
 
-## CLI Shape (single tool, three subcommands)
+## CLI (shipped commands)
 
 ```bash
-# Module 1: LLM-level chaos
+# LLM-level chaos (v0.1)
 agentic-chaos chaos run my_app.py --inject token_timeout,rate_limit_storm --save chaos_run.json
+agentic-chaos chaos list-faults
 
-# Module 2: Agent-orchestration chaos
+# Agent-level chaos (v0.2)
 agentic-chaos agent run my_graph.py --framework langgraph --inject memory_corruption,tool_failure --save chaos_run.json
-
-# Module 3: Drift detection
-agentic-chaos drift snapshot --prompt my_prompt.txt --model gpt-4o-mini --save baseline.json
-agentic-chaos drift compare baseline.json --against current_run.json
 ```
 
-All three save output in the same `workflow.json`-compatible format.
-
----
-
-## The Interop Piece You Asked About
-
-This is the core value loop, and it works the same way regardless of which
-`agentic-chaos` module produced the file:
+## Optional AgenticLens Integration
 
 ```bash
-# 1. agentic-chaos runs your agent, injects failures, records what happened
+# 1. agentic-chaos runs your agent, injects failures, saves a ChaosReport
 agentic-chaos agent run my_agent.py --inject tool_failure,memory_corrupt --save chaos_run.json
 
-# 2. AgenticLens (already built) analyzes that same file
+# 2. AgenticLens analyzes the same file (ChaosReport is workflow.json-compatible)
 agenticlens analyze chaos_run.json
 ```
 
-```
-Chaos Impact Report
-  * Tool failure injected at step "Retriever" → agent retried 3x, +$0.04 cost
-  * Memory corruption at step "Planner" → agent hallucinated fallback answer
-  * Total cost impact under failure: +140%
-  * Recovery: FAILED (no graceful degradation detected)
-```
-
-How this works under the hood:
-- `agentic-chaos` injects a fault (delays a call, kills a tool, corrupts a memory
-  field) and logs what happened into a `chaos_events` array — which step was
-  hit, what fault type, and how the app responded (retried / errored /
-  returned degraded output).
-- This `chaos_events` array is an **additive extension** to the same
-  `workflow.json` your `step()`/`profile()` context managers already produce.
-- AgenticLens needs only a **thin adapter**: one new recommender rule
-  (`ChaosImpactRecommender`) that reads `chaos_events` and correlates them
-  against the existing cost/latency data it already computes. You're not
-  rebuilding the reporting engine — you're extending it with one new rule set.
-- The drift module (Module 3) plugs into the same export layer too — a
-  `DriftRecommender` that reuses AgenticLens's existing Markdown/JSON/CSV
-  exporters.
-
-Net effect: **one new package, one small adapter change in AgenticLens**, and
-you get chaos reports, agent-resilience reports, and drift reports all coming
-out of the analysis tool you've already built.
+The `ChaosReport` JSON format is compatible with AgenticLens's `Workflow`
+schema — `agenticlens analyze` reads `chaos_events` alongside its normal
+cost/latency data. The `ChaosImpactRecommender` (in the agenticlens repo)
+reports resilience findings. Neither package imports the other at the core
+level.
 
 ---
 
 ## Build Order (within the single `agentic-chaos` package)
 
-Build the three modules in this order — each is releasable as a **minor
+Build the modules in this order — each is releasable as a **minor
 version bump** of the same package, so you get incremental PyPI releases
 (good for showing sustained activity/impact) without splitting into separate
 repos.
@@ -189,10 +131,79 @@ stretch goals.
 **Deliverables:**
 - [x] `agentic-chaos.agents` module (LangGraph adapter)
 - [x] `agent_topology` schema extension
-- [ ] AgenticLens `AgentResilienceRecommender` adapter + resilience score
+- [ ] AgenticLens `AgentResilienceRecommender` adapter + resilience score *(deferred to v0.9)*
 - [x] README section + 1 example (LangGraph multi-agent demo) + demo GIF
 
-### v0.3 — Prompt/Model Drift Detector (`agentic-chaos.drift`)
+### v0.3 — Fidelity Judges & Handoff Chaos (`agentic_chaos.judges`, `agentic_chaos.agents` extension)
+
+Slotted directly after the shipped Agent Failure Injector because it closes the
+two gaps that matter most the moment you're running multi-agent chaos for
+real: knowing whether a corrupted response is *actually* worse, and being
+able to break the **link** between two agents, not just an agent itself.
+
+**Fidelity Judges — is "different" actually "worse"?**
+
+`SilentDegradationFault` already corrupts output undetectably by cost/latency
+telemetry alone — nothing in the existing report says whether the corruption
+*mattered*. Fidelity Judges wrap an LLM-as-judge framework and attach a
+continuous score to the event, rather than gating a pass/fail test:
+
+```python
+from agentic_chaos.judges import DeepEvalJudge, fidelity_session
+from deepeval.metrics import GEval
+
+with fidelity_session(DeepEvalJudge(GEval(name="task-completion", criteria="..."))):
+    with chaos_session([SilentDegradationFault()]):
+        result = chaos_call(agent.answer, question, faults=["silent_degradation"])
+```
+
+```
+ChaosEvent(fault_type="silent_degradation", outcome="corrupted", fidelity_score=0.31)
+```
+
+Unlike a pytest-style assertion, `fidelity_score` is **data** — an additive
+`chaos_events` schema field (v1.3) — so the AgenticLens `ChaosImpactRecommender`
+can rank faults by how much they actually degraded quality, not merely
+whether they fired. Ships with `DeepEvalJudge` and `PydanticEvalsJudge`
+adapters.
+
+**Handoff Chaos — corrupt the wire, not the node**
+
+Every fault through v0.2 targets a *node*: a tool call, an LLM call, or an
+agent's own memory. Nothing targets the **edge** — the payload one agent
+hands to the next, which `TopologyTracker` already models as `AgentEdge`.
+`HandoffCorruptionFault` fires on a specific edge, corrupting, delaying, or
+dropping the message in transit between two named nodes:
+
+```python
+from agentic_chaos.agents import HandoffCorruptionFault
+
+with chaos_session([HandoffCorruptionFault(from_node="Planner", to_node="Executor", mode="drop")]):
+    ...
+```
+
+Because it's edge-scoped, the resulting `ChaosEvent` records exactly which
+link in the topology broke (`edge_id`, `from_node`, `to_node`) — something a
+topology-blind fault can't express. Modes: `"corrupt"` (garble the payload),
+`"drop"` (message never arrives), `"delay"` (late arrival, tests timeout
+handling downstream).
+
+**Memory Decay — corruption as drift, not a single event**
+
+A `mode="decay"` option on the existing `MemoryCorruptionFault`: instead of a
+one-shot truncate/inject/garble, corrupts shared state progressively across
+`N` turns (`rate` param) — modeling the more realistic long-running-session
+failure where state degrades gradually rather than breaking all at once.
+
+**Deliverables:**
+- [ ] `agentic_chaos.judges` module — `DeepEvalJudge`, `PydanticEvalsJudge`, `fidelity_session()`
+- [ ] `fidelity_score` schema extension (`chaos_events` v1.3)
+- [ ] `HandoffCorruptionFault` (`agentic_chaos.agents`) — corrupt/drop/delay modes, edge-scoped
+- [ ] `MemoryCorruptionFault(mode="decay", rate=...)`
+- [ ] AgenticLens `ChaosImpactRecommender` update to weight by `fidelity_score`
+- [ ] README section + example + demo GIF
+
+### v0.4 — Prompt/Model Drift Detector (`agentic-chaos.drift`)
 Different shape (monitoring/snapshotting vs. one-off fault injection), but
 lives in the same package and reuses the same export layer.
 
@@ -211,7 +222,7 @@ lives in the same package and reuses the same export layer.
 - [ ] AgenticLens `DriftRecommender` adapter
 - [ ] README section + example (scheduled drift check in CI) + demo GIF
 
-### v0.4 — Streaming Faults, Provider Patching & Chaos Profiles
+### v0.5 — Streaming Faults, Provider Patching & Chaos Profiles
 
 Closes the biggest remaining gaps in fault coverage and adoption friction.
 
@@ -258,7 +269,7 @@ agentic-chaos chaos run my_app.py --profile production-like
 - [ ] `AuthErrorFault` + `ContextLengthFault`
 - [ ] README section + example + demo GIF
 
-### v0.5 — Pytest Plugin & Assertions
+### v0.6 — Pytest Plugin & Assertions
 
 Makes chaos a first-class part of CI/CD — not a separate manual step.
 
@@ -273,20 +284,33 @@ def test_agent_handles_rate_limits():
 pytest --chaos   # enables chaos markers; without flag, tests run normally
 ```
 
-**Built-in assertions (pass/fail contracts):**
+**Built-in contracts (pass/fail checks, `agentic_chaos.contracts`):**
 - `CompletesWithin(timeout_s)` — call finishes within time budget
 - `NoUnhandledError()` — no unhandled exceptions escaped
 - `MaxRetries(n)` — agent didn't exceed retry limit
 - `RecoveredAfterFailure()` — agent produced a valid result despite injected fault
 - `MaxCostImpact(factor)` — cost under chaos didn't exceed N× baseline
+- `NoRetryStorm(max_retries_per_window)` — flags cascading retries *across the
+  whole topology* within a time window, not just repeated calls from a single
+  node — catches the case where a fault on one agent triggers a retry storm
+  that ripples through its callers
+- `FullTopologyTraversal()` — every node reachable in the `AgentTopology`
+  baseline run was actually visited under chaos; catches an agent silently
+  short-circuiting a planned step (e.g. the reviewer node never ran) rather
+  than just checking the conversation didn't error
+
+Contracts run against a `ChaosReport`/`AgentTopology` after the fact — they
+read the same schema AgenticLens consumes, so a contract failure and an
+AgenticLens recommendation come from the same data, not two disconnected
+checks.
 
 **Deliverables:**
 - [ ] `pytest-agentic-chaos` plugin (separate small package or entry point)
-- [ ] 5 assertion classes in `agentic_chaos.assertions`
+- [ ] 7 contract classes in `agentic_chaos.contracts`
 - [ ] `--chaos` pytest flag for opt-in activation
 - [ ] README section + CI example (GitHub Actions) + demo GIF
 
-### v0.6 — Fault Cascades, Adaptive Intensity & Response Poisoning
+### v0.7 — Fault Cascades, Adaptive Intensity & Response Poisoning
 
 Advanced chaos capabilities — models real-world compound failures and
 automates threshold discovery.
@@ -339,7 +363,7 @@ agentic-chaos estimate my_app.py --fault rate_limit_storm --retries 3
 - [ ] `agentic-chaos estimate` CLI subcommand
 - [ ] README section + examples + demo GIF
 
-### v0.7 — Chaos Workflows, Declarative Experiments & Explosion Radius
+### v0.8 — Chaos Workflows, Declarative Experiments & Explosion Radius
 
 Inspired by Chaos Mesh's orchestration model — adapted for AI agents instead
 of Kubernetes pods.
@@ -408,15 +432,34 @@ RateLimitStormFault(
 )
 ```
 
+**Topology Fuzzer (exploration, not a fixed workflow):**
+
+Rather than fuzzing random faults against a flat call list, `fuzz_topology()`
+walks the actual `AgentTopology` graph and weights fault placement by graph
+structure — e.g. hitting high-fan-out coordinator nodes more often than leaf
+tool calls, since that's where a real cascade is most likely to start:
+
+```python
+from agentic_chaos.workflows import fuzz_topology
+
+report = fuzz_topology(my_graph, n=20, scope=Scope(exclude_steps=["safety_check"]))
+```
+
+Useful once enough fault types exist (post-cascade, post-handoff-chaos) to
+make random combinations worth exploring; complements `find_breaking_point()`
+rather than replacing it — one searches a single parameter, the other
+explores across the whole graph.
+
 **Deliverables:**
 - [ ] `agentic_chaos.workflows` module (`ChaosWorkflow`, `Step`, `HealthCheck`)
 - [ ] `agentic-chaos chaos workflow run` CLI subcommand
 - [ ] YAML experiment loader + schema validation
 - [ ] `Scope` class for fault targeting (steps, providers, excludes)
+- [ ] `fuzz_topology()` graph-weighted fuzzer
 - [ ] Cron-based scheduling support for continuous chaos testing
 - [ ] README section + workflow example + demo GIF
 
-### v0.8 — Resilience Probes & Resilience Score
+### v0.9 — Resilience Probes & Resilience Score
 
 Inspired by LitmusChaos's resilience probes and scoring — adapted for AI
 agents. Moves agentic-chaos from "observe what happened" to "measure how
@@ -445,7 +488,7 @@ report = chaos_run(my_app, faults=[...], probes=probes)
 # → "Pre-chaos: all probes passed. Post-chaos: ResponseQualityProbe FAILED"
 ```
 
-Key difference from v0.5 assertions: assertions check *during* a chaos run;
+Key difference from v0.6 contracts: contracts check *during* a chaos run;
 probes check whether the agent **recovered to normal** after chaos stopped.
 
 **Resilience score (quantified 0–100 metric):**
@@ -483,7 +526,7 @@ retry efficiency, and cost overhead.
 - [ ] `--min-score` CLI flag for CI gating
 - [ ] README section + CI example + demo GIF
 
-### v0.9 — ChaosHub (Shared Experiment Registry)
+### v1.0 — ChaosHub (Shared Experiment Registry)
 
 A community-contributed library of pre-built fault recipes for common agent
 patterns — lowers the "what should I even test?" barrier.
@@ -520,7 +563,7 @@ agentic-chaos hub push my_experiment.yaml
 - **Local hub**: Bundled YAML experiments shipped with the package (works offline)
 - **Remote hub**: GitHub-hosted registry for community contributions (opt-in,
   requires network)
-- Experiments are standard YAML files (same format as v0.7 declarative experiments)
+- Experiments are standard YAML files (same format as v0.8 declarative experiments)
 
 **Deliverables:**
 - [ ] `agentic_chaos.hub` module (list, search, pull, push)
@@ -534,10 +577,11 @@ agentic-chaos hub push my_experiment.yaml
 
 ## Shared Data Contract
 
-Document the `chaos_events`, `agent_topology`, and drift-report extensions as
-a proper **spec**, not just implementation detail — `docs/workflow-schema-spec.md`
-in the `agenticlens` repo, versioned (`v1.1` chaos_events, `v1.2`
-agent_topology, `v1.3` drift). Each `agentic-chaos` module README links to it.
+Document the `chaos_events`, `agent_topology`, `fidelity_score`, and
+drift-report extensions as a proper **spec**, not just implementation detail —
+`docs/workflow-schema-spec.md` in the `agenticlens` repo, versioned (`v1.1`
+chaos_events, `v1.2` agent_topology, `v1.3` fidelity_score, `v1.4` drift).
+Each `agentic-chaos` module README links to it.
 
 This is what turns "one package with three modules" into a stronger petition
 artifact: you're not just shipping a tool, you're the author of the open
@@ -554,19 +598,21 @@ reference implementation of it.
 | 2 | PyPI release v0.1, README, demo, push for initial GitHub adoption | ongoing |
 | 3 | v0.2 — Agent Failure Injector (LangGraph) | 3–5 weeks |
 | 4 | PyPI release v0.2 | ongoing |
-| 5 | v0.3 — Drift Detector | 2–4 weeks |
-| 6 | PyPI release v0.3, publish the schema spec doc | ongoing |
-| 7 | v0.4 — Streaming Faults, Provider Patching & Chaos Profiles | 3–5 weeks |
-| 8 | PyPI release v0.4 | ongoing |
-| 9 | v0.5 — Pytest Plugin & Assertions | 2–4 weeks |
+| 5 | v0.3 — Fidelity Judges & Handoff Chaos | 2–4 weeks |
+| 6 | PyPI release v0.3 | ongoing |
+| 7 | v0.4 — Drift Detector | 2–4 weeks |
+| 8 | PyPI release v0.4, publish the schema spec doc | ongoing |
+| 9 | v0.5 — Streaming Faults, Provider Patching & Chaos Profiles | 3–5 weeks |
 | 10 | PyPI release v0.5 | ongoing |
-| 11 | v0.6 — Fault Cascades, Adaptive Intensity & Response Poisoning | 4–6 weeks |
+| 11 | v0.6 — Pytest Plugin & Assertions | 2–4 weeks |
 | 12 | PyPI release v0.6 | ongoing |
-| 13 | v0.7 — Chaos Workflows, Declarative Experiments & Explosion Radius | 4–6 weeks |
+| 13 | v0.7 — Fault Cascades, Adaptive Intensity & Response Poisoning | 4–6 weeks |
 | 14 | PyPI release v0.7 | ongoing |
-| 15 | v0.8 — Resilience Probes & Resilience Score | 3–5 weeks |
+| 15 | v0.8 — Chaos Workflows, Declarative Experiments & Explosion Radius | 4–6 weeks |
 | 16 | PyPI release v0.8 | ongoing |
-| 17 | v0.9 — ChaosHub (Shared Experiment Registry) | 3–5 weeks |
+| 17 | v0.9 — Resilience Probes & Resilience Score | 3–5 weeks |
 | 18 | PyPI release v0.9 | ongoing |
-| 19 | Blog post / talk: "one schema, one chaos toolkit, full AI-infra reliability stack" | after v0.9 ships |
+| 19 | v1.0 — ChaosHub (Shared Experiment Registry) | 3–5 weeks |
+| 20 | PyPI release v1.0 | ongoing |
+| 21 | Blog post / talk: "one schema, one chaos toolkit, full AI-infra reliability stack" | after v1.0 ships |
 
