@@ -22,6 +22,15 @@ agentic-chaos` works against any plain Python callable with no other package
 required. AgenticLens integration is optional (`pip install
 agentic-chaos[agenticlens]`).
 
+Within the broader DeepAgentLabs story, the package boundary should stay clear:
+
+- **AgenticLens observes, evaluates, explains, and recommends**
+- **Agentic Chaos injects, validates, tests, and proves resilience**
+
+That means `agentic-chaos` should stay focused on resilience testing,
+failure-mode validation, and recovery evidence rather than absorbing general
+observability, governance, or deployment features that belong elsewhere.
+
 The package contains the following modules (shipped and planned):
 
 | Module | Status | Purpose |
@@ -92,6 +101,25 @@ Build the modules in this order — each is releasable as a **minor
 version bump** of the same package, so you get incremental PyPI releases
 (good for showing sustained activity/impact) without splitting into separate
 repos.
+
+## Capability Direction
+
+Over time, the package should evolve around a resilience-testing shape like:
+
+```text
+agentic-chaos
+├── faults
+├── scenarios
+├── experiments
+├── recovery
+├── release-tests
+├── conformance-tests
+├── benchmarks
+└── reports
+```
+
+Not all of these need to become top-level modules immediately, but they are the
+right long-term categories for the package.
 
 ### v0.1 — LLM Chaos Toolkit (`agentic-chaos.chaos`)
 Narrowest scope, fastest to ship, most novel gap in the market (Chaos
@@ -615,4 +643,3 @@ reference implementation of it.
 | 19 | v1.0 — ChaosHub (Shared Experiment Registry) | 3–5 weeks |
 | 20 | PyPI release v1.0 | ongoing |
 | 21 | Blog post / talk: "one schema, one chaos toolkit, full AI-infra reliability stack" | after v1.0 ships |
-

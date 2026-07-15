@@ -7,6 +7,12 @@ happened. It has **no required dependency on any other package**, including
 [AgenticLens](https://github.com/DeepAgentLabs/agenticlens): `pip install
 agentic-chaos` and use it against any plain Python callable.
 
+Within the broader DeepAgentLabs architecture, Agentic Chaos is the resilience
+and failure-validation reference implementation for the **AI Operations
+Workflow Specification**. It injects, validates, tests, and proves resilience,
+while keeping its workflow artifacts compatible with the same shared
+operational model used by AgenticLens and the MCP layer.
+
 If you also use AgenticLens, an optional integration lets you merge chaos
 events straight into an AgenticLens `Workflow`, so `agenticlens analyze`
 reports on cost/latency and chaos impact together — see
