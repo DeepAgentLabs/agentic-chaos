@@ -27,9 +27,39 @@ Within the broader DeepAgentLabs story, the package boundary should stay clear:
 - **AgenticLens observes, evaluates, explains, and recommends**
 - **Agentic Chaos injects, validates, tests, and proves resilience**
 
+From a developer perspective, `agentic-chaos` exists to answer a simple
+question:
+
+`If my agentic AI system is slow, wrong, brittle, or unsafe under stress, can
+I prove it before production does?`
+
 That means `agentic-chaos` should stay focused on resilience testing,
 failure-mode validation, and recovery evidence rather than absorbing general
 observability, governance, or deployment features that belong elsewhere.
+
+For clarity, the package should not invent a separate closed reporting format as
+its main output. The canonical artifact for chaos and resilience evidence
+should remain the **AI Operations Specification** reference representation.
+
+In practice, that means:
+
+- chaos experiments should be exportable as AI Operations Specification
+  artifacts
+- resilience findings should attach as additive extensions to `workflow.json`
+- any JSON, CLI, report, or future telemetry output should derive from that
+  same shared contract
+
+The package should focus on these high-level resilience domains:
+
+- model and provider failure simulation
+- tool and API failure simulation
+- workflow and orchestration failure simulation
+- RAG and knowledge corruption scenarios
+- memory corruption and decay
+- agent handoff and coordination failures
+- safety and policy stress scenarios
+- recovery and degraded-mode evidence
+- resilience scoring and experiment reporting
 
 The package contains the following modules (shipped and planned):
 
@@ -93,6 +123,11 @@ cost/latency data. The `ChaosImpactRecommender` (in the agenticlens repo)
 reports resilience findings. Neither package imports the other at the core
 level.
 
+Developers contributing to `agentic-chaos` should be able to ask:
+
+`How does this fault, experiment, or report extend and export the AI Operations
+Specification?`
+
 ---
 
 ## Build Order (within the single `agentic-chaos` package)
@@ -120,6 +155,29 @@ agentic-chaos
 
 Not all of these need to become top-level modules immediately, but they are the
 right long-term categories for the package.
+
+## Developer Journey
+
+The roadmap should match how teams actually harden an agentic AI system:
+
+### Basic hardening
+
+- inject faults into single model calls
+- simulate timeouts, rate limits, and silent degradation
+- capture evidence from one run
+
+### Workflow hardening
+
+- break tools, memory, and agent loops
+- validate retries and fallback behavior
+- stress handoffs between agents and workflow steps
+
+### Production hardening
+
+- run repeatable chaos experiments in CI
+- measure quality impact, not only failure occurrence
+- compare baseline versus chaos runs
+- generate resilience evidence and readiness reports
 
 ### v0.1 — LLM Chaos Toolkit (`agentic-chaos.chaos`)
 Narrowest scope, fastest to ship, most novel gap in the market (Chaos
