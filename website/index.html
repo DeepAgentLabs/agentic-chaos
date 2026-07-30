@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="agentic-chaos: Standalone fault-injection toolkit for LLM-powered agents. Test resilience before production.">
+    <meta name="keywords" content="agentic AI, chaos engineering, fault injection, LLM testing, resilience">
+    <meta name="author" content="DeepAgentLabs">
+    <title>agentic-chaos — Resilience Testing for Agentic AI</title>
+    <link rel="stylesheet" href="assets/css/main.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-container">
+            <a href="/" class="logo">
+                <span class="logo-emoji">🌪️</span>
+                <span>agentic-chaos</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="#features">Features</a></li>
+                <li><a href="#faults">Faults</a></li>
+                <li><a href="docs/">Docs</a></li>
+                <li><a href="blog/">Blog</a></li>
+                <li><a href="explorer/">Explorer</a></li>
+            </ul>
+            <div class="nav-cta">
+                <a href="https://github.com/DeepAgentLabs/agentic-chaos" target="_blank" class="btn-secondary">GitHub</a>
+                <a href="#quickstart" class="btn-primary">Get Started</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Chaos Testing for Agentic AI</h1>
+            <p class="subtitle">
+                A standalone fault-injection toolkit that deliberately breaks your LLM calls and agent workflows—<br>
+                <strong>and reports exactly what failed.</strong>
+            </p>
+            <div class="hero-cta">
+                <a href="#quickstart" class="btn-primary btn-large">Quick Start (5 min)</a>
+                <a href="https://github.com/DeepAgentLabs/agentic-chaos" target="_blank" class="btn-secondary btn-large">View on GitHub</a>
+            </div>
+        </div>
+
+        <div class="stat-grid">
+            <div class="stat">
+                <div class="stat-number">0</div>
+                <div class="stat-label">Required Dependencies</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">6</div>
+                <div class="stat-label">Fault Types (v0.1-0.2)</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">2</div>
+                <div class="stat-label">Testing Layers</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">v1.0</div>
+                <div class="stat-label">Roadmap Ready</div>
+            </div>
+        </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- Problem Section -->
+    <section>
+        <h2>Why Chaos Testing for Agents?</h2>
+        <p class="section-subtitle">
+            Agentic AI systems are brittle. Your agent works fine in the lab, but what happens when the LLM times out,
+            a tool fails, or shared memory gets corrupted? Most teams don't know until production breaks.
+        </p>
+
+        <div class="feature-list">
+            <div class="feature">
+                <div class="feature-icon">🤐</div>
+                <h3>Silent Failures Invisible to Monitoring</h3>
+                <p>Your LLM returns garbage, but latency and tokens look normal. No alert fires. Chaos testing catches this.</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">⛓️</div>
+                <h3>Cascade Failures in Multi-Agent Systems</h3>
+                <p>One tool fails → Agent A fails → Agent B cascades. Without topology tracking, you miss the link.</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">🔄</div>
+                <h3>No Recovery Testing</h3>
+                <p>Your retry logic might fail under rate limits. Your turn limits might not prevent infinite loops. Prove it works.</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">📊</div>
+                <h3>Resilience Unproven</h3>
+                <p>Observability shows cost/latency. Chaos shows recovery. Together, they prove your agent is production-ready.</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">🚀</div>
+                <h3>Framework-Agnostic</h3>
+                <p>Works with any Python callable. LLM frameworks, agent frameworks, your custom code—no lock-in.</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">⚡</div>
+                <h3>Zero Setup Overhead</h3>
+                <p>pip install agentic-chaos. Wrap your calls. Run under chaos. No framework modifications needed.</p>
+            </div>
+        </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- Features Section -->
+    <section id="features">
+        <h2>How It Works</h2>
+        <p class="section-subtitle">agentic-chaos operates in two layers: LLM calls and agent workflows.</p>
+
+        <h3 style="font-size: 24px; margin-top: 48px; margin-bottom: 24px;">Two-Layer Testing</h3>
+
+        <div class="feature-list">
+            <div class="feature">
+                <div class="feature-icon">🔌</div>
+                <h3>LLM Layer (v0.1)</h3>
+                <p><strong>Test individual LLM calls</strong> — timeouts, rate limits, silent degradation. Works against any LLM, any provider.</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">🤖</div>
+                <h3>Agent Layer (v0.2)</h3>
+                <p><strong>Test multi-agent workflows</strong> — tool failures, memory corruption, infinite loops. Tracks topology and cascades.</p>
+            </div>
+        </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- Faults Section -->
+    <section id="faults">
+        <h2>All Fault Types</h2>
+        <p class="section-subtitle">6 fault types across LLM and agent layers. Extensible—add your own.</p>
+
+        <div class="faults-grid">
+            <!-- LLM Faults -->
+            <div class="fault-card">
+                <div class="fault-header">
+                    <span class="fault-emoji">⏱️</span>
+                    <span class="fault-name">TokenTimeout</span>
+                    <span class="fault-badge badge-llm">LLM</span>
+                </div>
+                <p class="fault-description">Simulates a hung/slow completion. Hangs for N seconds then times out (or succeeds late).</p>
+                <div class="fault-meta">
+                    <div class="meta-item">
+                        <div class="meta-label">Modes</div>
+                        <div class="meta-value">raise, delay</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">CLI</div>
+                        <div class="meta-value">token_timeout</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="fault-card">
+                <div class="fault-header">
+                    <span class="fault-emoji">🌪️</span>
+                    <span class="fault-name">RateLimitStorm</span>
+                    <span class="fault-badge badge-llm">LLM</span>
+                </div>
+                <p class="fault-description">Simulates a burst of 429 errors, then recovery. Tests retry logic and backoff behavior.</p>
+                <div class="fault-meta">
+                    <div class="meta-item">
+                        <div class="meta-label">Stateful</div>
+                        <div class="meta-value">Yes (counts firings)</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">CLI</div>
+                        <div class="meta-value">rate_limit_storm</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="fault-card">
+                <div class="fault-header">
+                    <span class="fault-emoji">🤐</span>
+                    <span class="fault-name">SilentDegradation</span>
+                    <span class="fault-badge badge-llm">LLM</span>
+                </div>
+                <p class="fault-description">Real latency, garbage output. Monitoring-blind failure—the hardest to detect.</p>
+                <div class="fault-meta">
+                    <div class="meta-item">
+                        <div class="meta-label">Detection</div>
+                        <div class="meta-value">Very hard</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">CLI</div>
+                        <div class="meta-value">silent_degradation</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="fault-card">
+                <div class="fault-header">
+                    <span class="fault-emoji">🔧</span>
+                    <span class="fault-name">ToolCallFailure</span>
+                    <span class="fault-badge badge-agent">Agent</span>
+                </div>
+                <p class="fault-description">Force a tool to fail—error, timeout, or return empty. Tests tool unavailability.</p>
+                <div class="fault-meta">
+                    <div class="meta-item">
+                        <div class="meta-label">Modes</div>
+                        <div class="meta-value">error, timeout, empty</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">CLI</div>
+                        <div class="meta-value">tool_failure</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="fault-card">
+                <div class="fault-header">
+                    <span class="fault-emoji">💾</span>
+                    <span class="fault-name">MemoryCorruption</span>
+                    <span class="fault-badge badge-agent">Agent</span>
+                </div>
+                <p class="fault-description">Corrupt shared agent state—truncate to 50%, inject garbage, or garble text.</p>
+                <div class="fault-meta">
+                    <div class="meta-item">
+                        <div class="meta-label">Modes</div>
+                        <div class="meta-value">truncate, inject, garble</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">CLI</div>
+                        <div class="meta-value">memory_corruption</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="fault-card">
+                <div class="fault-header">
+                    <span class="fault-emoji">♻️</span>
+                    <span class="fault-name">InfiniteLoop</span>
+                    <span class="fault-badge badge-agent">Agent</span>
+                </div>
+                <p class="fault-description">Force agent to loop past termination. Tests turn-limit safeguards.</p>
+                <div class="fault-meta">
+                    <div class="meta-item">
+                        <div class="meta-label">Stateful</div>
+                        <div class="meta-value">Yes (tracks turns)</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">CLI</div>
+                        <div class="meta-value">infinite_loop</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <p style="text-align: center; margin-top: 32px;">
+            <a href="explorer/" class="btn-primary btn-large" style="display: inline-block;">
+                🔍 Try Interactive Fault Explorer
+            </a>
+        </p>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- Quick Start -->
+    <section id="quickstart">
+        <h2>Quick Start (5 minutes)</h2>
+        <p class="section-subtitle">Install, wrap your calls, run under chaos.</p>
+
+        <h3 style="font-size: 20px; margin-top: 32px; margin-bottom: 16px;">1. Install</h3>
+        <div class="code-example">
+            <span class="code-tab">bash</span>
+            <pre>pip install agentic-chaos</pre>
+        </div>
+
+        <h3 style="font-size: 20px; margin-top: 32px; margin-bottom: 16px;">2. Wrap Your LLM Calls</h3>
+        <div class="code-example">
+            <span class="code-tab">Python</span>
+            <pre>
+from agentic_chaos.chaos import chaos_call, chaos_session, TokenTimeoutError
+
+with chaos_session(["token_timeout"]):
+    try:
+        result = chaos_call(
+            llm.complete,
+            "What is the weather?",
+            faults=["token_timeout"]
+        )
+    except TokenTimeoutError:
+        print("LLM timed out—handled gracefully")</pre>
+        </div>
+
+        <h3 style="font-size: 20px; margin-top: 32px; margin-bottom: 16px;">3. Run from CLI</h3>
+        <div class="code-example">
+            <span class="code-tab">bash</span>
+            <pre>
+agentic-chaos chaos run my_app.py \
+  --inject token_timeout,rate_limit_storm,silent_degradation \
+  --save chaos_report.json</pre>
+        </div>
+
+        <h3 style="font-size: 20px; margin-top: 32px; margin-bottom: 16px;">Learn More</h3>
+        <p style="font-size: 14px; color: var(--text-secondary);">
+            <a href="docs/" style="color: var(--primary); text-decoration: none; font-weight: 500;">→ Full Documentation</a> •
+            <a href="blog/" style="color: var(--primary); text-decoration: none; font-weight: 500;">→ Case Studies</a> •
+            <a href="https://github.com/DeepAgentLabs/agentic-chaos/tree/main/examples" target="_blank" style="color: var(--primary); text-decoration: none; font-weight: 500;">→ Examples</a>
+        </p>
+    </section>
+
+    <!-- CTA Section -->
+    <div class="cta-section">
+        <h2>Ready to Build Resilient Agentic AI?</h2>
+        <p>Start testing your agents today. Zero setup required.</p>
+        <div class="hero-cta">
+            <a href="https://github.com/DeepAgentLabs/agentic-chaos" target="_blank" class="btn-large" style="background: white; color: var(--primary); border: none;">⭐ Star on GitHub</a>
+            <a href="docs/" class="btn-large" style="color: white; border: 1px solid white;">📖 Read Docs</a>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>Project</h3>
+                <ul>
+                    <li><a href="https://github.com/DeepAgentLabs/agentic-chaos" target="_blank">GitHub</a></li>
+                    <li><a href="https://pypi.org/project/agentic-chaos/" target="_blank">PyPI</a></li>
+                    <li><a href="docs/" target="_blank">Documentation</a></li>
+                    <li><a href="https://github.com/DeepAgentLabs/agentic-chaos/blob/main/ROADMAP.md" target="_blank">Roadmap</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Resources</h3>
+                <ul>
+                    <li><a href="blog/">Blog & Case Studies</a></li>
+                    <li><a href="explorer/">Fault Explorer</a></li>
+                    <li><a href="https://github.com/DeepAgentLabs/agenticlens" target="_blank">AgenticLens</a></li>
+                    <li><a href="https://github.com/DeepAgentLabs" target="_blank">DeepAgentLabs</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Community</h3>
+                <ul>
+                    <li><a href="https://github.com/DeepAgentLabs/agentic-chaos/discussions" target="_blank">Discussions</a></li>
+                    <li><a href="https://github.com/DeepAgentLabs/agentic-chaos/issues" target="_blank">Issues</a></li>
+                    <li><a href="https://github.com/DeepAgentLabs/agentic-chaos/blob/main/LICENSE" target="_blank">License (MIT)</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Quick Links</h3>
+                <ul>
+                    <li><a href="#features">How It Works</a></li>
+                    <li><a href="#faults">Fault Types</a></li>
+                    <li><a href="#quickstart">Get Started</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2026 DeepAgentLabs. MIT License. agentic-chaos is open source.</p>
+        </div>
+    </footer>
+
+    <script src="assets/js/main.js"></script>
+</body>
+</html>

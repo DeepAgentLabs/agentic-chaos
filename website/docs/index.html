@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation - agentic-chaos</title>
+    <link rel="stylesheet" href="../assets/css/main.css">
+    <style>
+        .docs-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 60px 24px;
+        }
+
+        .docs-nav {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 40px;
+        }
+
+        .docs-nav h3 {
+            font-size: 16px;
+            margin-bottom: 16px;
+        }
+
+        .docs-nav ul {
+            list-style: none;
+        }
+
+        .docs-nav a {
+            display: block;
+            padding: 8px 0;
+            font-size: 14px;
+            color: var(--text-secondary);
+            border-left: 2px solid transparent;
+            padding-left: 12px;
+            transition: all 0.2s;
+        }
+
+        .docs-nav a:hover {
+            color: var(--primary);
+            border-left-color: var(--primary);
+        }
+
+        .docs-content h1 {
+            font-size: 42px;
+            margin-bottom: 12px;
+        }
+
+        .docs-content > section {
+            padding: 0;
+            margin-bottom: 60px;
+        }
+
+        .docs-content h2 {
+            font-size: 28px;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .docs-content h3 {
+            font-size: 20px;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .docs-content p {
+            font-size: 15px;
+            line-height: 1.8;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+        }
+
+        .docs-content ul, .docs-content ol {
+            margin: 16px 0;
+            padding-left: 24px;
+        }
+
+        .docs-content li {
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+        }
+
+        .code-example {
+            background: var(--surface-dark);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 16px;
+            margin: 16px 0;
+            overflow-x: auto;
+        }
+
+        .code-example pre {
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        .note {
+            background: rgba(30, 136, 229, 0.1);
+            border-left: 3px solid var(--secondary);
+            padding: 12px 16px;
+            margin: 16px 0;
+            border-radius: 4px;
+        }
+
+        .note strong {
+            color: var(--secondary);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-container">
+            <a href="/" class="logo">
+                <span class="logo-emoji">🌪️</span>
+                <span>agentic-chaos</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="/#features">Features</a></li>
+                <li><a href="/#faults">Faults</a></li>
+                <li><a href="./">Docs</a></li>
+                <li><a href="../blog/">Blog</a></li>
+                <li><a href="../explorer/">Explorer</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="docs-container">
+        <div class="docs-content">
+            <h1>📚 Documentation</h1>
+            <p>Complete guide to using agentic-chaos for resilience testing.</p>
+
+            <div class="docs-nav">
+                <h3>Quick Navigation</h3>
+                <ul>
+                    <li><a href="#install">Installation</a></li>
+                    <li><a href="#quickstart">Quick Start</a></li>
+                    <li><a href="#api">Python API</a></li>
+                    <li><a href="#cli">CLI Reference</a></li>
+                    <li><a href="#faults">Fault Types</a></li>
+                    <li><a href="#examples">Examples</a></li>
+                </ul>
+            </div>
+
+            <!-- Installation -->
+            <section id="install">
+                <h2>Installation</h2>
+                <h3>PyPI (Recommended)</h3>
+                <div class="code-example">
+                    <pre>pip install agentic-chaos</pre>
+                </div>
+
+                <h3>From Source</h3>
+                <div class="code-example">
+                    <pre>git clone https://github.com/DeepAgentLabs/agentic-chaos.git
+cd agentic-chaos
+uv sync --frozen</pre>
+                </div>
+
+                <h3>With AgenticLens Integration</h3>
+                <div class="code-example">
+                    <pre>pip install agentic-chaos[agenticlens]</pre>
+                </div>
+                <p>This enables optional two-way integration: merge chaos events into AgenticLens observability reports.</p>
+            </section>
+
+            <!-- Quick Start -->
+            <section id="quickstart">
+                <h2>Quick Start</h2>
+                <h3>Step 1: Import</h3>
+                <div class="code-example">
+                    <pre>from agentic_chaos.chaos import chaos_call, chaos_session, TokenTimeoutError</pre>
+                </div>
+
+                <h3>Step 2: Wrap Your Calls</h3>
+                <div class="code-example">
+                    <pre>with chaos_session(["token_timeout"]):
+    try:
+        result = chaos_call(llm.complete, "What is AI?", faults=["token_timeout"])
+    except TokenTimeoutError:
+        print("LLM timed out—handle gracefully")</pre>
+                </div>
+
+                <h3>Step 3: Run from CLI</h3>
+                <div class="code-example">
+                    <pre>agentic-chaos chaos run my_app.py --inject token_timeout,rate_limit_storm --save report.json</pre>
+                </div>
+
+                <div class="note">
+                    <strong>💡 Tip:</strong> Outside of a chaos session, all calls are transparent pass-throughs. This means your instrumented code is safe to ship.
+                </div>
+            </section>
+
+            <!-- Python API -->
+            <section id="api">
+                <h2>Python API Reference</h2>
+
+                <h3>chaos_call()</h3>
+                <p>Inject chaos into a single function call.</p>
+                <div class="code-example">
+                    <pre>result = chaos_call(
+    fn,                    # The function to call
+    *args,                 # Positional arguments
+    faults=["fault_type"], # Which faults apply here
+    step_name="step",      # For tracking/topology
+    **kwargs               # Keyword arguments
+)</pre>
+                </div>
+
+                <h3>chaos_session()</h3>
+                <p>Create a chaos testing session. All chaos_call() inside use faults from this session.</p>
+                <div class="code-example">
+                    <pre>with chaos_session([TokenTimeoutFault(hang_seconds=3.0), RateLimitStormFault()]):
+    # chaos_call() here will use these faults
+    result = chaos_call(llm_fn, query, faults=["token_timeout"])</pre>
+                </div>
+
+                <h3>Fault Classes</h3>
+                <ul>
+                    <li><code>TokenTimeoutFault(hang_seconds=2.0, mode="raise")</code></li>
+                    <li><code>RateLimitStormFault(burst_count=3, retry_after=1.0)</code></li>
+                    <li><code>SilentDegradationFault(degrade_fn=None, seed=None)</code></li>
+                    <li><code>ToolCallFailureFault(mode="error", timeout_seconds=5.0, tool_name=None)</code></li>
+                    <li><code>MemoryCorruptionFault(mode="garble", seed=None)</code></li>
+                    <li><code>InfiniteLoopFault(force_turns=5, continue_value="...")</code></li>
+                </ul>
+            </section>
+
+            <!-- CLI -->
+            <section id="cli">
+                <h2>CLI Reference</h2>
+
+                <h3>chaos run</h3>
+                <p>Run a Python script under LLM-level chaos injection.</p>
+                <div class="code-example">
+                    <pre>agentic-chaos chaos run my_app.py --inject FAULT1,FAULT2 --save report.json</pre>
+                </div>
+
+                <h3>agent run</h3>
+                <p>Run an agent under agent-level chaos injection.</p>
+                <div class="code-example">
+                    <pre>agentic-chaos agent run my_agent.py --inject tool_failure,memory_corruption --save report.json</pre>
+                </div>
+
+                <h3>chaos list-faults</h3>
+                <p>List all available fault types.</p>
+                <div class="code-example">
+                    <pre>agentic-chaos chaos list-faults</pre>
+                </div>
+            </section>
+
+            <!-- Faults -->
+            <section id="faults">
+                <h2>Fault Types</h2>
+
+                <h3>LLM-Level Faults (v0.1)</h3>
+
+                <strong>TokenTimeoutFault</strong> – Hung/slow completion
+                <ul>
+                    <li>Modes: raise (error), delay (succeed late)</li>
+                    <li>Use: Test timeout handling, slow response degradation</li>
+                </ul>
+
+                <strong>RateLimitStormFault</strong> – 429 burst then recovery
+                <ul>
+                    <li>Stateful: First N calls fail, rest pass</li>
+                    <li>Use: Test retry logic and backoff behavior</li>
+                </ul>
+
+                <strong>SilentDegradationFault</strong> – Same latency, garbage output
+                <ul>
+                    <li>Outcome: Monitoring-blind failure</li>
+                    <li>Use: Test app's own validation, catch output without monitoring</li>
+                </ul>
+
+                <h3>Agent-Level Faults (v0.2)</h3>
+
+                <strong>ToolCallFailureFault</strong> – Tool error/timeout/empty
+                <ul>
+                    <li>Modes: error, timeout, empty</li>
+                    <li>Use: Test tool unavailability, cascade failures</li>
+                </ul>
+
+                <strong>MemoryCorruptionFault</strong> – Truncate/inject/garble state
+                <ul>
+                    <li>Modes: truncate (50%), inject (garbage), garble (letters)</li>
+                    <li>Use: Test multi-agent memory resilience</li>
+                </ul>
+
+                <strong>InfiniteLoopFault</strong> – Force extra turns
+                <ul>
+                    <li>Stateful: First N calls forced to continue</li>
+                    <li>Use: Test turn-limit safeguards</li>
+                </ul>
+            </section>
+
+            <!-- Examples -->
+            <section id="examples">
+                <h2>Examples</h2>
+
+                <h3>Example 1: Test Recovery</h3>
+                <div class="code-example">
+                    <pre>with chaos_session([RateLimitStormFault(burst_count=2)]):
+    for i in range(5):
+        try:
+            result = chaos_call(llm_fn, query, faults=["rate_limit_storm"])
+            print(f"Call {i}: Success")
+        except RateLimitStormError:
+            print(f"Call {i}: Rate limited")</pre>
+                </div>
+
+                <h3>Example 2: Agent Cascade</h3>
+                <div class="code-example">
+                    <pre>from agentic_chaos.agents import wrap_tool, TopologyTracker
+
+tracker = TopologyTracker()
+search = wrap_tool(search_fn, "search", tracker=tracker, caller_node="Agent")
+
+with chaos_session([ToolCallFailureFault(tool_name="search")]):
+    agent_workflow()
+
+# See cascade in tracker.topology.as_json()</pre>
+                </div>
+
+                <h3>Example 3: AgenticLens Integration</h3>
+                <div class="code-example">
+                    <pre>from agenticlens import profile, step
+from agentic_chaos.integrations.agenticlens import attach_events, step_kwargs
+
+with chaos_session(["token_timeout"]) as session:
+    with profile("Agent") as workflow:
+        with step("Search"):
+            chunks = chaos_call(search, q, **step_kwargs(step), faults=["token_timeout"])
+
+attach_events(session, workflow)
+# agenticlens analyze workflow.json → shows cost + chaos impact</pre>
+                </div>
+
+                <div class="note">
+                    <strong>📖 More Examples:</strong> See <a href="https://github.com/DeepAgentLabs/agentic-chaos/tree/main/examples" target="_blank">examples/ folder</a> in the repo.
+                </div>
+            </section>
+
+            <!-- Resources -->
+            <section>
+                <h2>Resources</h2>
+                <ul>
+                    <li><strong><a href="https://github.com/DeepAgentLabs/agentic-chaos" target="_blank">GitHub Repository</a></strong> – Source code, issues, discussions</li>
+                    <li><strong><a href="https://github.com/DeepAgentLabs/agentic-chaos/blob/main/README.md" target="_blank">README</a></strong> – Project overview</li>
+                    <li><strong><a href="https://github.com/DeepAgentLabs/agentic-chaos/blob/main/ROADMAP.md" target="_blank">Roadmap</a></strong> – v0.3 through v1.0 plans</li>
+                    <li><strong><a href="../explorer/">Fault Explorer</a></strong> – Interactive fault playground</li>
+                    <li><strong><a href="../blog/">Blog & Case Studies</a></strong> – Real-world examples</li>
+                </ul>
+            </section>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-bottom">
+            <p>&copy; 2026 DeepAgentLabs. MIT License.</p>
+        </div>
+    </footer>
+</body>
+</html>

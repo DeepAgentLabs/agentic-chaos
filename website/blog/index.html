@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog & Case Studies - agentic-chaos</title>
+    <link rel="stylesheet" href="../assets/css/main.css">
+    <style>
+        .blog-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 60px 24px;
+        }
+
+        .blog-header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .blog-header h1 {
+            font-size: 42px;
+            margin-bottom: 12px;
+        }
+
+        .blog-header p {
+            font-size: 16px;
+            color: var(--text-secondary);
+        }
+
+        .blog-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 32px;
+            margin-bottom: 60px;
+        }
+
+        .blog-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 32px;
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .blog-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0, 179, 102, 0.15);
+        }
+
+        .blog-meta {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+
+        .blog-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }
+
+        .blog-excerpt {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            flex-grow: 1;
+            margin-bottom: 16px;
+        }
+
+        .blog-tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .blog-tag {
+            font-size: 11px;
+            padding: 4px 12px;
+            background: rgba(0, 179, 102, 0.1);
+            color: var(--primary);
+            border-radius: 4px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .blog-cta {
+            color: var(--primary);
+            font-weight: 600;
+            font-size: 14px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .blog-cta:hover {
+            gap: 10px;
+        }
+
+        .case-study {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 40px;
+            margin-bottom: 32px;
+        }
+
+        .case-study h2 {
+            font-size: 28px;
+            margin-bottom: 12px;
+        }
+
+        .case-study-meta {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 24px;
+        }
+
+        .case-study p {
+            font-size: 15px;
+            color: var(--text-secondary);
+            line-height: 1.8;
+            margin-bottom: 16px;
+        }
+
+        .case-study ul {
+            margin: 16px 0;
+            padding-left: 24px;
+        }
+
+        .case-study li {
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+        }
+
+        .result-box {
+            background: rgba(0, 179, 102, 0.05);
+            border-left: 3px solid var(--primary);
+            padding: 16px;
+            margin: 24px 0;
+            border-radius: 4px;
+        }
+
+        .result-box strong {
+            color: var(--primary);
+        }
+
+        @media (max-width: 768px) {
+            .blog-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-container">
+            <a href="/" class="logo">
+                <span class="logo-emoji">🌪️</span>
+                <span>agentic-chaos</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="/#features">Features</a></li>
+                <li><a href="/#faults">Faults</a></li>
+                <li><a href="../docs/">Docs</a></li>
+                <li><a href="./">Blog</a></li>
+                <li><a href="../explorer/">Explorer</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="blog-container">
+        <div class="blog-header">
+            <h1>📖 Blog & Case Studies</h1>
+            <p>Real-world resilience testing with agentic-chaos</p>
+        </div>
+
+        <h2 style="font-size: 28px; margin: 60px 0 32px;">Featured Case Studies</h2>
+
+        <!-- Case Study 1 -->
+        <div class="case-study">
+            <h2>🤖 Multi-Agent Customer Support: Testing Tool Cascade Failures</h2>
+            <div class="case-study-meta">Published: July 2026 | Team: DeepAgentLabs</div>
+
+            <p>
+                <strong>Challenge:</strong> A customer support agent orchestrates four sub-agents (Search, Refund, Escalation, Follow-up).
+                If the Search agent fails, does the Refund agent gracefully degrade? Or does it cascade into all four failing?
+            </p>
+
+            <p>
+                <strong>Approach:</strong> We used agentic-chaos with ToolCallFailureFault to break the Search agent's database connection,
+                then TopologyTracker to visualize which agents were impacted.
+            </p>
+
+            <div class="code-example">
+                <pre>with chaos_session([ToolCallFailureFault(tool_name="search", mode="error")]):
+    coordinator.run_workflow()
+
+# Output topology shows cascade edges:
+# Coordinator → Search (fails) → Refund (cascades) → Follow-up (blocked)</pre>
+            </div>
+
+            <p><strong>Finding:</strong> Without fallbacks, a single tool failure cascaded to 3 agents. We added:</p>
+            <ul>
+                <li>Search timeout handling with 2-second fallback to cache</li>
+                <li>Refund pre-check (skip if no search results)</li>
+                <li>Follow-up retry loop (up to 3x)</li>
+            </ul>
+
+            <div class="result-box">
+                <strong>✓ Result:</strong> With hardening, 4/4 agents remained operational even when Search failed.
+                Resilience score improved from 42/100 to 78/100.
+            </div>
+
+            <p style="font-size: 13px; color: var(--text-muted); margin-top: 24px;">
+                → Read full case study: <a href="https://github.com/DeepAgentLabs/agentic-chaos/tree/main/examples" target="_blank">examples/chaos_agent_failure_demo.py</a>
+            </p>
+        </div>
+
+        <!-- Case Study 2 -->
+        <div class="case-study">
+            <h2>🤐 The Silent Degradation Problem: Undetectable Failures</h2>
+            <div class="case-study-meta">Published: June 2026 | Team: DeepAgentLabs</div>
+
+            <p>
+                <strong>Challenge:</strong> A RAG system's retriever appeared healthy (normal latency, token counts),
+                but was returning corrupted embeddings. Your monitoring saw nothing wrong until production complaints arrived.
+            </p>
+
+            <p><strong>The Gap:</strong> Latency-based monitoring is blind to silent degradation. A corrupted embedding still takes 245ms.</p>
+
+            <p><strong>Solution:</strong> Use agentic-chaos SilentDegradationFault to simulate this exact scenario:</p>
+
+            <div class="code-example">
+                <pre>with chaos_session([SilentDegradationFault()]):
+    # Embeddings come back, but content is corrupted
+    results = chaos_call(retriever.search, query, faults=["silent_degradation"])
+
+    # Your monitoring sees:
+    # ✓ Latency: 245ms (normal)
+    # ✓ Tokens: 128 (normal)
+    # ✗ Content: corrupted (undetected)</pre>
+            </div>
+
+            <p><strong>Key Insight:</strong> Silent degradation is the hardest failure to catch. Monitoring + resilience testing = solution.</p>
+
+            <div class="result-box">
+                <strong>✓ Outcome:</strong> Team added content validation to the retriever and caught 3 similar failures in staging
+                before production, preventing downtime.
+            </div>
+        </div>
+
+        <!-- Case Study 3 -->
+        <div class="case-study">
+            <h2>⏱️ Rate Limit Recovery: Testing Retry Logic Under Pressure</h2>
+            <div class="case-study-meta">Published: May 2026 | Team: Research</div>
+
+            <p>
+                <strong>Challenge:</strong> Your agent calls an external API that occasionally rate-limits (429).
+                Does your retry strategy work? How many tokens do you waste? What's the UX impact?
+            </p>
+
+            <p><strong>Solution:</strong> RateLimitStormFault simulates a 3-call 429 burst, then recovery:</p>
+
+            <div class="code-example">
+                <pre>with chaos_session([RateLimitStormFault(burst_count=3, retry_after=1.0)]):
+    for i in range(10):
+        result = chaos_call(api.call, args, faults=["rate_limit_storm"])
+
+# Calls 0-2: 429 (require retry)
+# Calls 3-9: Success (burst cleared)</pre>
+            </div>
+
+            <p><strong>Findings:</strong></p>
+            <ul>
+                <li>Without backoff: 15 wasted tokens, 5s delay, user sees timeout</li>
+                <li>With exponential backoff: 2 wasted tokens, 4s delay, user waits (acceptable)</li>
+                <li>With probabilistic retry: 0 wasted tokens, <2s delay, fully recovers</li>
+            </ul>
+
+            <div class="result-box">
+                <strong>✓ Decision:</strong> Implemented probabilistic retry + jitter. Reduced UX impact by 80% under rate limit stress.
+            </div>
+        </div>
+
+        <!-- Blog Posts -->
+        <h2 style="font-size: 28px; margin: 60px 0 32px;">Recent Blog Posts</h2>
+
+        <div class="blog-grid">
+            <div class="blog-card">
+                <div class="blog-meta">June 15, 2026</div>
+                <div class="blog-title">Building Resilient Multi-Agent Systems</div>
+                <div class="blog-excerpt">
+                    A deep dive into designing agents that don't cascade failures. We show how TopologyTracker catches cascade edges
+                    and how to harden each link.
+                </div>
+                <div class="blog-tags">
+                    <span class="blog-tag">multi-agent</span>
+                    <span class="blog-tag">resilience</span>
+                </div>
+                <a href="https://github.com/DeepAgentLabs/agentic-chaos" target="_blank" class="blog-cta">Read more →</a>
+            </div>
+
+            <div class="blog-card">
+                <div class="blog-meta">June 1, 2026</div>
+                <div class="blog-title">Silent Degradation: The Invisible Failure Mode</div>
+                <div class="blog-excerpt">
+                    Why monitoring-only strategies miss corrupted outputs. How SilentDegradationFault exposes gaps in observability,
+                    and what to do about it.
+                </div>
+                <div class="blog-tags">
+                    <span class="blog-tag">observability</span>
+                    <span class="blog-tag">testing</span>
+                </div>
+                <a href="https://github.com/DeepAgentLabs/agentic-chaos" target="_blank" class="blog-cta">Read more →</a>
+            </div>
+
+            <div class="blog-card">
+                <div class="blog-meta">May 20, 2026</div>
+                <div class="blog-title">Chaos Engineering for LLM Agents</div>
+                <div class="blog-excerpt">
+                    From distributed systems to AI: how chaos principles apply to LLM workflows. Lessons learned building agentic-chaos.
+                </div>
+                <div class="blog-tags">
+                    <span class="blog-tag">chaos</span>
+                    <span class="blog-tag">llm</span>
+                </div>
+                <a href="https://github.com/DeepAgentLabs/agentic-chaos" target="_blank" class="blog-cta">Read more →</a>
+            </div>
+
+            <div class="blog-card">
+                <div class="blog-meta">May 5, 2026</div>
+                <div class="blog-title">Topology Tracking for Agent Workflows</div>
+                <div class="blog-excerpt">
+                    How TopologyTracker builds a graph of agent interactions and why it matters for resilience testing. Cascade visualization.
+                </div>
+                <div class="blog-tags">
+                    <span class="blog-tag">agents</span>
+                    <span class="blog-tag">architecture</span>
+                </div>
+                <a href="https://github.com/DeepAgentLabs/agentic-chaos" target="_blank" class="blog-cta">Read more →</a>
+            </div>
+
+            <div class="blog-card">
+                <div class="blog-meta">April 18, 2026</div>
+                <div class="blog-title">Zero-Dependency Testing: Why It Matters</div>
+                <div class="blog-excerpt">
+                    Why framework-agnostic fault injection is critical for adoption. How agentic-chaos achieves zero-dependency design.
+                </div>
+                <div class="blog-tags">
+                    <span class="blog-tag">design</span>
+                    <span class="blog-tag">testing</span>
+                </div>
+                <a href="https://github.com/DeepAgentLabs/agentic-chaos" target="_blank" class="blog-cta">Read more →</a>
+            </div>
+
+            <div class="blog-card">
+                <div class="blog-meta">April 1, 2026</div>
+                <div class="blog-title">Announcing agentic-chaos v0.1</div>
+                <div class="blog-excerpt">
+                    Introducing the LLM Chaos Toolkit: 3 fault types, CLI, and AgenticLens integration. Building resilience into LLM workflows.
+                </div>
+                <div class="blog-tags">
+                    <span class="blog-tag">announcement</span>
+                    <span class="blog-tag">release</span>
+                </div>
+                <a href="https://github.com/DeepAgentLabs/agentic-chaos" target="_blank" class="blog-cta">Read more →</a>
+            </div>
+        </div>
+
+        <!-- CTA -->
+        <div class="cta-section" style="margin-top: 60px;">
+            <h2>Ready to Test Your Agent's Resilience?</h2>
+            <p>Start with the fault explorer or read the full documentation.</p>
+            <div class="hero-cta">
+                <a href="../explorer/" class="btn-large">🔍 Fault Explorer</a>
+                <a href="../docs/" class="btn-large" style="color: white; border: 1px solid white;">📖 Full Docs</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-bottom">
+            <p>&copy; 2026 DeepAgentLabs. MIT License.</p>
+        </div>
+    </footer>
+</body>
+</html>

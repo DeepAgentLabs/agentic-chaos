@@ -1,0 +1,31 @@
+# GitHub Pages Jekyll Configuration
+# This file configures how GitHub Pages builds the website
+
+title: agentic-chaos
+description: Standalone fault-injection toolkit for LLM-powered agents
+url: https://deepagentlabs.github.io/agentic-chaos
+baseurl: /agentic-chaos
+
+# Build settings
+markdown: kramdown
+theme: null
+plugins: []
+
+# Exclude unnecessary files from build
+exclude:
+  - .gitignore
+  - .github
+  - LICENSE
+  - README.md
+  - src/
+  - tests/
+  - examples/
+  - pyproject.toml
+  - uv.lock
+
+# Include assets
+include:
+  - .nojekyll
+
+# Output settings
+destination: ./_site

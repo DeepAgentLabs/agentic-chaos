@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="agentic-chaos: Standalone fault-injection toolkit for LLM-powered agents. Test resilience before production.">
+    <meta name="keywords" content="agentic AI, chaos engineering, fault injection, LLM testing, resilience">
+    <meta name="author" content="DeepAgentLabs">
+    <title>agentic-chaos — Resilience Testing for Agentic AI</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #008300;
+            --primary-light: #00a300;
+            --secondary: #2a78d6;
+            --accent: #eb6834;
+            --text-primary: #0b0b0b;
+            --text-secondary: #52514e;
+            --text-muted: #898781;
+            --bg: #ffffff;
+            --surface: #fcfcfb;
+            --surface-dark: #f1efe8;
+            --border: rgba(11, 11, 11, 0.1);
+            --success: #0ca30c;
+            --warning: #fab219;
+            --danger: #d03b3b;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --primary: #00c300;
+                --primary-light: #00e300;
+                --text-primary: #ffffff;
+                --text-secondary: #c3c2b7;
+                --text-muted: #898781;
+                --bg: #1a1a19;
+                --surface: #2c2c2a;
+                --surface-dark: #383835;
+                --border: rgba(255, 255, 255, 0.1);
+            }
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            color: var(--text-primary);
+            background: var(--bg);
+            line-height: 1.6;
+        }
+
+        /* Navigation */
+        nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: var(--bg);
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(10px);
+            background-color: rgba(255, 255, 255, 0.8);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            nav {
+                background-color: rgba(26, 26, 25, 0.8);
+            }
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--primary);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo-emoji {
+            font-size: 24px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 32px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+
+        .nav-cta {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn-primary, .btn-secondary {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            text-decoration: none;
+            cursor: pointer;
+            border: 1px solid var(--border);
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-light);
+        }
+
+        .btn-secondary {
+            color: var(--text-primary);
+            background: var(--surface);
+        }
+
+        .btn-secondary:hover {
+            background: var(--surface-dark);
+        }
+
+        /* Hero Section */
+        .hero {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 80px 24px;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-size: 48px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+
+        .hero .subtitle {
+            font-size: 20px;
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+            line-height: 1.6;
+        }
+
+        .hero-cta {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            margin-bottom: 64px;
+        }
+
+        .btn-large {
+            padding: 12px 28px;
+            font-size: 16px;
+            border-radius: 8px;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 32px;
+            margin-top: 64px;
+            text-align: center;
+        }
+
+        .stat {
+            padding: 24px;
+            background: var(--surface);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        /* Section Styling */
+        section {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 80px 24px;
+        }
+
+        section h2 {
+            font-size: 36px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+
+        section .section-subtitle {
+            font-size: 16px;
+            color: var(--text-secondary);
+            margin-bottom: 48px;
+            line-height: 1.8;
+        }
+
+        /* Faults Section */
+        .faults-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 24px;
+        }
+
+        .fault-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 24px;
+            transition: all 0.3s;
+        }
+
+        .fault-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        .fault-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .fault-emoji {
+            font-size: 24px;
+        }
+
+        .fault-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .fault-badge {
+            display: inline-block;
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 500;
+            margin-left: auto;
+        }
+
+        .badge-llm {
+            background: rgba(42, 120, 214, 0.15);
+            color: var(--secondary);
+        }
+
+        .badge-agent {
+            background: rgba(235, 104, 52, 0.15);
+            color: var(--accent);
+        }
+
+        .fault-description {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            line-height: 1.6;
+        }
+
+        .fault-meta {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            font-size: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+
+        .meta-item {
+            color: var(--text-secondary);
+        }
+
+        .meta-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 2px;
+        }
+
+        .meta-value {
+            font-weight: 500;
+            font-family: 'Courier New', monospace;
+            color: var(--text-primary);
+        }
+
+        /* Features Section */
+        .feature-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 32px;
+        }
+
+        .feature {
+            padding: 24px;
+        }
+
+        .feature-icon {
+            font-size: 32px;
+            margin-bottom: 16px;
+        }
+
+        .feature h3 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .feature p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* Code Example */
+        .code-example {
+            background: var(--surface-dark);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 24px;
+            margin: 32px 0;
+            overflow-x: auto;
+        }
+
+        .code-example pre {
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: var(--text-primary);
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        .code-tab {
+            display: inline-block;
+            padding: 4px 12px;
+            background: var(--primary);
+            color: white;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
+            margin-bottom: 12px;
+        }
+
+        /* Roadmap */
+        .roadmap-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+        }
+
+        .roadmap-item {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            font-size: 13px;
+        }
+
+        .roadmap-version {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .roadmap-status {
+            display: inline-block;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 3px;
+            margin-bottom: 8px;
+        }
+
+        .status-shipped {
+            background: rgba(12, 163, 12, 0.15);
+            color: var(--success);
+        }
+
+        .status-planned {
+            background: rgba(250, 178, 25, 0.15);
+            color: var(--warning);
+        }
+
+        .roadmap-description {
+            color: var(--text-secondary);
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            background: var(--primary);
+            color: white;
+            border-radius: 8px;
+            padding: 48px;
+            text-align: center;
+            margin: 80px auto;
+        }
+
+        .cta-section h2 {
+            color: white;
+            margin-bottom: 16px;
+        }
+
+        .cta-section p {
+            font-size: 16px;
+            margin-bottom: 32px;
+        }
+
+        /* Footer */
+        footer {
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            padding: 48px 24px;
+            margin-top: 80px;
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 48px;
+            margin-bottom: 48px;
+        }
+
+        .footer-section h3 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+
+        .footer-section ul {
+            list-style: none;
+        }
+
+        .footer-section a {
+            display: block;
+            font-size: 13px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            margin-bottom: 8px;
+            transition: color 0.2s;
+        }
+
+        .footer-section a:hover {
+            color: var(--primary);
+        }
+
+        .footer-bottom {
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-links {
+                gap: 16px;
+                font-size: 12px;
+            }
+
+            .hero h1 {
+                font-size: 32px;
+            }
+
+            .hero .subtitle {
+                font-size: 16px;
+            }
+
+            section {
+                padding: 48px 16px;
+            }
+
+            section h2 {
+                font-size: 28px;
+            }
+
+            .stat-grid {
+                gap: 16px;
+            }
+
+            .hero-cta {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .cta-section {
+                padding: 32px 16px;
+            }
+        }
+
+        /* Utility */
+        .divider {
+            height: 1px;
+            background: var(--border);
+            margin: 80px 0;
+        }
+
+        .badge-info {
+            display: inline-block;
+            background: rgba(42, 120, 214, 0.1);
+            color: var(--secondary);
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-bottom: 16px;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+            margin: 32px 0;
+        }
+
+        .comparison-table th {
+            background: var(--surface-dark);
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            border: 1px solid var(--border);
+        }
+
+        .comparison-table td {
+            padding: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .comparison-table tr:hover {
+            background: var(--surface);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-container">
+            <a href="#" class="logo">
+                <span class="logo-emoji">🌪️</span>
+                <span>agentic-chaos</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="#features">Features</a></li>
+                <li><a href="#faults">Faults</a></li>
+                <li><a href="#quickstart">Quick Start</a></li>
+                <li><a href="#roadmap">Roadmap</a></li>
+            </ul>
+            <div class="nav-cta">
+                <a href="https://github.com/DeepAgentLabs/agentic-chaos" target="_blank" class="btn-secondary">GitHub</a>
+                <a href="#quickstart" class="btn-primary">Get Started</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="hero">
+        <h1>Chaos Testing for Agentic AI</h1>
+        <p class="subtitle">
+            A standalone fault-injection toolkit that deliberately breaks your LLM calls and agent workflows—<br>
+            <strong>and reports exactly what failed.</strong>
+        </p>
+        <div class="hero-cta">
+            <a href="#quickstart" class="btn-primary btn-large">Quick Start (5 min)</a>
+            <a href="https://github.com/DeepAgentLabs/agentic-chaos" target="_blank" class="btn-secondary btn-large">View on GitHub</a>
+        </div>
+
+        <div class="stat-grid">
+            <div class="stat">
+                <div class="stat-number">0</div>
+                <div class="stat-label">Required Dependencies</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">6</div>
+                <div class="stat-label">Fault Types (v0.1-0.2)</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">2</div>
+                <div class="stat-label">Testing Layers</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">100%</div>
+                <div class="stat-label">Production Ready</div>
+            </div>
+        </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- Problem Section -->
+    <section>
+        <h2>Why Chaos Testing for Agents?</h2>
+        <p class="section-subtitle">
+            Agentic AI systems are brittle. Your agent works fine in the lab, but what happens when the LLM times out,
+            a tool fails, or shared memory gets corrupted? Most teams don't know until production breaks.
+        </p>
+
+        <div class="feature-list">
+            <div class="feature">
+                <div class="feature-icon">🤐</div>
+                <h3>Silent Failures Invisible to Monitoring</h3>
+                <p>Your LLM returns garbage, but latency and tokens look normal. No alert fires. Chaos testing catches this.</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">⛓️</div>
+                <h3>Cascade Failures in Multi-Agent Systems</h3>
+                <p>One tool fails → Agent A fails → Agent B cascades. Without topology tracking, you miss the link.</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">🔄</div>
+                <h3>No Recovery Testing</h3>
+                <p>Your retry logic might fail under rate limits. Your turn limits might not prevent infinite loops. Prove it works.</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">📊</div>
+                <h3>Resilience Unproven</h3>
+                <p>Observability shows cost/latency. Chaos shows recovery. Together, they prove your agent is production-ready.</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">🚀</div>
+                <h3>Framework-Agnostic</h3>
+                <p>Works with any Python callable. LLM frameworks, agent frameworks, your custom code—no lock-in.</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">⚡</div>
+                <h3>Zero Setup Overhead</h3>
+                <p>pip install agentic-chaos. Wrap your calls. Run under chaos. No framework modifications needed.</p>
+            </div>
+        </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- Features Section -->
+    <section id="features">
+        <h2>How It Works</h2>
+        <p class="section-subtitle">agentic-chaos operates in two layers: LLM calls and agent workflows.</p>
+
+        <h3 style="font-size: 24px; margin-top: 48px; margin-bottom: 24px;">Two-Layer Testing</h3>
+
+        <div class="feature-list">
+            <div class="feature">
+                <div class="feature-icon">🔌</div>
+                <h3>LLM Layer (v0.1)</h3>
+                <p><strong>Test individual LLM calls</strong> — timeouts, rate limits, silent degradation. Works against any LLM, any provider.</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">🤖</div>
+                <h3>Agent Layer (v0.2)</h3>
+                <p><strong>Test multi-agent workflows</strong> — tool failures, memory corruption, infinite loops. Tracks topology and cascades.</p>
+            </div>
+        </div>
+
+        <h3 style="font-size: 24px; margin-top: 48px; margin-bottom: 24px;">Zero-Dependency Design</h3>
+
+        <div class="code-example">
+            <span class="code-tab">Python</span>
+            <pre>
+from agentic_chaos.chaos import chaos_call, chaos_session
+
+# Outside a session, this is a transparent pass-through
+result = llm.complete("What is AI?")
+
+# Inside a session, faults inject
+with chaos_session(["token_timeout", "silent_degradation"]):
+    try:
+        result = chaos_call(llm.complete, "What is AI?", faults=["token_timeout"])
+    except TokenTimeoutError:
+        # Handle timeout, then retry without the fault
+        result = llm.complete("What is AI?")
+
+# That's it. No instrumentation. No framework lock-in.</pre>
+        </div>
+
+        <h3 style="font-size: 24px; margin-top: 48px; margin-bottom: 24px;">Composition with Observability</h3>
+
+        <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 24px; line-height: 1.8;">
+            Optional AgenticLens integration: merge chaos events straight into workflow reports so observability and resilience testing are one.
+        </p>
+
+        <div class="code-example">
+            <span class="code-tab">Python</span>
+            <pre>
+from agenticlens import profile, step
+from agentic_chaos.chaos import chaos_call, chaos_session
+
+with chaos_session(["token_timeout"]) as session:
+    with profile("Support Agent") as workflow:
+        with step("Retriever"):
+            chunks = chaos_call(retriever.search, query, faults=["token_timeout"])
+
+# Merge chaos events into workflow
+attach_events(session, workflow)
+
+# agenticlens analyze workflow.json
+# → Shows cost/latency + chaos impact together</pre>
+        </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- Faults Section -->
+    <section id="faults">
+        <h2>All Fault Types</h2>
+        <p class="section-subtitle">6 fault types across LLM and agent layers. Extensible—add your own.</p>
+
+        <div class="faults-grid">
+            <!-- LLM Faults -->
+            <div class="fault-card">
+                <div class="fault-header">
+                    <span class="fault-emoji">⏱️</span>
+                    <span class="fault-name">TokenTimeout</span>
+                    <span class="fault-badge badge-llm">LLM</span>
+                </div>
+                <p class="fault-description">Simulates a hung/slow completion. Hangs for N seconds then times out (or succeeds late).</p>
+                <div class="fault-meta">
+                    <div class="meta-item">
+                        <div class="meta-label">Modes</div>
+                        <div class="meta-value">raise, delay</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">CLI</div>
+                        <div class="meta-value">token_timeout</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="fault-card">
+                <div class="fault-header">
+                    <span class="fault-emoji">🌪️</span>
+                    <span class="fault-name">RateLimitStorm</span>
+                    <span class="fault-badge badge-llm">LLM</span>
+                </div>
+                <p class="fault-description">Simulates a burst of 429 errors, then recovery. Tests retry logic and backoff behavior.</p>
+                <div class="fault-meta">
+                    <div class="meta-item">
+                        <div class="meta-label">Stateful</div>
+                        <div class="meta-value">Yes (counts firings)</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">CLI</div>
+                        <div class="meta-value">rate_limit_storm</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="fault-card">
+                <div class="fault-header">
+                    <span class="fault-emoji">🤐</span>
+                    <span class="fault-name">SilentDegradation</span>
+                    <span class="fault-badge badge-llm">LLM</span>
+                </div>
+                <p class="fault-description">Real latency, garbage output. Monitoring-blind failure—the hardest to detect.</p>
+                <div class="fault-meta">
+                    <div class="meta-item">
+                        <div class="meta-label">Detection</div>
+                        <div class="meta-value">Very hard</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">CLI</div>
+                        <div class="meta-value">silent_degradation</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="fault-card">
+                <div class="fault-header">
+                    <span class="fault-emoji">🔧</span>
+                    <span class="fault-name">ToolCallFailure</span>
+                    <span class="fault-badge badge-agent">Agent</span>
+                </div>
+                <p class="fault-description">Force a tool to fail—error, timeout, or return empty. Tests tool unavailability.</p>
+                <div class="fault-meta">
+                    <div class="meta-item">
+                        <div class="meta-label">Modes</div>
+                        <div class="meta-value">error, timeout, empty</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">CLI</div>
+                        <div class="meta-value">tool_failure</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="fault-card">
+                <div class="fault-header">
+                    <span class="fault-emoji">💾</span>
+                    <span class="fault-name">MemoryCorruption</span>
+                    <span class="fault-badge badge-agent">Agent</span>
+                </div>
+                <p class="fault-description">Corrupt shared agent state—truncate to 50%, inject garbage, or garble text.</p>
+                <div class="fault-meta">
+                    <div class="meta-item">
+                        <div class="meta-label">Modes</div>
+                        <div class="meta-value">truncate, inject, garble</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">CLI</div>
+                        <div class="meta-value">memory_corruption</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="fault-card">
+                <div class="fault-header">
+                    <span class="fault-emoji">♻️</span>
+                    <span class="fault-name">InfiniteLoop</span>
+                    <span class="fault-badge badge-agent">Agent</span>
+                </div>
+                <p class="fault-description">Force agent to loop past termination. Tests turn-limit safeguards.</p>
+                <div class="fault-meta">
+                    <div class="meta-item">
+                        <div class="meta-label">Stateful</div>
+                        <div class="meta-value">Yes (tracks turns)</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">CLI</div>
+                        <div class="meta-value">infinite_loop</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- Quick Start -->
+    <section id="quickstart">
+        <h2>Quick Start (5 minutes)</h2>
+        <p class="section-subtitle">Install, wrap your calls, run under chaos.</p>
+
+        <h3 style="font-size: 20px; margin-top: 32px; margin-bottom: 16px;">1. Install</h3>
+        <div class="code-example">
+            <span class="code-tab">bash</span>
+            <pre>pip install agentic-chaos</pre>
+        </div>
+
+        <h3 style="font-size: 20px; margin-top: 32px; margin-bottom: 16px;">2. Wrap Your LLM Calls</h3>
+        <div class="code-example">
+            <span class="code-tab">Python</span>
+            <pre>
+from agentic_chaos.chaos import chaos_call, chaos_session, TokenTimeoutError
+
+with chaos_session(["token_timeout"]):
+    try:
+        result = chaos_call(
+            llm.complete,
+            "What is the weather?",
+            faults=["token_timeout"]
+        )
+    except TokenTimeoutError:
+        print("LLM timed out—handled gracefully")</pre>
+        </div>
+
+        <h3 style="font-size: 20px; margin-top: 32px; margin-bottom: 16px;">3. Run from CLI</h3>
+        <div class="code-example">
+            <span class="code-tab">bash</span>
+            <pre>
+agentic-chaos chaos run my_app.py \
+  --inject token_timeout,rate_limit_storm,silent_degradation \
+  --save chaos_report.json
+
+# Output:
+# Chaos Events
+# Step         Fault                 Outcome    Message
+# ────────────────────────────────────────────────────────
+# Retriever    token_timeout         errored    call hung for 2.0s then timed out
+# LLMCall      silent_degradation    degraded   output silently degraded
+
+# Saved chaos report to chaos_report.json</pre>
+        </div>
+
+        <h3 style="font-size: 20px; margin-top: 32px; margin-bottom: 16px;">4. View Reports</h3>
+        <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 16px;">
+            The report is standalone JSON — load it, analyze it, integrate with your observability stack.
+        </p>
+
+        <div class="code-example">
+            <span class="code-tab">JSON</span>
+            <pre>
+{
+  "chaos_events": [
+    {
+      "fault_type": "token_timeout",
+      "step_name": "Retriever",
+      "outcome": "errored",
+      "message": "call hung for 2.0s then timed out"
+    }
+  ]
+}</pre>
+        </div>
+
+        <div class="cta-section">
+            <h2>Ready to Test Your Agent's Resilience?</h2>
+            <p>Clone the repo, run a quickstart example, or check out the full documentation.</p>
+            <div class="hero-cta">
+                <a href="https://github.com/DeepAgentLabs/agentic-chaos" target="_blank" class="btn-large" style="background: white; color: var(--primary); border: none;">Star on GitHub</a>
+                <a href="https://github.com/DeepAgentLabs/agentic-chaos/tree/main/examples" target="_blank" class="btn-large" style="color: white; border: 1px solid white;">View Examples</a>
+            </div>
+        </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- Roadmap -->
+    <section id="roadmap">
+        <h2>Roadmap</h2>
+        <p class="section-subtitle">From v0.1 shipped to v1.0 (ChaosHub community registry).</p>
+
+        <div class="roadmap-grid">
+            <div class="roadmap-item">
+                <div class="roadmap-version">v0.1</div>
+                <span class="roadmap-status status-shipped">✓ Shipped</span>
+                <div class="roadmap-description">LLM Chaos Toolkit (3 faults, CLI, AgenticLens adapter)</div>
+            </div>
+
+            <div class="roadmap-item">
+                <div class="roadmap-version">v0.2</div>
+                <span class="roadmap-status status-shipped">✓ Shipped (2026-07-13)</span>
+                <div class="roadmap-description">Agent Failure Injector (3 agent faults, topology tracking, LangGraph adapter)</div>
+            </div>
+
+            <div class="roadmap-item">
+                <div class="roadmap-version">v0.3</div>
+                <span class="roadmap-status status-planned">🚧 Planned</span>
+                <div class="roadmap-description">Fidelity Judges & Handoff Chaos (LLM-as-judge scoring, edge-scoped faults)</div>
+            </div>
+
+            <div class="roadmap-item">
+                <div class="roadmap-version">v0.4</div>
+                <span class="roadmap-status status-planned">🚧 Planned</span>
+                <div class="roadmap-description">Prompt/Model Drift Detector (snapshot, compare, detect silent changes)</div>
+            </div>
+
+            <div class="roadmap-item">
+                <div class="roadmap-version">v0.5</div>
+                <span class="roadmap-status status-planned">🚧 Planned</span>
+                <div class="roadmap-description">Streaming Faults, Provider Patching & Chaos Profiles</div>
+            </div>
+
+            <div class="roadmap-item">
+                <div class="roadmap-version">v0.6</div>
+                <span class="roadmap-status status-planned">🚧 Planned</span>
+                <div class="roadmap-description">Pytest Plugin & Assertions (CI/CD integration)</div>
+            </div>
+
+            <div class="roadmap-item">
+                <div class="roadmap-version">v0.7</div>
+                <span class="roadmap-status status-planned">🚧 Planned</span>
+                <div class="roadmap-description">Fault Cascades, Adaptive Intensity & Response Poisoning</div>
+            </div>
+
+            <div class="roadmap-item">
+                <div class="roadmap-version">v0.8</div>
+                <span class="roadmap-status status-planned">🚧 Planned</span>
+                <div class="roadmap-description">Chaos Workflows, Declarative Experiments & Explosion Radius</div>
+            </div>
+
+            <div class="roadmap-item">
+                <div class="roadmap-version">v0.9</div>
+                <span class="roadmap-status status-planned">🚧 Planned</span>
+                <div class="roadmap-description">Resilience Probes & Resilience Score (0–100 metric)</div>
+            </div>
+
+            <div class="roadmap-item">
+                <div class="roadmap-version">v1.0</div>
+                <span class="roadmap-status status-planned">🚧 Planned</span>
+                <div class="roadmap-description">ChaosHub (Shared Experiment Registry)</div>
+            </div>
+        </div>
+
+        <p style="font-size: 14px; color: var(--text-secondary); margin-top: 48px; line-height: 1.8; text-align: center;">
+            Each version is a minor bump on the same package — incremental PyPI releases with sustained activity. <br>
+            <strong><a href="https://github.com/DeepAgentLabs/agentic-chaos/blob/main/ROADMAP.md" target="_blank" style="color: var(--primary); text-decoration: none;">View full roadmap →</a></strong>
+        </p>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- Comparison -->
+    <section>
+        <h2>How agentic-chaos Compares</h2>
+        <p class="section-subtitle">What makes agentic-chaos unique in the market.</p>
+
+        <table class="comparison-table">
+            <thead>
+                <tr>
+                    <th>Feature</th>
+                    <th>ChaosEater</th>
+                    <th>Fault Injection FW</th>
+                    <th>Observability Tools</th>
+                    <th>agentic-chaos</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Zero Dependencies</strong></td>
+                    <td>✗</td>
+                    <td>✗</td>
+                    <td>✗</td>
+                    <td>✅</td>
+                </tr>
+                <tr>
+                    <td><strong>LLM Faults</strong></td>
+                    <td>✗</td>
+                    <td>✓</td>
+                    <td>✓</td>
+                    <td>✅ (3 types)</td>
+                </tr>
+                <tr>
+                    <td><strong>Agent Faults</strong></td>
+                    <td>✗</td>
+                    <td>Limited</td>
+                    <td>Limited</td>
+                    <td>✅ (3 types)</td>
+                </tr>
+                <tr>
+                    <td><strong>Silent Degradation</strong></td>
+                    <td>Not mentioned</td>
+                    <td>Implicit</td>
+                    <td>Implicit</td>
+                    <td>✅ Explicit</td>
+                </tr>
+                <tr>
+                    <td><strong>Topology Tracking</strong></td>
+                    <td>✗</td>
+                    <td>✗</td>
+                    <td>Tracing only</td>
+                    <td>✅ Graph + cascades</td>
+                </tr>
+                <tr>
+                    <td><strong>Framework Agnostic</strong></td>
+                    <td>Kubernetes only</td>
+                    <td>Partially</td>
+                    <td>Framework-specific</td>
+                    <td>✅ Any Python callable</td>
+                </tr>
+                <tr>
+                    <td><strong>Production Ready</strong></td>
+                    <td>Research</td>
+                    <td>Emerging</td>
+                    <td>Mature</td>
+                    <td>✅ Shipped v0.2</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>Project</h3>
+                <ul>
+                    <li><a href="https://github.com/DeepAgentLabs/agentic-chaos" target="_blank">GitHub Repository</a></li>
+                    <li><a href="https://pypi.org/project/agentic-chaos/" target="_blank">PyPI Package</a></li>
+                    <li><a href="https://github.com/DeepAgentLabs/agentic-chaos/blob/main/README.md" target="_blank">Documentation</a></li>
+                    <li><a href="https://github.com/DeepAgentLabs/agentic-chaos/blob/main/ROADMAP.md" target="_blank">Full Roadmap</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Resources</h3>
+                <ul>
+                    <li><a href="https://github.com/DeepAgentLabs/agentic-chaos/tree/main/examples" target="_blank">Examples & Tutorials</a></li>
+                    <li><a href="https://github.com/DeepAgentLabs/agenticlens" target="_blank">AgenticLens (Observability)</a></li>
+                    <li><a href="https://github.com/DeepAgentLabs" target="_blank">DeepAgentLabs</a></li>
+                    <li><a href="https://github.com/DeepAgentLabs/agentic-chaos/issues" target="_blank">Report Issues</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Community</h3>
+                <ul>
+                    <li><a href="https://github.com/DeepAgentLabs/agentic-chaos/discussions" target="_blank">Discussions</a></li>
+                    <li><a href="https://github.com/DeepAgentLabs/agentic-chaos/blob/main/CONTRIBUTING.md" target="_blank">Contributing</a></li>
+                    <li><a href="https://github.com/DeepAgentLabs/agentic-chaos/blob/main/LICENSE" target="_blank">License (MIT)</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Learn More</h3>
+                <ul>
+                    <li><a href="#features">How It Works</a></li>
+                    <li><a href="#faults">All Fault Types</a></li>
+                    <li><a href="#quickstart">Quick Start</a></li>
+                    <li><a href="#roadmap">Roadmap</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2026 DeepAgentLabs. MIT License. agentic-chaos is open source.</p>
+        </div>
+    </footer>
+</body>
+</html>
