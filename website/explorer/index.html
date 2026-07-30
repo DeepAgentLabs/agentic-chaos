@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fault Explorer - agentic-chaos</title>
+    <link rel="stylesheet" href="../assets/css/main.css">
+    <style>
+        .explorer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 60px 24px;
+        }
+
+        .explorer-header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .explorer-header h1 {
+            font-size: 42px;
+            margin-bottom: 12px;
+        }
+
+        .explorer-header p {
+            font-size: 16px;
+            color: var(--text-secondary);
+        }
+
+        .explorer-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            align-items: start;
+        }
+
+        .fault-selector {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+        }
+
+        .fault-selector h2 {
+            font-size: 20px;
+            margin-bottom: 24px;
+            text-align: left;
+        }
+
+        .fault-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .fault-btn {
+            padding: 16px;
+            border: 2px solid var(--border);
+            background: var(--bg);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .fault-btn:hover {
+            border-color: var(--primary);
+        }
+
+        .fault-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .fault-btn-emoji {
+            font-size: 20px;
+            margin-right: 8px;
+        }
+
+        .fault-details {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 32px;
+        }
+
+        .fault-details h2 {
+            text-align: left;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .detail-emoji {
+            font-size: 32px;
+        }
+
+        .detail-section {
+            margin-bottom: 32px;
+        }
+
+        .detail-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .detail-value {
+            font-size: 15px;
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .badge-detail {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+
+        .badge-llm {
+            background: rgba(30, 136, 229, 0.15);
+            color: var(--secondary);
+        }
+
+        .badge-agent {
+            background: rgba(255, 107, 53, 0.15);
+            color: var(--accent);
+        }
+
+        .code-block {
+            background: var(--surface-dark);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 12px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+            margin-top: 8px;
+        }
+
+        .interaction-demo {
+            background: var(--surface-dark);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 24px;
+            margin-top: 32px;
+        }
+
+        .interaction-demo h3 {
+            font-size: 16px;
+            margin-bottom: 16px;
+        }
+
+        .demo-control {
+            margin-bottom: 16px;
+        }
+
+        .demo-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+            font-weight: 600;
+        }
+
+        .demo-input, .demo-select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            background: var(--bg);
+            color: var(--text-primary);
+            font-size: 13px;
+        }
+
+        .demo-button {
+            padding: 8px 16px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        .demo-button:hover {
+            background: var(--primary-light);
+        }
+
+        .demo-output {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 12px;
+            margin-top: 12px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 12px;
+            color: var(--primary);
+            min-height: 60px;
+            word-break: break-all;
+        }
+
+        @media (max-width: 768px) {
+            .explorer-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .fault-selector {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
+
+            .fault-btn {
+                padding: 12px;
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-container">
+            <a href="/" class="logo">
+                <span class="logo-emoji">🌪️</span>
+                <span>agentic-chaos</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="/#features">Features</a></li>
+                <li><a href="/#faults">Faults</a></li>
+                <li><a href="../docs/">Docs</a></li>
+                <li><a href="../blog/">Blog</a></li>
+                <li><a href="./">Explorer</a></li>
+            </ul>
+            <div class="nav-cta">
+                <a href="https://github.com/DeepAgentLabs/agentic-chaos" target="_blank" class="btn-secondary">GitHub</a>
+                <a href="/#quickstart" class="btn-primary">Get Started</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="explorer-container">
+        <div class="explorer-header">
+            <h1>🔍 Fault Explorer</h1>
+            <p>Interactively explore all 6 fault types, their behaviors, and see simulated outputs</p>
+        </div>
+
+        <div class="explorer-grid">
+            <!-- Fault Selector -->
+            <div class="fault-selector">
+                <h2>Select a Fault</h2>
+                <div class="fault-buttons" id="faultButtons"></div>
+            </div>
+
+            <!-- Fault Details -->
+            <div class="fault-details" id="faultDetails">
+                <h2><span class="detail-emoji" id="detailEmoji"></span><span id="detailName"></span></h2>
+                <div class="detail-section">
+                    <div class="detail-label">Type</div>
+                    <div id="detailType"></div>
+                </div>
+                <div class="detail-section">
+                    <div class="detail-label">Description</div>
+                    <div class="detail-value" id="detailDescription"></div>
+                </div>
+                <div class="detail-section">
+                    <div class="detail-label">CLI Command</div>
+                    <div class="code-block" id="detailCLI"></div>
+                </div>
+                <div class="detail-section">
+                    <div class="detail-label">Python API</div>
+                    <div class="code-block" id="detailPython"></div>
+                </div>
+                <div class="detail-section">
+                    <div class="detail-label">Modes/Behavior</div>
+                    <div class="detail-value" id="detailModes"></div>
+                </div>
+                <div class="interaction-demo">
+                    <h3>💻 Interactive Demo</h3>
+                    <div class="demo-control" id="demoControls"></div>
+                    <button class="demo-button" onclick="runDemo()">Run Demo</button>
+                    <div class="demo-output" id="demoOutput">Output will appear here...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>Project</h3>
+                <ul>
+                    <li><a href="https://github.com/DeepAgentLabs/agentic-chaos" target="_blank">GitHub</a></li>
+                    <li><a href="https://pypi.org/project/agentic-chaos/" target="_blank">PyPI</a></li>
+                    <li><a href="../docs/">Documentation</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Resources</h3>
+                <ul>
+                    <li><a href="../blog/">Blog & Case Studies</a></li>
+                    <li><a href="./">Fault Explorer</a></li>
+                    <li><a href="https://github.com/DeepAgentLabs" target="_blank">DeepAgentLabs</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Community</h3>
+                <ul>
+                    <li><a href="https://github.com/DeepAgentLabs/agentic-chaos/discussions" target="_blank">Discussions</a></li>
+                    <li><a href="https://github.com/DeepAgentLabs/agentic-chaos/issues" target="_blank">Issues</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2026 DeepAgentLabs. MIT License.</p>
+        </div>
+    </footer>
+
+    <script>
+        const faults = [
+            {
+                id: 'token_timeout',
+                name: 'TokenTimeoutFault',
+                emoji: '⏱️',
+                type: '<span class="badge-detail badge-llm">LLM</span>',
+                description: 'Simulates a hung/slow completion that either times out or succeeds late. Tests client-side timeout handling and whether slow responses degrade UX.',
+                cli: 'agentic-chaos chaos run app.py --inject token_timeout',
+                python: 'chaos_call(llm.complete, query, faults=["token_timeout"])',
+                modes: '<strong>raise</strong> - Hang then error (default) | <strong>delay</strong> - Hang then succeed',
+                parameters: ['hang_seconds (float, default 2.0)', 'mode (str, default "raise")'],
+                demoFields: [
+                    { name: 'hang_seconds', type: 'number', default: '2.0', min: '0.5', max: '10' },
+                    { name: 'mode', type: 'select', options: ['raise', 'delay'] }
+                ]
+            },
+            {
+                id: 'rate_limit_storm',
+                name: 'RateLimitStormFault',
+                emoji: '🌪️',
+                type: '<span class="badge-detail badge-llm">LLM</span>',
+                description: 'Simulates a burst of 429 (Too Many Requests) errors that eventually recovers. Tests retry logic, exponential backoff, and cascade handling.',
+                cli: 'agentic-chaos chaos run app.py --inject rate_limit_storm',
+                python: 'chaos_call(llm.complete, query, faults=["rate_limit_storm"])',
+                modes: '<strong>Stateful</strong> - First N calls error with 429, then pass through normally',
+                parameters: ['burst_count (int, default 3)', 'retry_after (float, default 1.0)'],
+                demoFields: [
+                    { name: 'burst_count', type: 'number', default: '3', min: '1', max: '10' },
+                    { name: 'retry_after', type: 'number', default: '1.0', min: '0.1', max: '5' }
+                ]
+            },
+            {
+                id: 'silent_degradation',
+                name: 'SilentDegradationFault',
+                emoji: '🤐',
+                type: '<span class="badge-detail badge-llm">LLM</span>',
+                description: 'Calls the real function but corrupts its output. Latency & tokens look normal—but output is garbage. The hardest fault to detect.',
+                cli: 'agentic-chaos chaos run app.py --inject silent_degradation',
+                python: 'chaos_call(llm.complete, query, faults=["silent_degradation"])',
+                modes: '<strong>Default</strong> - Garbles text (preserves length) | <strong>Custom</strong> - Use your own degrade_fn',
+                parameters: ['degrade_fn (callable, optional)', 'seed (int, optional for reproducibility)'],
+                demoFields: [
+                    { name: 'input_text', type: 'text', default: 'The quick brown fox', placeholder: 'Text to garble' }
+                ]
+            },
+            {
+                id: 'tool_failure',
+                name: 'ToolCallFailureFault',
+                emoji: '🔧',
+                type: '<span class="badge-detail badge-agent">Agent</span>',
+                description: 'Forces a tool to fail—immediately error, timeout, or return empty/null. Tests tool unavailability and cascade failures in multi-agent systems.',
+                cli: 'agentic-chaos agent run agent.py --inject tool_failure',
+                python: 'chaos_call(search_tool, query, faults=["tool_failure"])',
+                modes: '<strong>error</strong> - Raise error immediately | <strong>timeout</strong> - Sleep then error | <strong>empty</strong> - Return null',
+                parameters: ['mode (str, default "error")', 'timeout_seconds (float, default 5.0)', 'tool_name (str, optional for scoping)'],
+                demoFields: [
+                    { name: 'mode', type: 'select', options: ['error', 'timeout', 'empty'] },
+                    { name: 'timeout_seconds', type: 'number', default: '5.0', min: '0.5', max: '30' }
+                ]
+            },
+            {
+                id: 'memory_corruption',
+                name: 'MemoryCorruptionFault',
+                emoji: '💾',
+                type: '<span class="badge-detail badge-agent">Agent</span>',
+                description: 'Calls the real function but corrupts its result—truncate to 50%, inject garbage, or garble text. Tests shared state resilience.',
+                cli: 'agentic-chaos agent run agent.py --inject memory_corruption',
+                python: 'chaos_call(memory.read, key, faults=["memory_corruption"])',
+                modes: '<strong>truncate</strong> - Cut to ~50% | <strong>inject</strong> - Insert garbage | <strong>garble</strong> - Scramble letters',
+                parameters: ['mode (str, default "garble")', 'seed (int, optional)'],
+                demoFields: [
+                    { name: 'mode', type: 'select', options: ['truncate', 'inject', 'garble'] },
+                    { name: 'input_text', type: 'text', default: 'Agent context and memories', placeholder: 'Text to corrupt' }
+                ]
+            },
+            {
+                id: 'infinite_loop',
+                name: 'InfiniteLoopFault',
+                emoji: '♻️',
+                type: '<span class="badge-detail badge-agent">Agent</span>',
+                description: 'Forces an agent to loop past its normal termination. Tests turn-limit safeguards and whether agents degrade gracefully under excessive iterations.',
+                cli: 'agentic-chaos agent run agent.py --inject infinite_loop',
+                python: 'chaos_call(agent.think, state, faults=["infinite_loop"])',
+                modes: '<strong>Stateful</strong> - First N calls return continue signal, then pass through',
+                parameters: ['force_turns (int, default 5)', 'continue_value (any, default "I need to continue...")'],
+                demoFields: [
+                    { name: 'force_turns', type: 'number', default: '5', min: '1', max: '20' }
+                ]
+            }
+        ];
+
+        let currentFault = faults[0];
+
+        function initExplorer() {
+            const faultButtons = document.getElementById('faultButtons');
+            faults.forEach(fault => {
+                const btn = document.createElement('button');
+                btn.className = `fault-btn ${fault.id === currentFault.id ? 'active' : ''}`;
+                btn.innerHTML = `<span class="fault-btn-emoji">${fault.emoji}</span>${fault.name}`;
+                btn.onclick = () => selectFault(fault.id);
+                faultButtons.appendChild(btn);
+            });
+            updateDetails();
+        }
+
+        function selectFault(faultId) {
+            currentFault = faults.find(f => f.id === faultId);
+            document.querySelectorAll('.fault-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.closest('.fault-btn').classList.add('active');
+            updateDetails();
+        }
+
+        function updateDetails() {
+            document.getElementById('detailEmoji').textContent = currentFault.emoji;
+            document.getElementById('detailName').textContent = currentFault.name;
+            document.getElementById('detailType').innerHTML = currentFault.type;
+            document.getElementById('detailDescription').textContent = currentFault.description;
+            document.getElementById('detailCLI').textContent = currentFault.cli;
+            document.getElementById('detailPython').textContent = currentFault.python;
+            document.getElementById('detailModes').innerHTML = currentFault.modes;
+
+            const demoControls = document.getElementById('demoControls');
+            demoControls.innerHTML = '';
+            currentFault.demoFields.forEach(field => {
+                const div = document.createElement('div');
+                div.className = 'demo-control';
+                div.innerHTML = `<div class="demo-label">${field.name}</div>`;
+                if (field.type === 'text') {
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.className = 'demo-input';
+                    input.id = field.name;
+                    input.value = field.default || '';
+                    input.placeholder = field.placeholder || '';
+                    div.appendChild(input);
+                } else if (field.type === 'number') {
+                    const input = document.createElement('input');
+                    input.type = 'number';
+                    input.className = 'demo-input';
+                    input.id = field.name;
+                    input.value = field.default || '1';
+                    if (field.min) input.min = field.min;
+                    if (field.max) input.max = field.max;
+                    div.appendChild(input);
+                } else if (field.type === 'select') {
+                    const select = document.createElement('select');
+                    select.className = 'demo-select';
+                    select.id = field.name;
+                    field.options.forEach(opt => {
+                        const option = document.createElement('option');
+                        option.value = opt;
+                        option.textContent = opt;
+                        select.appendChild(option);
+                    });
+                    div.appendChild(select);
+                }
+                demoControls.appendChild(div);
+            });
+        }
+
+        function garbleText(text) {
+            const alphabet = 'abcdefghijklmnopqrstuvwxyz';
+            return text.replace(/[A-Za-z]+/g, () => {
+                let result = '';
+                for (let i = 0; i < Math.random() * 10 + 5; i++) {
+                    result += alphabet[Math.floor(Math.random() * alphabet.length)];
+                }
+                return result;
+            });
+        }
+
+        function runDemo() {
+            const output = document.getElementById('demoOutput');
+            let result = '';
+
+            if (currentFault.id === 'token_timeout') {
+                const hangSeconds = parseFloat(document.getElementById('hang_seconds').value || 2.0);
+                const mode = document.getElementById('mode').value;
+                result = `TokenTimeoutFault(hang_seconds=${hangSeconds}, mode="${mode}")\n\n`;
+                if (mode === 'raise') {
+                    result += `✗ Called hung for ${hangSeconds}s then timed out`;
+                } else {
+                    result += `⟳ Call delayed ${hangSeconds}s before completing\n✓ Result: <response>`;
+                }
+            } else if (currentFault.id === 'rate_limit_storm') {
+                const burstCount = parseInt(document.getElementById('burst_count').value || 3);
+                const retryAfter = parseFloat(document.getElementById('retry_after').value || 1.0);
+                result = `RateLimitStormFault(burst_count=${burstCount}, retry_after=${retryAfter})\n\n`;
+                for (let i = 1; i <= 5; i++) {
+                    if (i <= burstCount) {
+                        result += `Call ${i}: ✗ 429 Too Many Requests (retry after ${retryAfter}s)\n`;
+                    } else {
+                        result += `Call ${i}: ✓ Success (burst exhausted)\n`;
+                    }
+                }
+            } else if (currentFault.id === 'silent_degradation') {
+                const inputText = document.getElementById('input_text').value || 'hello world';
+                const garbled = garbleText(inputText);
+                result = `SilentDegradationFault()\n\n`;
+                result += `Original:   "${inputText}"\n`;
+                result += `Corrupted:  "${garbled}"\n\n`;
+                result += `✓ Latency: 245ms (normal)\n`;
+                result += `✓ Tokens: 128 (normal)\n`;
+                result += `✗ Content: corrupted`;
+            } else if (currentFault.id === 'tool_failure') {
+                const mode = document.getElementById('mode').value;
+                const timeout = parseFloat(document.getElementById('timeout_seconds').value || 5.0);
+                result = `ToolCallFailureFault(mode="${mode}", timeout_seconds=${timeout})\n\n`;
+                if (mode === 'error') {
+                    result += `✗ Tool execution failed: Tool execution failed`;
+                } else if (mode === 'timeout') {
+                    result += `⟳ Sleeping ${timeout}s...\n✗ Tool timed out after ${timeout}s`;
+                } else {
+                    result += `✓ Tool executed\n→ Result: null (empty)`;
+                }
+            } else if (currentFault.id === 'memory_corruption') {
+                const mode = document.getElementById('mode').value;
+                const inputText = document.getElementById('input_text').value || 'Agent context';
+                let corrupted = inputText;
+                result = `MemoryCorruptionFault(mode="${mode}")\n\n`;
+                if (mode === 'truncate') {
+                    corrupted = inputText.substring(0, Math.ceil(inputText.length / 2));
+                    result += `Original:   "${inputText}"\n`;
+                    result += `Corrupted:  "${corrupted}" (truncated to 50%)`;
+                } else if (mode === 'inject') {
+                    corrupted = inputText.substring(0, Math.floor(inputText.length / 2)) + ' [INJECTED: xyzabc] ' + inputText.substring(Math.floor(inputText.length / 2));
+                    result += `Original:   "${inputText}"\n`;
+                    result += `Corrupted:  "${corrupted}"`;
+                } else {
+                    corrupted = garbleText(inputText);
+                    result += `Original:   "${inputText}"\n`;
+                    result += `Corrupted:  "${corrupted}"`;
+                }
+            } else if (currentFault.id === 'infinite_loop') {
+                const forceTurns = parseInt(document.getElementById('force_turns').value || 5);
+                result = `InfiniteLoopFault(force_turns=${forceTurns})\n\n`;
+                for (let i = 0; i < 8; i++) {
+                    if (i < forceTurns) {
+                        result += `Turn ${i}: ↻ Forced continue signal (${i + 1}/${forceTurns})\n`;
+                    } else {
+                        result += `Turn ${i}: ✓ Real result (budget exhausted)`;
+                    }
+                }
+            }
+
+            output.textContent = result;
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', initExplorer);
+    </script>
+</body>
+</html>
