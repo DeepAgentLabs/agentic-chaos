@@ -220,6 +220,44 @@ stretch goals.
 - [ ] AgenticLens `AgentResilienceRecommender` adapter + resilience score *(deferred to v0.9)*
 - [x] README section + 1 example (LangGraph multi-agent demo) + demo GIF
 
+### v0.2.x — Structured Experiment Reports & Synthetic Scenarios
+
+Enhancements to the shipped foundation — focused on making chaos results
+operationally useful rather than adding new fault types.
+
+**Structured experiment reports:**
+
+Every chaos run should emit a report with a clear shape:
+- hypothesis (what you expected to break)
+- injection point with provenance (which agent, tool, step, and context)
+- fault applied
+- observed behavior
+- recovery outcome
+- verdict (recovered / degraded / failed)
+
+This goes beyond "fault fired" into answering "what does this mean for
+production readiness?" Reports should be exportable as AI Operations
+Specification artifacts.
+
+**Synthetic test scenarios:**
+
+Prebuilt known-bad agent behaviors that validate resilience behavior
+consistently:
+- agent that always retries until budget exhaustion
+- agent that silently drops a required step under load
+- agent that enters a handoff loop between two nodes
+- agent that succeeds but at 5× expected cost
+
+These serve as regression fixtures and benchmarking baselines for the chaos
+toolkit itself.
+
+**Deliverables:**
+- [ ] structured `ExperimentReport` model with provenance fields
+- [ ] report export to JSON (AI Operations Specification-compatible)
+- [ ] 4+ synthetic scenario fixtures in `tests/synthetic/`
+- [ ] CLI `--report` flag to emit structured reports
+- [ ] README section with report schema example
+
 ### v0.3 — Fidelity Judges & Handoff Chaos (`agentic_chaos.judges`, `agentic_chaos.agents` extension)
 
 Slotted directly after the shipped Agent Failure Injector because it closes the
