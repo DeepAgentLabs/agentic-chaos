@@ -74,3 +74,10 @@ If you also have agenticlens checked out as a sibling, run the full suite:
 uv sync --extra dev --extra agenticlens
 uv run pytest
 ```
+
+## Release
+
+1. Bump version in `pyproject.toml`, `src/agentic_chaos/__init__.py`, and `CHANGELOG.md`
+2. Commit: `git commit -am "release: vX.Y.Z"`
+3. Tag: `git tag vX.Y.Z`
+4. Push: `git push origin main --tags`
