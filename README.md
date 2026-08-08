@@ -26,6 +26,17 @@ tools that happen to compose.
 **Agent Failure Injector** (v0.2) are shipped. Planned next: a **Prompt/Model
 Drift Detector** (v0.3). See [ROADMAP.md](ROADMAP.md) for the full plan.
 
+### What's Next
+
+- **Structured experiment reports** — every chaos run emits a report with
+  hypothesis, injection point provenance, observed behavior, and verdict
+- **Synthetic test scenarios** — prebuilt known-bad agent behaviors for
+  consistent resilience validation
+- **Fidelity Judges** (v0.3) — LLM-as-judge scoring to determine if corrupted
+  output is actually worse
+- **Handoff Chaos** (v0.3) — corrupt the wire between agents, not just the
+  nodes
+
 ## Installation
 
 ```bash
@@ -251,6 +262,15 @@ in the agenticlens repo) — interop through a shared file format, not a code
 dependency in either direction.
 
 ## Development
+
+A `Makefile` provides shorthand for common tasks:
+
+```bash
+make install     # install dev dependencies
+make check       # run all quality gates (lint + format + typecheck + test)
+make test-cov    # tests with coverage report
+make help        # list all available targets
+```
 
 Without a sibling `agenticlens` checkout, use `--frozen` (see
 [Installation](#installation) for why):
