@@ -1,6 +1,7 @@
 import pytest
 
 from agentic_chaos.agents.faults import (
+    HandoffCorruptionFault,
     InfiniteLoopFault,
     MemoryCorruptionFault,
     ToolCallFailureError,
@@ -175,6 +176,167 @@ class TestMemoryCorruptionFault:
 
         assert outcome.result.content != "genuine content"
 
+    def test_decay_mode_progressively_worsens_state(self) -> None:
+        fault = MemoryCorruptionFault(mode="decay", seed=1, rate=0.5)
+
+        first = fault.trigger(lambda: "persistent memory state", step_id=None, step_name=None)
+        second = fault.trigger(lambda: "persistent memory state", step_id=None, step_name=None)
+
+        assert first.event is not None
+        assert second.event is not None
+        assert first.event.detail["progress"] == 0.5
+        assert second.event.detail["progress"] == 1.0
+        assert first.result != "persistent memory state"
+        assert second.result != "persistent memory state"
+
+    def test_decay_mode_rejects_invalid_rate(self) -> None:
+        with pytest.raises(ValueError, match="rate must be"):
+            MemoryCorruptionFault(mode="decay", rate=0.0)
+
+
+# ---------------------------------------------------------------------------
+# HandoffCorruptionFault
+# ---------------------------------------------------------------------------
+
+
+class TestHandoffCorruptionFault:
+    def test_rejects_invalid_mode(self) -> None:
+        with pytest.raises(ValueError, match="mode must be"):
+            HandoffCorruptionFault(mode="explode")
+
+    def test_corrupt_mode_mutates_payload_before_delivery(self) -> None:
+        fault = HandoffCorruptionFault(
+            from_node="Planner",
+            to_node="Executor",
+            mode="corrupt",
+            seed=1,
+        )
+
+        outcome = fault.trigger(
+            lambda payload: payload,
+            step_id="Executor",
+            step_name="Executor",
+            call_args=("plan the work",),
+            edge_id="edge-1",
+            from_node="Planner",
+            to_node="Executor",
+        )
+
+        assert outcome.result != "plan the work"
+        assert outcome.baseline is None
+        assert outcome.event is not None
+        assert outcome.event.edge_id == "edge-1"
+        assert outcome.event.from_node == "Planner"
+        assert outcome.event.to_node == "Executor"
+
+    def test_corrupt_mode_calls_downstream_once(self) -> None:
+        fault = HandoffCorruptionFault(mode="corrupt", seed=1)
+        calls: list[str] = []
+
+        def downstream(payload: str) -> str:
+            calls.append(payload)
+            return payload
+
+        outcome = fault.trigger(
+            downstream,
+            step_id="Executor",
+            step_name="Executor",
+            call_args=("plan the work",),
+            edge_id="edge-1",
+            from_node="Planner",
+            to_node="Executor",
+        )
+
+        assert outcome.event is not None
+        assert len(calls) == 1
+        assert calls[0] != "plan the work"
+
+    def test_delay_mode_calls_once_and_records_delayed_outcome(self) -> None:
+        calls: list[str] = []
+        fault = HandoffCorruptionFault(mode="delay", delay_seconds=0.0)
+
+        outcome = fault.trigger(
+            lambda payload: calls.append(payload) or payload.upper(),
+            step_id="Executor",
+            step_name="Executor",
+            call_args=("plan",),
+            edge_id="edge-delay",
+            from_node="Planner",
+            to_node="Executor",
+        )
+
+        assert calls == ["plan"]
+        assert outcome.result == "PLAN"
+        assert outcome.event is not None
+        assert outcome.event.outcome == "delayed"
+        assert outcome.event.detail["delay_seconds"] == 0.0
+
+    def test_drop_mode_returns_none_without_calling(self) -> None:
+        calls: list[int] = []
+        fault = HandoffCorruptionFault(mode="drop")
+
+        outcome = fault.trigger(
+            lambda payload: calls.append(1) or payload,
+            step_id="Executor",
+            step_name="Executor",
+            call_args=("plan",),
+            edge_id="edge-2",
+            from_node="Planner",
+            to_node="Executor",
+        )
+
+        assert calls == []
+        assert outcome.result is None
+        assert outcome.event is not None
+        assert outcome.event.outcome == "degraded"
+
+    def test_missing_edge_id_passes_through(self) -> None:
+        fault = HandoffCorruptionFault(mode="drop")
+
+        outcome = fault.trigger(
+            lambda payload: payload.upper(),
+            step_id="Executor",
+            step_name="Executor",
+            call_args=("plan",),
+            from_node="Planner",
+            to_node="Executor",
+        )
+
+        assert outcome.result == "PLAN"
+        assert outcome.event is None
+
+    def test_non_matching_edge_passes_through(self) -> None:
+        fault = HandoffCorruptionFault(from_node="Router", to_node="Planner", mode="drop")
+
+        outcome = fault.trigger(
+            lambda payload: payload.upper(),
+            step_id="Executor",
+            step_name="Executor",
+            call_args=("plan",),
+            edge_id="edge-3",
+            from_node="Planner",
+            to_node="Executor",
+        )
+
+        assert outcome.result == "PLAN"
+        assert outcome.event is None
+
+    def test_to_node_mismatch_passes_through(self) -> None:
+        fault = HandoffCorruptionFault(to_node="Reviewer", mode="drop")
+
+        outcome = fault.trigger(
+            lambda payload: payload.upper(),
+            step_id="Executor",
+            step_name="Executor",
+            call_args=("plan",),
+            edge_id="edge-4",
+            from_node="Planner",
+            to_node="Executor",
+        )
+
+        assert outcome.result == "PLAN"
+        assert outcome.event is None
+
 
 # ---------------------------------------------------------------------------
 # InfiniteLoopFault
@@ -236,11 +398,17 @@ class TestAgentFaultsIntegration:
         assert "tool_failure" in FAULT_REGISTRY
         assert "memory_corruption" in FAULT_REGISTRY
         assert "infinite_loop" in FAULT_REGISTRY
+        assert "handoff_corruption" in FAULT_REGISTRY
 
     def test_resolve_faults_finds_agent_faults(self) -> None:
-        faults = resolve_faults("tool_failure,memory_corruption,infinite_loop")
+        faults = resolve_faults("tool_failure,memory_corruption,infinite_loop,handoff_corruption")
         names = [f.name for f in faults]
-        assert names == ["tool_failure", "memory_corruption", "infinite_loop"]
+        assert names == [
+            "tool_failure",
+            "memory_corruption",
+            "infinite_loop",
+            "handoff_corruption",
+        ]
 
     def test_tool_failure_via_chaos_call(self) -> None:
         with chaos_session([ToolCallFailureFault()]) as session:
