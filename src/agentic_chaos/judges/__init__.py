@@ -12,7 +12,7 @@ from contextvars import ContextVar, Token
 from dataclasses import dataclass
 from importlib import import_module
 from types import TracebackType
-from typing import Any, Protocol
+from typing import Any, Coroutine, Literal, Protocol, cast
 
 from agentic_chaos.models.chaos_event import ChaosEvent
 
@@ -61,7 +61,7 @@ def _run_maybe_awaitable(value: Any) -> Any:
         try:
             asyncio.get_running_loop()
         except RuntimeError:
-            return asyncio.run(value)
+            return asyncio.run(cast(Coroutine[Any, Any, Any], value))
         raise RuntimeError(
             "Async judge results cannot be awaited while an event loop is already running."
         )
@@ -286,7 +286,7 @@ class fidelity_session:  # noqa: N801
         exc_type: type[BaseException] | None,
         exc_value: BaseException | None,
         traceback: TracebackType | None,
-    ) -> bool:
+    ) -> Literal[False]:
         assert self._token is not None
         _active_fidelity_session.reset(self._token)
         return False
