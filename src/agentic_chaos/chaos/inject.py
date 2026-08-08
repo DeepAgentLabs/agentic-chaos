@@ -2,6 +2,7 @@ from collections.abc import Callable
 from typing import Any, TypeVar
 
 from agentic_chaos.chaos.context import get_active_session
+from agentic_chaos.judges import score_outcome
 
 T = TypeVar("T")
 
@@ -11,6 +12,9 @@ def chaos_call(
     *args: Any,
     step_id: str | None = None,
     step_name: str | None = None,
+    edge_id: str | None = None,
+    from_node: str | None = None,
+    to_node: str | None = None,
     faults: list[str] | None = None,
     **kwargs: Any,
 ) -> T:
@@ -44,9 +48,23 @@ def chaos_call(
         )
 
     outcome = candidates[0].trigger(
-        lambda: fn(*args, **kwargs), step_id=step_id, step_name=step_name
+        lambda *call_args, **call_kwargs: fn(*call_args, **call_kwargs),
+        step_id=step_id,
+        step_name=step_name,
+        call_args=args,
+        call_kwargs=kwargs,
+        edge_id=edge_id,
+        from_node=from_node,
+        to_node=to_node,
     )
     if outcome.event is not None:
+        score_outcome(
+            outcome.event,
+            baseline=outcome.baseline,
+            observed=outcome.result,
+            step_id=step_id,
+            step_name=step_name,
+        )
         session.events.append(outcome.event)
     if outcome.raised is not None:
         raise outcome.raised

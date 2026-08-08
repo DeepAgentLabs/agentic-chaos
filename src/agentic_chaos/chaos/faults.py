@@ -46,6 +46,7 @@ class FaultOutcome:
     result: Any = None
     event: ChaosEvent | None = None
     raised: BaseException | None = None
+    baseline: Any = None
 
 
 class BaseFault(ABC):
@@ -61,10 +62,15 @@ class BaseFault(ABC):
     @abstractmethod
     def trigger(
         self,
-        call: Callable[[], Any],
+        call: Callable[..., Any],
         *,
         step_id: str | None,
         step_name: str | None,
+        call_args: tuple[Any, ...] = (),
+        call_kwargs: dict[str, Any] | None = None,
+        edge_id: str | None = None,
+        from_node: str | None = None,
+        to_node: str | None = None,
     ) -> FaultOutcome:
         """Decide how `call()` should be affected by this fault this time.
 
@@ -94,15 +100,21 @@ class TokenTimeoutFault(BaseFault):
 
     def trigger(
         self,
-        call: Callable[[], Any],
+        call: Callable[..., Any],
         *,
         step_id: str | None,
         step_name: str | None,
+        call_args: tuple[Any, ...] = (),
+        call_kwargs: dict[str, Any] | None = None,
+        edge_id: str | None = None,
+        from_node: str | None = None,
+        to_node: str | None = None,
     ) -> FaultOutcome:
+        call_kwargs = call_kwargs or {}
         time.sleep(self.hang_seconds)
 
         if self.mode == "delay":
-            result = call()
+            result = call(*call_args, **call_kwargs)
             event = ChaosEvent(
                 fault_type=self.name,
                 step_id=step_id,
@@ -142,13 +154,19 @@ class RateLimitStormFault(BaseFault):
 
     def trigger(
         self,
-        call: Callable[[], Any],
+        call: Callable[..., Any],
         *,
         step_id: str | None,
         step_name: str | None,
+        call_args: tuple[Any, ...] = (),
+        call_kwargs: dict[str, Any] | None = None,
+        edge_id: str | None = None,
+        from_node: str | None = None,
+        to_node: str | None = None,
     ) -> FaultOutcome:
+        call_kwargs = call_kwargs or {}
         if self._fired >= self.burst_count:
-            return FaultOutcome(result=call())
+            return FaultOutcome(result=call(*call_args, **call_kwargs))
 
         self._fired += 1
         message = f"429 Too Many Requests (attempt {self._fired}/{self.burst_count})"
@@ -253,12 +271,18 @@ class SilentDegradationFault(BaseFault):
 
     def trigger(
         self,
-        call: Callable[[], Any],
+        call: Callable[..., Any],
         *,
         step_id: str | None,
         step_name: str | None,
+        call_args: tuple[Any, ...] = (),
+        call_kwargs: dict[str, Any] | None = None,
+        edge_id: str | None = None,
+        from_node: str | None = None,
+        to_node: str | None = None,
     ) -> FaultOutcome:
-        result = call()
+        call_kwargs = call_kwargs or {}
+        result = call(*call_args, **call_kwargs)
         degraded = self.degrade_fn(result)
         event = ChaosEvent(
             fault_type=self.name,
@@ -267,7 +291,7 @@ class SilentDegradationFault(BaseFault):
             outcome="degraded",
             message="output silently degraded (same shape, corrupted content)",
         )
-        return FaultOutcome(result=degraded, event=event)
+        return FaultOutcome(result=degraded, event=event, baseline=result)
 
 
 FAULT_REGISTRY: dict[str, type[BaseFault]] = {

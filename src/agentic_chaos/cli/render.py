@@ -19,20 +19,26 @@ def render_chaos_events(console: Console, events: list[ChaosEvent]) -> None:
         console.print("[green]No faults triggered.[/green]")
         return
 
+    show_fidelity = any(event.fidelity_score is not None for event in events)
     table = Table(title="Chaos Events", box=box.SIMPLE_HEAVY)
     table.add_column("Step")
     table.add_column("Fault")
     table.add_column("Outcome")
+    if show_fidelity:
+        table.add_column("Fidelity")
     table.add_column("Message")
 
     for event in events:
         style = _OUTCOME_STYLES.get(event.outcome, "white")
-        table.add_row(
+        row = [
             event.step_name or event.step_id or "n/a",
             event.fault_type,
             f"[{style}]{event.outcome}[/{style}]",
-            event.message,
-        )
+        ]
+        if show_fidelity:
+            row.append(f"{event.fidelity_score:.2f}" if event.fidelity_score is not None else "-")
+        row.append(event.message)
+        table.add_row(*row)
 
     console.print(table)
     console.print(f"\n[bold]{len(events)}[/bold] chaos event(s) recorded.")

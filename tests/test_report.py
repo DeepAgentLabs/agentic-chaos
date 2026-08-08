@@ -17,10 +17,20 @@ def test_chaos_report_json_round_trip() -> None:
         name="Test Run",
         start_time=datetime.now(timezone.utc),
         end_time=datetime.now(timezone.utc),
-        chaos_events=[{"fault_type": "token_timeout", "outcome": "errored", "message": "x"}],
+        chaos_events=[
+            {
+                "fault_type": "token_timeout",
+                "outcome": "errored",
+                "message": "x",
+                "fidelity_score": 0.25,
+                "edge_id": "edge-1",
+            }
+        ],
     )
 
     dumped = json.loads(report.model_dump_json())
 
     assert dumped["name"] == "Test Run"
     assert dumped["chaos_events"][0]["fault_type"] == "token_timeout"
+    assert dumped["chaos_events"][0]["fidelity_score"] == 0.25
+    assert dumped["chaos_events"][0]["edge_id"] == "edge-1"

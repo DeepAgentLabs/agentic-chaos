@@ -49,6 +49,7 @@ def test_chaos_list_faults() -> None:
     assert "token_timeout" in result.output
     assert "rate_limit_storm" in result.output
     assert "silent_degradation" in result.output
+    assert "handoff_corruption" in result.output
 
 
 def test_chaos_run_unknown_fault_name(tmp_path: Path) -> None:
@@ -207,6 +208,19 @@ except ToolCallFailureError:
     pass
 """
 
+_HANDOFF_SCRIPT = """
+from agentic_chaos import TopologyTracker, wrap_node
+
+tracker = TopologyTracker()
+tracker.register_node("Planner", type="agent")
+
+def executor(payload):
+    return payload
+
+wrapped = wrap_node(executor, node_name="Executor", tracker=tracker, caller_node="Planner")
+wrapped("handoff payload")
+"""
+
 
 def test_agent_run_no_topology_leak_across_invocations(tmp_path: Path) -> None:
     """Bug fix: a TopologyTracker from one invocation must NOT leak into
@@ -233,7 +247,33 @@ def test_agent_run_no_topology_leak_across_invocations(tmp_path: Path) -> None:
     assert data2["agent_topology"] is None  # second must NOT have leaked topology
 
 
+def test_agent_run_saves_handoff_edge_metadata(tmp_path: Path) -> None:
+    script = tmp_path / "handoff.py"
+    script.write_text(_HANDOFF_SCRIPT)
+    out = tmp_path / "handoff_report.json"
+
+    result = runner.invoke(
+        app,
+        [
+            "agent",
+            "run",
+            str(script),
+            "--inject",
+            "handoff_corruption",
+            "--save",
+            str(out),
+        ],
+    )
+
+    assert result.exit_code == 0
+    data = json.loads(out.read_text())
+    assert data["chaos_events"][0]["fault_type"] == "handoff_corruption"
+    assert data["chaos_events"][0]["edge_id"] is not None
+    assert data["chaos_events"][0]["from_node"] == "Planner"
+    assert data["chaos_events"][0]["to_node"] == "Executor"
+
+
 def test_drift_snapshot_not_implemented() -> None:
     result = runner.invoke(app, ["drift", "snapshot"])
     assert result.exit_code == 1
-    assert "v0.3" in result.output
+    assert "v0.4" in result.output
