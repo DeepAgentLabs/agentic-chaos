@@ -4,6 +4,33 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-08-08
+
+### Added
+
+- **Fidelity Judges & Handoff Chaos (v0.3)**:
+  - New `agentic_chaos.judges` module with `JudgeProtocol`,
+    `fidelity_session()`, `HeuristicJudge`, `DeepEvalJudge`, and
+    `PydanticEvalsJudge`.
+  - `ChaosEvent.fidelity_score` field (schema v1.3) for judge-produced
+    quality comparisons when a baseline result exists.
+  - `HandoffCorruptionFault` for edge-scoped multi-agent faults with
+    `"corrupt"`, `"drop"`, and `"delay"` modes.
+  - `MemoryCorruptionFault(mode="decay", rate=...)` for progressive
+    long-running state degradation across turns.
+  - Edge provenance on `ChaosEvent`: `edge_id`, `from_node`, and `to_node`.
+  - New example: `examples/chaos_handoff_and_judges_demo.py`.
+  - New CLI rendering for fidelity scores when present in recorded events.
+
+### Changed
+
+- Bumped package version to `0.3.0`.
+- Drift placeholders and docs now point to v0.4 instead of v0.3.
+- `HandoffCorruptionFault(mode="corrupt")` now calls the downstream node
+  exactly once, avoiding duplicate side effects on non-pure nodes. As a
+  tradeoff, corrupt-mode handoffs do not emit a comparative `fidelity_score`
+  unless the caller captures a separate baseline.
+
 ## [0.2.0] - 2026-07-13
 
 ### Added

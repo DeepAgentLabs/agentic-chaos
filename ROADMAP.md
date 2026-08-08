@@ -4,7 +4,7 @@
 
 - **v0.1** ✅ Complete — LLM Chaos Toolkit (3 faults, CLI, AgenticLens adapter)
 - **v0.2** ✅ Complete — Agent Failure Injector (3 agent faults, topology tracking, LangGraph adapter) — shipped 2026-07-13
-- **v0.3** 🚧 Planned — Fidelity Judges & Handoff Chaos
+- **v0.3** ✅ Complete — Fidelity Judges & Handoff Chaos (`v0.3.0`)
 - **v0.4** 🚧 Planned — Prompt/Model Drift Detector
 - **v0.5** 🚧 Planned — Streaming Faults, Provider Patching & Chaos Profiles
 - **v0.6** 🚧 Planned — Pytest Plugin & Assertions
@@ -67,7 +67,7 @@ The package contains the following modules (shipped and planned):
 |--------|--------|---------|
 | `agentic_chaos.chaos` | ✅ Shipped (v0.1) | LLM-level fault injection — `TokenTimeoutFault`, `RateLimitStormFault`, `SilentDegradationFault` |
 | `agentic_chaos.agents` | ✅ Shipped (v0.2) | Agent-level fault injection — `ToolCallFailureFault`, `MemoryCorruptionFault`, `InfiniteLoopFault`, LangGraph adapter, topology tracking |
-| `agentic_chaos.judges` | 🚧 Planned (v0.3) | Fidelity Judges — LLM-as-judge scoring to determine if corrupted output is actually worse |
+| `agentic_chaos.judges` | ✅ Shipped (v0.3) | Fidelity Judges — LLM-as-judge scoring to determine if corrupted output is actually worse |
 | `agentic_chaos.drift` | 🚧 Planned (v0.4) | Prompt/model drift detection — snapshot, compare, detect silent changes |
 | `agentic_chaos.integrations` | ✅ Shipped (v0.1) | Optional AgenticLens adapter (`attach_events()`, `step_kwargs()`) |
 
@@ -320,10 +320,10 @@ one-shot truncate/inject/garble, corrupts shared state progressively across
 failure where state degrades gradually rather than breaking all at once.
 
 **Deliverables:**
-- [ ] `agentic_chaos.judges` module — `DeepEvalJudge`, `PydanticEvalsJudge`, `fidelity_session()`
-- [ ] `fidelity_score` schema extension (`chaos_events` v1.3)
-- [ ] `HandoffCorruptionFault` (`agentic_chaos.agents`) — corrupt/drop/delay modes, edge-scoped
-- [ ] `MemoryCorruptionFault(mode="decay", rate=...)`
+- [x] `agentic_chaos.judges` module — `DeepEvalJudge`, `PydanticEvalsJudge`, `fidelity_session()`
+- [x] `fidelity_score` schema extension (`chaos_events` v1.3)
+- [x] `HandoffCorruptionFault` (`agentic_chaos.agents`) — corrupt/drop/delay modes, edge-scoped
+- [x] `MemoryCorruptionFault(mode="decay", rate=...)`
 - [ ] AgenticLens `ChaosImpactRecommender` update to weight by `fidelity_score`
 - [ ] README section + example + demo GIF
 
