@@ -7,12 +7,12 @@ evaluation frameworks directly.
 
 import asyncio
 import inspect
-from collections.abc import Callable
+from collections.abc import Callable, Coroutine
 from contextvars import ContextVar, Token
 from dataclasses import dataclass
 from importlib import import_module
 from types import TracebackType
-from typing import Any, Coroutine, Literal, Protocol, cast
+from typing import Any, Literal, Protocol, cast
 
 from agentic_chaos.models.chaos_event import ChaosEvent
 
