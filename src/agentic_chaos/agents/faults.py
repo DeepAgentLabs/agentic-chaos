@@ -18,6 +18,7 @@ from agentic_chaos.chaos.faults import (
     FaultOutcome,
     garble_text,
     mutate_text_attrs,
+    snapshot_baseline,
 )
 from agentic_chaos.models.chaos_event import ChaosEvent
 
@@ -301,6 +302,7 @@ class MemoryCorruptionFault(BaseFault):
     ) -> FaultOutcome:
         call_kwargs = call_kwargs or {}
         result = call(*call_args, **call_kwargs)
+        baseline = snapshot_baseline(result)
         if self.mode == "decay":
             self._turn += 1
             progress = min(1.0, self._turn * self.rate)
@@ -326,7 +328,7 @@ class MemoryCorruptionFault(BaseFault):
             message=message,
             detail=detail,
         )
-        return FaultOutcome(result=corrupted, event=event, baseline=result)
+        return FaultOutcome(result=corrupted, event=event, baseline=baseline)
 
 
 # ---------------------------------------------------------------------------
