@@ -612,8 +612,8 @@
                 <div class="stat-label">Required Dependencies</div>
             </div>
             <div class="stat">
-                <div class="stat-number">6</div>
-                <div class="stat-label">Fault Types (v0.1-0.2)</div>
+                <div class="stat-number">7</div>
+                <div class="stat-label">Fault Types (v0.1-0.3)</div>
             </div>
             <div class="stat">
                 <div class="stat-number">2</div>
@@ -677,7 +677,7 @@
         <h2>How It Works</h2>
         <p class="section-subtitle">agentic-chaos operates in two layers: LLM calls and agent workflows.</p>
 
-        <h3 style="font-size: 24px; margin-top: 48px; margin-bottom: 24px;">Two-Layer Testing</h3>
+        <h3 style="font-size: 24px; margin-top: 48px; margin-bottom: 24px;">Three-Layer Testing</h3>
 
         <div class="feature-list">
             <div class="feature">
@@ -689,6 +689,11 @@
                 <div class="feature-icon">🤖</div>
                 <h3>Agent Layer (v0.2)</h3>
                 <p><strong>Test multi-agent workflows</strong> — tool failures, memory corruption, infinite loops. Tracks topology and cascades.</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">⚖️</div>
+                <h3>Fidelity &amp; Handoff Layer (v0.3)</h3>
+                <p><strong>Score whether corruption actually mattered</strong> and break the edge between two agents — LLM-as-judge fidelity scoring plus edge-scoped handoff corruption/drop/delay.</p>
             </div>
         </div>
 
@@ -743,7 +748,7 @@ attach_events(session, workflow)
     <!-- Faults Section -->
     <section id="faults">
         <h2>All Fault Types</h2>
-        <p class="section-subtitle">6 fault types across LLM and agent layers. Extensible—add your own.</p>
+        <p class="section-subtitle">7 fault types across LLM, agent, and handoff layers. Extensible—add your own.</p>
 
         <div class="faults-grid">
             <!-- LLM Faults -->
@@ -860,6 +865,25 @@ attach_events(session, workflow)
                     </div>
                 </div>
             </div>
+
+            <div class="fault-card">
+                <div class="fault-header">
+                    <span class="fault-emoji">🔗</span>
+                    <span class="fault-name">HandoffCorruption</span>
+                    <span class="fault-badge badge-agent">Agent</span>
+                </div>
+                <p class="fault-description">Targets the edge between two agents instead of a node — corrupt, drop, or delay a handoff payload in transit.</p>
+                <div class="fault-meta">
+                    <div class="meta-item">
+                        <div class="meta-label">Modes</div>
+                        <div class="meta-value">corrupt, drop, delay</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">CLI</div>
+                        <div class="meta-value">handoff_corruption</div>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
 
@@ -963,7 +987,7 @@ agentic-chaos chaos run my_app.py \
 
             <div class="roadmap-item">
                 <div class="roadmap-version">v0.3</div>
-                <span class="roadmap-status status-planned">🚧 Planned</span>
+                <span class="roadmap-status status-shipped">✓ Shipped</span>
                 <div class="roadmap-description">Fidelity Judges & Handoff Chaos (LLM-as-judge scoring, edge-scoped faults)</div>
             </div>
 
@@ -1081,7 +1105,7 @@ agentic-chaos chaos run my_app.py \
                     <td>Research</td>
                     <td>Emerging</td>
                     <td>Mature</td>
-                    <td>✅ Shipped v0.2</td>
+                    <td>✅ Shipped v0.3</td>
                 </tr>
             </tbody>
         </table>
