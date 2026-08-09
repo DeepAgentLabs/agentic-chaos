@@ -78,7 +78,14 @@ def chaos_call(
         lambda *call_args, **call_kwargs: fn(*call_args, **call_kwargs),
         step_id=step_id,
         step_name=step_name,
-        **_trigger_kwargs(candidates[0], args, kwargs, _chaos_edge_id, _chaos_from_node, _chaos_to_node),
+        **_trigger_kwargs(
+            candidates[0],
+            args,
+            kwargs,
+            _chaos_edge_id,
+            _chaos_from_node,
+            _chaos_to_node,
+        ),
     )
     if outcome.event is not None:
         score_outcome(
