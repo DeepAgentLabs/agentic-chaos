@@ -1,6 +1,6 @@
 import pytest
 
-from agentic_chaos.chaos.faults import RateLimitStormError, TokenTimeoutFault
+from agentic_chaos.chaos.faults import FaultOutcome, RateLimitStormError, TokenTimeoutFault
 from agentic_chaos.chaos.inject import chaos_call
 from agentic_chaos.chaos.session import chaos_session
 
@@ -103,3 +103,20 @@ def test_session_events_as_json_serializes_recorded_events() -> None:
     assert events[0]["fault_type"] == "token_timeout"
     assert events[0]["step_id"] == "s1"
     assert isinstance(events[0]["timestamp"], str)  # JSON-mode serialized
+
+
+def test_chaos_call_preserves_original_args_for_legacy_faults() -> None:
+    class LegacyPassThroughFault:
+        name = "legacy"
+
+        def trigger(
+            self,
+            call,
+            *,
+            step_id=None,
+            step_name=None,
+        ) -> FaultOutcome:
+            return FaultOutcome(result=call())
+
+    with chaos_session([LegacyPassThroughFault()]):
+        assert chaos_call(lambda x: x, 1) == 1

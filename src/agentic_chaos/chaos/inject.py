@@ -74,8 +74,13 @@ def chaos_call(
             "Pass faults=[...] to chaos_call() to pick which one applies at this call site."
         )
 
+    def invoke(*call_args: Any, **call_kwargs: Any) -> T:
+        if not call_args and not call_kwargs:
+            return fn(*args, **kwargs)
+        return fn(*call_args, **call_kwargs)
+
     outcome = candidates[0].trigger(
-        lambda *call_args, **call_kwargs: fn(*call_args, **call_kwargs),
+        invoke,
         step_id=step_id,
         step_name=step_name,
         **_trigger_kwargs(
