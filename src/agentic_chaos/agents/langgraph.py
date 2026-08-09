@@ -91,16 +91,27 @@ def wrap_node(
 
     @wraps(fn)
     def wrapped(*args: Any, **kwargs: Any) -> T:
+        edge = None
         if tracker is not None:
             tracker.register_node(name, type=node_type)
             if caller_node is not None:
-                tracker.record_edge(
+                edge = tracker.record_edge(
                     caller_node,
                     name,
                     message_type="handoff",
                     source_type="agent",
                     target_type=node_type,
                 )
-        return chaos_call(fn, *args, step_id=name, step_name=name, faults=faults, **kwargs)
+        return chaos_call(
+            fn,
+            *args,
+            step_id=name,
+            step_name=name,
+            _chaos_edge_id=edge.id if edge is not None else None,
+            _chaos_from_node=caller_node,
+            _chaos_to_node=name,
+            faults=faults,
+            **kwargs,
+        )
 
     return wrapped

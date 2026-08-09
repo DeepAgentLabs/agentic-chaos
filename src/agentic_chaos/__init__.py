@@ -1,4 +1,5 @@
 from agentic_chaos.agents import (
+    HandoffCorruptionFault,
     InfiniteLoopFault,
     MemoryCorruptionFault,
     ToolCallFailureFault,
@@ -13,12 +14,17 @@ from agentic_chaos.chaos import (
     chaos_call,
     chaos_session,
 )
+from agentic_chaos.judges import DeepEvalJudge, HeuristicJudge, PydanticEvalsJudge, fidelity_session
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 __all__ = [
+    "DeepEvalJudge",
+    "HandoffCorruptionFault",
+    "HeuristicJudge",
     "InfiniteLoopFault",
     "MemoryCorruptionFault",
+    "PydanticEvalsJudge",
     "RateLimitStormFault",
     "SilentDegradationFault",
     "TokenTimeoutFault",
@@ -27,6 +33,7 @@ __all__ = [
     "__version__",
     "chaos_call",
     "chaos_session",
+    "fidelity_session",
     "wrap_node",
     "wrap_tool",
 ]

@@ -22,9 +22,10 @@ tools that happen to compose.
 
 ## Status
 
-`agentic-chaos` is early-stage software. The **LLM Chaos Toolkit** (v0.1) and
-**Agent Failure Injector** (v0.2) are shipped. Planned next: a **Prompt/Model
-Drift Detector** (v0.3). See [ROADMAP.md](ROADMAP.md) for the full plan.
+`agentic-chaos` is early-stage software. The **LLM Chaos Toolkit** (v0.1),
+**Agent Failure Injector** (v0.2), and **Fidelity Judges & Handoff Chaos**
+(`v0.3.0`) are available. A **Prompt/Model Drift Detector** remains planned
+for v0.4. See [ROADMAP.md](ROADMAP.md) for the full plan.
 
 ### What's Next
 
@@ -32,10 +33,9 @@ Drift Detector** (v0.3). See [ROADMAP.md](ROADMAP.md) for the full plan.
   hypothesis, injection point provenance, observed behavior, and verdict
 - **Synthetic test scenarios** — prebuilt known-bad agent behaviors for
   consistent resilience validation
-- **Fidelity Judges** (v0.3) — LLM-as-judge scoring to determine if corrupted
-  output is actually worse
-- **Handoff Chaos** (v0.3) — corrupt the wire between agents, not just the
-  nodes
+- **Memory decay** — progressive corruption for long-running shared state
+- **Prompt/model drift detection** (v0.4) — snapshot, compare, and detect
+  silent changes
 
 ## Installation
 
@@ -150,11 +150,14 @@ agentic-chaos chaos run my_app.py --inject silent_degradation --save chaos_run.j
 # Run a script with agent-level faults.
 agentic-chaos agent run my_agent.py --inject tool_failure,memory_corruption --save report.json
 
-# List all available fault types (v0.1 + v0.2).
+# Run a script with edge-scoped handoff chaos.
+agentic-chaos agent run my_agent.py --inject handoff_corruption --save report.json
+
+# List all available fault types (v0.1 + v0.3).
 agentic-chaos chaos list-faults
 ```
 
-`agentic-chaos drift ...` is a placeholder for the v0.3 module — running it
+`agentic-chaos drift ...` is a placeholder for the v0.4 module — running it
 today prints a pointer to [ROADMAP.md](ROADMAP.md).
 
 ## Agent Failure Injector (v0.2)
@@ -164,8 +167,29 @@ Three agent-level fault types for testing multi-agent resilience:
 | Fault | `--inject` name | What it does |
 | --- | --- | --- |
 | Tool-call failure | `tool_failure` | Forces a tool call to error (`"error"`), timeout (`"timeout"`), or return null (`"empty"`). Use `tool_name="search"` to target a specific tool; `None` targets all. |
-| Memory corruption | `memory_corruption` | Corrupts shared agent state: `"truncate"` cuts to half, `"inject"` inserts garbage, `"garble"` replaces text with random letters. |
+| Memory corruption | `memory_corruption` | Corrupts shared agent state: `"truncate"` cuts to half, `"inject"` inserts garbage, `"garble"` replaces text with random letters, and `"decay"` progressively worsens state across turns. |
 | Infinite loop | `infinite_loop` | Replaces the agent's return value with a "continue" signal for `force_turns` calls, then passes through. Tests whether your agent has turn-limit safeguards. |
+| Handoff corruption | `handoff_corruption` | Targets a topology edge instead of a node: `"corrupt"` garbles the payload in transit, `"drop"` prevents delivery, and `"delay"` arrives late. |
+
+## Fidelity Judges (v0.3.0)
+
+Fidelity judges answer the question the raw fault event cannot: did the
+corrupted output actually get worse?
+
+```python
+from agentic_chaos import HeuristicJudge, SilentDegradationFault, chaos_call, chaos_session, fidelity_session
+
+with fidelity_session(HeuristicJudge()):
+    with chaos_session([SilentDegradationFault()]) as session:
+        answer = chaos_call(agent.answer, "What changed?", faults=["silent_degradation"])
+
+print(session.events[0].fidelity_score)  # 0.0 - 1.0
+```
+
+The zero-dependency `HeuristicJudge` ships in-core. `DeepEvalJudge` and
+`PydanticEvalsJudge` are lightweight adapters around already-constructed
+external evaluator objects, so the base package still has no hard dependency
+on any eval framework.
 
 ### wrap_tool() / wrap_node() + TopologyTracker
 
@@ -197,6 +221,7 @@ print(tracker.topology.as_json())  # nodes + edges
 | [`examples/chaos_customer_support_demo.py`](examples/chaos_customer_support_demo.py) | nothing but `agentic_chaos` | All three v0.1 faults' default behavior in one flow: a rate-limit storm the app retries through and recovers from, a token timeout it doesn't handle (fails outright), and a silent degradation (normal-looking call, corrupted output). |
 | [`examples/chaos_advanced_faults_demo.py`](examples/chaos_advanced_faults_demo.py) | nothing but `agentic_chaos` | `TokenTimeoutFault(mode="delay")` and a custom `SilentDegradationFault(degrade_fn=...)`. |
 | [`examples/chaos_agent_failure_demo.py`](examples/chaos_agent_failure_demo.py) | nothing but `agentic_chaos` | All three v0.2 agent faults: tool-call failure, memory corruption, infinite loop. Plus `wrap_tool()` and `TopologyTracker`. |
+| [`examples/chaos_handoff_and_judges_demo.py`](examples/chaos_handoff_and_judges_demo.py) | nothing but `agentic_chaos` | Edge-scoped handoff corruption plus a manual baseline capture that lets `fidelity_session()` score the recorded event safely for a pure downstream function. |
 | [`examples/chaos_with_agenticlens_demo.py`](examples/chaos_with_agenticlens_demo.py) | `agentic-chaos[agenticlens]` | The optional integration: `attach_events()` + `step_kwargs()` merging chaos events onto a real AgenticLens `Workflow`. |
 
 Run any of them directly (`uv run python examples/...`), or the first two

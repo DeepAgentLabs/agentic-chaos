@@ -8,6 +8,7 @@ recording which agents/tools communicated, and a LangGraph adapter with
 """
 
 from agentic_chaos.agents.faults import (
+    HandoffCorruptionFault,
     InfiniteLoopError,
     InfiniteLoopFault,
     MemoryCorruptionFault,
@@ -18,6 +19,7 @@ from agentic_chaos.agents.langgraph import wrap_node, wrap_tool
 from agentic_chaos.agents.topology import TopologyTracker, get_active_tracker, reset_active_tracker
 
 __all__ = [
+    "HandoffCorruptionFault",
     "InfiniteLoopError",
     "InfiniteLoopFault",
     "MemoryCorruptionFault",
