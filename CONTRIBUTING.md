@@ -22,7 +22,13 @@ uv sync --extra dev
 
 1. Create a focused branch from `main`.
 2. Add or update tests with every behavior change.
-3. Run:
+3. Add or update user-facing examples when the feature, CLI, or expected fault
+   workflow changes.
+4. If a roadmap item is completed or its status changes, update `README.md`
+   and the roadmap document in the same pull request.
+5. If the work is release-ready, update `pyproject.toml`,
+   `src/agentic_chaos/__init__.py`, and `CHANGELOG.md` as part of the release.
+6. Run:
 
 ```bash
 ruff check .
@@ -31,15 +37,16 @@ mypy
 pytest
 ```
 
-4. Keep PRs focused — one concern per pull request.
-5. Write clear commit messages describing *why*, not just *what*.
+7. Keep PRs focused — one concern per pull request.
+8. Write clear commit messages describing *why*, not just *what*.
 
 ## Adding a fault type
 
 1. Create a class in `src/agentic_chaos/chaos/faults/`
 2. Register it in `FAULT_REGISTRY`
 3. Add tests in `tests/`
-4. Document in README if user-facing
+4. Add or update a usage example
+5. Document in README if user-facing
 
 ## Releases
 
