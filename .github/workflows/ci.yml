@@ -14,7 +14,7 @@ jobs:
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13"]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7
@@ -54,12 +54,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out agentic-chaos
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           path: agentic-chaos
 
       - name: Check out agenticlens (local dependency, not yet published with chaos_events support)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: DeepAgentLabs/agenticlens
           path: agenticlens
@@ -90,7 +90,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [test, test-agenticlens-integration]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install uv
         uses: astral-sh/setup-uv@v7
         with:
