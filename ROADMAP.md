@@ -7,11 +7,52 @@
 - **v0.3** ✅ Complete — Fidelity Judges & Handoff Chaos (`v0.3.0`)
 - **v0.4** 🚧 Planned — Prompt/Model Drift Detector
 - **v0.5** 🚧 Planned — Streaming Faults, Provider Patching & Chaos Profiles
+- **v0.5.x** 🚧 Planned — Safety Rails (Circuit Breaker & Dry-Run)
 - **v0.6** 🚧 Planned — Pytest Plugin & Assertions
 - **v0.7** 🚧 Planned — Fault Cascades, Adaptive Intensity & Response Poisoning
 - **v0.8** 🚧 Planned — Chaos Workflows, Declarative Experiments & Explosion Radius
 - **v0.9** 🚧 Planned — Resilience Probes & Resilience Score
 - **v1.0** 🚧 Planned — ChaosHub (Shared Experiment Registry)
+
+## Cross-Project Dependencies
+
+`agentic-chaos` is standalone at runtime, but several roadmap items should be
+validated against sibling projects before they are considered complete.
+
+- `agenticlens`
+  Validates that chaos artifacts, resilience evidence, and extension fields
+  remain analyzable by the observability/evaluation layer.
+- `ai-operations-spec`
+  Provides the canonical artifact and semantic model that chaos reports should
+  align with when they claim interoperability.
+- `deep-agentic-core-mcp`
+  Exposes chaos capabilities to hosts and is a useful end-to-end check for
+  user-facing experiment orchestration.
+
+For roadmap planning, treat ecosystem links as:
+
+- `Depends on`: a sibling capability that must exist first.
+- `Coordinate with`: a sibling repo that should be updated in the same window.
+- `Validate in`: sibling integrations, fixtures, or CLIs that should be
+  checked before closing the item.
+
+## Definition of Done
+
+A roadmap item is done only when all applicable work is complete:
+
+- implementation is merged and usable through the intended Python API, CLI, or
+  exported artifact
+- tests or regression fixtures cover the behavior
+- usage examples and user-facing docs are added or updated
+- `README.md` and this roadmap are updated when the feature changes user
+  expectations or milestone status
+- AIOS alignment or extension behavior is documented for ecosystem-facing
+  output
+- sibling-project dependency and integration checks are recorded where
+  relevant
+- release metadata (`pyproject.toml`, `src/agentic_chaos/__init__.py`,
+  `CHANGELOG.md`) is updated when the work is part of a release-ready change
+  set
 
 ---
 
@@ -70,6 +111,7 @@ The package contains the following modules (shipped and planned):
 | `agentic_chaos.judges` | ✅ Shipped (v0.3) | Fidelity Judges — LLM-as-judge scoring to determine if corrupted output is actually worse |
 | `agentic_chaos.drift` | 🚧 Planned (v0.4) | Prompt/model drift detection — snapshot, compare, detect silent changes |
 | `agentic_chaos.integrations` | ✅ Shipped (v0.1) | Optional AgenticLens adapter (`attach_events()`, `step_kwargs()`) |
+| `agentic_chaos.safety` | 🚧 Planned (v0.5.x) | Circuit breaker (max-cost / max-failure-rate auto-abort) + `--dry-run` mode |
 
 ## Package Layout (current)
 
@@ -218,7 +260,9 @@ stretch goals.
 - [x] `agentic-chaos.agents` module (LangGraph adapter)
 - [x] `agent_topology` schema extension
 - [ ] AgenticLens `AgentResilienceRecommender` adapter + resilience score *(deferred to v0.9)*
-- [x] README section + 1 example (LangGraph multi-agent demo) + demo GIF
+- [x] README section + 1 example (`examples/chaos_agent_failure_demo.py`, plain Python
+      callables — no LangGraph dependency required to exercise the faults)
+- [ ] demo GIF
 
 ### v0.2.x — Structured Experiment Reports & Synthetic Scenarios
 
@@ -325,7 +369,8 @@ failure where state degrades gradually rather than breaking all at once.
 - [x] `HandoffCorruptionFault` (`agentic_chaos.agents`) — corrupt/drop/delay modes, edge-scoped
 - [x] `MemoryCorruptionFault(mode="decay", rate=...)`
 - [ ] AgenticLens `ChaosImpactRecommender` update to weight by `fidelity_score`
-- [ ] README section + example + demo GIF
+- [x] README section + example (`examples/chaos_handoff_and_judges_demo.py`)
+- [ ] demo GIF
 
 ### v0.4 — Prompt/Model Drift Detector (`agentic-chaos.drift`)
 Different shape (monitoring/snapshotting vs. one-off fault injection), but
@@ -344,6 +389,14 @@ lives in the same package and reuses the same export layer.
 - [ ] `agentic-chaos.drift` module + CLI subcommand
 - [ ] Local snapshot/baseline storage (simple JSON to start)
 - [ ] AgenticLens `DriftRecommender` adapter
+- [ ] Cooldown-protected scheduled drift checks — recurring drift runs
+  (cron/CI-triggered) that only emit a report when the comparison actually
+  changed vs. baseline, rate-limited per baseline/target so a persistent
+  drift doesn't re-fire on every run. No new hard dependency (agentic-chaos
+  stays zero-dependency) — this is a documented cron/systemd-timer recipe
+  plus the cooldown logic, not an embedded scheduler. Pattern modeled on
+  `devops-open-agent`'s proactive Kubernetes schedules (cron trigger +
+  per-user alert cooldown, so N runs/day doesn't mean N alerts).
 - [ ] README section + example (scheduled drift check in CI) + demo GIF
 
 ### v0.5 — Streaming Faults, Provider Patching & Chaos Profiles
@@ -391,6 +444,52 @@ agentic-chaos chaos run my_app.py --profile production-like
 - [ ] `chaos.toml` profile loader + `--profile` CLI flag
 - [ ] `probability` parameter on all fault classes
 - [ ] `AuthErrorFault` + `ContextLengthFault`
+- [ ] README section + example + demo GIF
+
+### v0.5.x — Safety Rails (Circuit Breaker & Dry-Run)
+
+Inspired by a gap Chaos Mesh's own roadmap admits is still unbuilt: "a new
+component to force recovery chaos experiments, and avoid experiments going
+out of control." For Chaos Mesh that's a stuck pod. For `agentic-chaos` the
+blast radius is real API spend and real production traffic — `probability`
+(v0.5), provider patching (v0.5), and `cascade()` (v0.7) all make it easier
+to point a stress profile at a live system and have it run away before a
+human notices. This slots in right after profiles/patching ship, ahead of
+the heavier v0.7/v0.8 features that make runaway chaos more likely, and maps
+to the `recovery` category already named in [Capability
+Direction](#capability-direction).
+
+**Circuit breaker (automatic abort):**
+```python
+from agentic_chaos.safety import CircuitBreaker
+
+with chaos_session([...], breaker=CircuitBreaker(max_cost_usd=5.0, max_failure_rate=0.5)):
+    ...
+# -> aborts the session and raises ChaosAbortedError once either threshold is crossed,
+#    instead of letting an unattended run keep injecting faults
+```
+Thresholds check cumulative cost (from token/pricing data, mirroring
+AgenticLens's cost intelligence) and rolling failure rate across the active
+session. An aborted session still emits a `ChaosReport` — with `aborted=True`
+and the triggering threshold recorded — so the run stays diagnosable rather
+than just disappearing.
+
+**Dry-run mode:**
+```bash
+agentic-chaos chaos run my_app.py --inject rate_limit_storm,cascade --dry-run
+# -> reports which faults would fire, at which call sites, under this config —
+#    no fault actually injected, no target function call skipped or altered
+```
+Lets a profile or YAML experiment (v0.5/v0.8) be reviewed before it runs
+unattended or against anything resembling production, the same way `kubectl
+apply --dry-run` or an admission webhook lets you validate a Chaos Mesh
+CRD before it takes effect.
+
+**Deliverables:**
+- [ ] `agentic_chaos.safety` module — `CircuitBreaker`, `ChaosAbortedError`
+- [ ] `max_cost_usd` / `max_failure_rate` thresholds on `chaos_session()`
+- [ ] `aborted` + triggering-threshold fields on `ChaosReport`
+- [ ] `--dry-run` flag on `chaos run` / `agent run` CLI commands
 - [ ] README section + example + demo GIF
 
 ### v0.6 — Pytest Plugin & Assertions
@@ -511,6 +610,15 @@ report = workflow.run(my_app)
 Workflows compose multiple fault types in sequence with status verification
 between stages — models how real outages escalate.
 
+Beyond flat serial steps, the engine should support the node types Chaos
+Mesh's own Workflow CRD found necessary for real escalation scenarios:
+`Parallel([...])` branches (e.g. run tool-failure and memory-corruption
+concurrently before the next gate, instead of only one at a time), a
+`Suspend()` node for a manual human-in-the-loop gate between stages, and
+reusable `Template` step definitions so a common escalation pattern isn't
+copy-pasted across every workflow file. Worth designing in from the start
+rather than retrofitting once `ChaosWorkflow` ships as serial-only.
+
 **CLI:**
 ```bash
 agentic-chaos chaos workflow run chaos_workflow.yaml --save report.json
@@ -540,6 +648,19 @@ schedule:
 ```
 YAML experiments can be version-controlled alongside application code and
 run via CLI or CI.
+
+**Experiment validation (lint):**
+
+```bash
+agentic-chaos experiment validate experiments/rate-limit-recovery.yaml
+# -> checks schema shape, unknown fault names, out-of-range params, and an
+#    importable `target` — exit code 0/1, safe to run as a pre-commit hook
+#    or a CI step before a scheduled experiment ever executes
+```
+Chaos Mesh validates CRDs via admission webhooks before anything is applied;
+this is the equivalent check for declarative experiments — catches a typo'd
+fault name or a bad `target` path before a nightly cron run (v0.8) wastes a
+cycle discovering it at 2am.
 
 **Explosion radius control (scoped targeting):**
 
@@ -576,8 +697,10 @@ explores across the whole graph.
 
 **Deliverables:**
 - [ ] `agentic_chaos.workflows` module (`ChaosWorkflow`, `Step`, `HealthCheck`)
+- [ ] `Parallel`, `Suspend`, and reusable `Template` step types
 - [ ] `agentic-chaos chaos workflow run` CLI subcommand
 - [ ] YAML experiment loader + schema validation
+- [ ] `agentic-chaos experiment validate` CLI command (lint, CI-friendly exit code)
 - [ ] `Scope` class for fault targeting (steps, providers, excludes)
 - [ ] `fuzz_topology()` graph-weighted fuzzer
 - [ ] Cron-based scheduling support for continuous chaos testing
@@ -641,11 +764,20 @@ assert report.resilience_score >= 70  # CI gate
 Score is computed from: fault recovery rate, probe pass rate, latency impact,
 retry efficiency, and cost overhead.
 
+**Run-history retention:**
+
+Trend tracking above only works if run history doesn't grow unbounded.
+Mirrors Chaos Mesh dashboard's `ttlcontroller` for aging out old experiment
+records: a configurable retention policy (`max_runs` or `max_age_days`) on
+the local history store used for trend comparisons, so `chaos_run.json`
+history doesn't accumulate indefinitely on every CI box that runs it nightly.
+
 **Deliverables:**
 - [ ] `agentic_chaos.probes` module (`Probe`, `HttpProbe`, `ResponseQualityProbe`, `LatencyProbe`)
 - [ ] Pre/during/post probe execution lifecycle
 - [ ] Resilience score computation engine
 - [ ] Score trend tracking (compare against previous runs)
+- [ ] configurable run-history retention (`max_runs` / `max_age_days`) for the local trend store
 - [ ] Rich terminal report with per-fault breakdown + bar chart
 - [ ] `--min-score` CLI flag for CI gating
 - [ ] README section + CI example + demo GIF
@@ -688,10 +820,21 @@ agentic-chaos hub push my_experiment.yaml
 - **Remote hub**: GitHub-hosted registry for community contributions (opt-in,
   requires network)
 - Experiments are standard YAML files (same format as v0.8 declarative experiments)
+- **Plugin interface**: a `BaseFault` ABC discovered via Python entry points
+  (`pip install agentic-chaos-plugin-x` registers under an
+  `agentic_chaos.plugins` entry-point group and shows up automatically) —
+  code-level fault packages, distinct from the YAML recipes above. Chaos
+  Mesh's own roadmap admits it has no plugin SDK; every fault type there is
+  in-tree and hand-maintained by the core team. `agentic-chaos` is already
+  closer to this (custom `degrade_fn`, judge adapters) — formalizing it here
+  is what turns ChaosHub into a real third-party ecosystem instead of a
+  recipe list.
 
 **Deliverables:**
 - [ ] `agentic_chaos.hub` module (list, search, pull, push)
 - [ ] `agentic-chaos hub` CLI subcommand group
+- [ ] `BaseFault` plugin interface + `agentic_chaos.plugins` entry-point discovery
+- [ ] `agentic-chaos hub list` distinguishes bundled/remote YAML recipes from installed plugin packages
 - [ ] 6+ bundled experiment recipes (RAG, ReAct, multi-agent, support)
 - [ ] GitHub-hosted remote registry with contribution workflow
 - [ ] `--experiment` flag on `chaos run` to use hub recipes directly
