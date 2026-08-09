@@ -59,6 +59,16 @@
 4. Add test in `tests/`
 5. Update README with usage example
 
+## Feature Completion Expectations
+
+- Every behavior change must include tests.
+- User-facing features must include or update examples in `README.md`, CLI
+  usage text, or test fixtures that demonstrate expected usage.
+- When a roadmap item or milestone meaningfully changes status, update
+  `README.md` and the roadmap document in the same change.
+- When work is packaged as a release-ready change, also update
+  `pyproject.toml`, `src/agentic_chaos/__init__.py`, and `CHANGELOG.md`.
+
 ## AgenticLens Integration
 
 The integration is a thin adapter in `integrations/agenticlens.py`. It converts

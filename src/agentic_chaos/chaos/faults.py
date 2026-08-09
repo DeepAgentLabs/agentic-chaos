@@ -1,3 +1,4 @@
+import copy
 import random
 import re
 import time
@@ -241,6 +242,33 @@ def mutate_text_attrs(result: Any, mutator: Callable[[str], str]) -> Any:
     return result
 
 
+def _baseline_fallback(value: Any) -> Any:
+    """Return an immutable, judgeable fallback when `deepcopy` is unavailable."""
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+    if isinstance(value, dict):
+        for key in ("content", "text"):
+            dict_value = value.get(key)
+            if isinstance(dict_value, str):
+                return dict_value
+    for attr in ("content", "text"):
+        attr_value = getattr(value, attr, None)
+        if isinstance(attr_value, str):
+            return attr_value
+    try:
+        return repr(value)
+    except Exception:
+        return f"<unreprable {type(value).__name__}>"
+
+
+def snapshot_baseline(value: Any) -> Any:
+    """Capture a best-effort baseline before in-place corruption occurs."""
+    try:
+        return copy.deepcopy(value)
+    except Exception:
+        return _baseline_fallback(value)
+
+
 def _default_degrade(result: Any, rng: random.Random) -> Any:
     """Best-effort content corruption across common LLM response shapes."""
     return mutate_text_attrs(result, lambda text: garble_text(text, rng))
@@ -283,6 +311,7 @@ class SilentDegradationFault(BaseFault):
     ) -> FaultOutcome:
         call_kwargs = call_kwargs or {}
         result = call(*call_args, **call_kwargs)
+        baseline = snapshot_baseline(result)
         degraded = self.degrade_fn(result)
         event = ChaosEvent(
             fault_type=self.name,
@@ -291,7 +320,7 @@ class SilentDegradationFault(BaseFault):
             outcome="degraded",
             message="output silently degraded (same shape, corrupted content)",
         )
-        return FaultOutcome(result=degraded, event=event, baseline=result)
+        return FaultOutcome(result=degraded, event=event, baseline=baseline)
 
 
 FAULT_REGISTRY: dict[str, type[BaseFault]] = {

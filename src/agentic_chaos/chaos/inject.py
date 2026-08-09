@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from inspect import signature
 from typing import Any, TypeVar
 
 from agentic_chaos.chaos.context import get_active_session
@@ -7,14 +8,40 @@ from agentic_chaos.judges import score_outcome
 T = TypeVar("T")
 
 
+def _trigger_kwargs(
+    fault: Any,
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
+    edge_id: str | None,
+    from_node: str | None,
+    to_node: str | None,
+) -> dict[str, Any]:
+    """Build kwargs for fault.trigger(), omitting params the implementation doesn't accept."""
+    all_kwargs: dict[str, Any] = {
+        "call_args": args,
+        "call_kwargs": kwargs,
+        "edge_id": edge_id,
+        "from_node": from_node,
+        "to_node": to_node,
+    }
+    try:
+        params = signature(fault.trigger).parameters
+    except (ValueError, TypeError):
+        return all_kwargs
+    # If the implementation uses **kwargs it accepts everything
+    if any(p.kind == p.VAR_KEYWORD for p in params.values()):
+        return all_kwargs
+    return {k: v for k, v in all_kwargs.items() if k in params}
+
+
 def chaos_call(
     fn: Callable[..., T],
     *args: Any,
     step_id: str | None = None,
     step_name: str | None = None,
-    edge_id: str | None = None,
-    from_node: str | None = None,
-    to_node: str | None = None,
+    _chaos_edge_id: str | None = None,
+    _chaos_from_node: str | None = None,
+    _chaos_to_node: str | None = None,
     faults: list[str] | None = None,
     **kwargs: Any,
 ) -> T:
@@ -47,15 +74,23 @@ def chaos_call(
             "Pass faults=[...] to chaos_call() to pick which one applies at this call site."
         )
 
+    def invoke(*call_args: Any, **call_kwargs: Any) -> T:
+        if not call_args and not call_kwargs:
+            return fn(*args, **kwargs)
+        return fn(*call_args, **call_kwargs)
+
     outcome = candidates[0].trigger(
-        lambda *call_args, **call_kwargs: fn(*call_args, **call_kwargs),
+        invoke,
         step_id=step_id,
         step_name=step_name,
-        call_args=args,
-        call_kwargs=kwargs,
-        edge_id=edge_id,
-        from_node=from_node,
-        to_node=to_node,
+        **_trigger_kwargs(
+            candidates[0],
+            args,
+            kwargs,
+            _chaos_edge_id,
+            _chaos_from_node,
+            _chaos_to_node,
+        ),
     )
     if outcome.event is not None:
         score_outcome(

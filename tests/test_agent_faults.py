@@ -176,6 +176,21 @@ class TestMemoryCorruptionFault:
 
         assert outcome.result.content != "genuine content"
 
+    def test_garble_uses_fallback_baseline_when_state_cannot_be_deepcopied(self) -> None:
+        class State:
+            def __init__(self) -> None:
+                self.content = "genuine content"
+
+            def __deepcopy__(self, memo: dict[int, object]) -> "State":
+                raise TypeError("cannot deepcopy state")
+
+        fault = MemoryCorruptionFault(mode="garble", seed=2)
+        outcome = fault.trigger(lambda: State(), step_id=None, step_name=None)
+
+        assert outcome.baseline == "genuine content"
+        assert outcome.result.content != "genuine content"
+        assert outcome.event is not None
+
     def test_decay_mode_progressively_worsens_state(self) -> None:
         fault = MemoryCorruptionFault(mode="decay", seed=1, rate=0.5)
 

@@ -107,9 +107,9 @@ def wrap_node(
             *args,
             step_id=name,
             step_name=name,
-            edge_id=edge.id if edge is not None else None,
-            from_node=caller_node,
-            to_node=name,
+            _chaos_edge_id=edge.id if edge is not None else None,
+            _chaos_from_node=caller_node,
+            _chaos_to_node=name,
             faults=faults,
             **kwargs,
         )

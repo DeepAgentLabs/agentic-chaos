@@ -151,6 +151,22 @@ def test_silent_degradation_custom_degrade_fn() -> None:
     assert outcome.result == "REPLACED"
 
 
+def test_silent_degradation_falls_back_when_result_cannot_be_deepcopied() -> None:
+    class Response:
+        def __init__(self) -> None:
+            self.content = "genuine content"
+
+        def __deepcopy__(self, memo: dict[int, object]) -> "Response":
+            raise TypeError("cannot deepcopy response")
+
+    fault = SilentDegradationFault(seed=4)
+    outcome = fault.trigger(lambda: Response(), step_id=None, step_name=None)
+
+    assert outcome.baseline == "genuine content"
+    assert outcome.result.content != "genuine content"
+    assert outcome.event is not None
+
+
 def test_fault_registry_has_all_three_v01_faults() -> None:
     assert {"token_timeout", "rate_limit_storm", "silent_degradation"}.issubset(FAULT_REGISTRY)
 
