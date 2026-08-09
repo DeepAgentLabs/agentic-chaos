@@ -1,6 +1,11 @@
 import pytest
 
-from agentic_chaos.chaos.faults import BaseFault, FaultOutcome, RateLimitStormError, TokenTimeoutFault
+from agentic_chaos.chaos.faults import (
+    BaseFault,
+    FaultOutcome,
+    RateLimitStormError,
+    TokenTimeoutFault,
+)
 from agentic_chaos.chaos.inject import chaos_call
 from agentic_chaos.chaos.session import chaos_session
 
