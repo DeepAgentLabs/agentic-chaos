@@ -1,6 +1,6 @@
 import pytest
 
-from agentic_chaos.chaos.faults import FaultOutcome, RateLimitStormError, TokenTimeoutFault
+from agentic_chaos.chaos.faults import BaseFault, FaultOutcome, RateLimitStormError, TokenTimeoutFault
 from agentic_chaos.chaos.inject import chaos_call
 from agentic_chaos.chaos.session import chaos_session
 
@@ -106,7 +106,7 @@ def test_session_events_as_json_serializes_recorded_events() -> None:
 
 
 def test_chaos_call_preserves_original_args_for_legacy_faults() -> None:
-    class LegacyPassThroughFault:
+    class LegacyPassThroughFault(BaseFault):
         name = "legacy"
 
         def trigger(
