@@ -298,6 +298,26 @@ uv sync --frozen</pre>
                     <li>Stateful: First N calls forced to continue</li>
                     <li>Use: Test turn-limit safeguards</li>
                 </ul>
+
+                <h3>Fidelity &amp; Handoff Faults (v0.3)</h3>
+
+                <strong>HandoffCorruptionFault</strong> – Corrupt/drop/delay an edge, not a node
+                <ul>
+                    <li>Modes: corrupt (garble in transit), drop (never arrives), delay (late arrival)</li>
+                    <li>Use: Test resilience of the payload handed from one agent to another</li>
+                </ul>
+
+                <strong>MemoryCorruptionFault(mode="decay")</strong> – Progressive corruption across turns
+                <ul>
+                    <li>Param: <code>rate</code> controls how quickly shared state degrades</li>
+                    <li>Use: Model long-running-session state decay instead of a single corruption event</li>
+                </ul>
+
+                <strong>Fidelity Judges</strong> – <code>fidelity_session()</code> with <code>HeuristicJudge</code>, <code>DeepEvalJudge</code>, or <code>PydanticEvalsJudge</code>
+                <ul>
+                    <li>Attaches a continuous <code>fidelity_score</code> (0.0–1.0) to a <code>ChaosEvent</code></li>
+                    <li>Use: Determine whether corrupted output is actually worse, not just different</li>
+                </ul>
             </section>
 
             <!-- Examples -->
@@ -353,7 +373,7 @@ attach_events(session, workflow)
                 <ul>
                     <li><strong><a href="https://github.com/DeepAgentLabs/agentic-chaos" target="_blank">GitHub Repository</a></strong> – Source code, issues, discussions</li>
                     <li><strong><a href="https://github.com/DeepAgentLabs/agentic-chaos/blob/main/README.md" target="_blank">README</a></strong> – Project overview</li>
-                    <li><strong><a href="https://github.com/DeepAgentLabs/agentic-chaos/blob/main/ROADMAP.md" target="_blank">Roadmap</a></strong> – v0.3 through v1.0 plans</li>
+                    <li><strong><a href="https://github.com/DeepAgentLabs/agentic-chaos/blob/main/ROADMAP.md" target="_blank">Roadmap</a></strong> – v0.4 through v1.0 plans (v0.1–v0.3 shipped)</li>
                     <li><strong><a href="../explorer/">Fault Explorer</a></strong> – Interactive fault playground</li>
                     <li><strong><a href="../blog/">Blog & Case Studies</a></strong> – Real-world examples</li>
                 </ul>

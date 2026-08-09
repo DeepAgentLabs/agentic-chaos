@@ -1,3 +1,4 @@
+import copy
 import random
 import re
 import time
@@ -46,6 +47,7 @@ class FaultOutcome:
     result: Any = None
     event: ChaosEvent | None = None
     raised: BaseException | None = None
+    baseline: Any = None
 
 
 class BaseFault(ABC):
@@ -61,10 +63,15 @@ class BaseFault(ABC):
     @abstractmethod
     def trigger(
         self,
-        call: Callable[[], Any],
+        call: Callable[..., Any],
         *,
         step_id: str | None,
         step_name: str | None,
+        call_args: tuple[Any, ...] = (),
+        call_kwargs: dict[str, Any] | None = None,
+        edge_id: str | None = None,
+        from_node: str | None = None,
+        to_node: str | None = None,
     ) -> FaultOutcome:
         """Decide how `call()` should be affected by this fault this time.
 
@@ -94,15 +101,21 @@ class TokenTimeoutFault(BaseFault):
 
     def trigger(
         self,
-        call: Callable[[], Any],
+        call: Callable[..., Any],
         *,
         step_id: str | None,
         step_name: str | None,
+        call_args: tuple[Any, ...] = (),
+        call_kwargs: dict[str, Any] | None = None,
+        edge_id: str | None = None,
+        from_node: str | None = None,
+        to_node: str | None = None,
     ) -> FaultOutcome:
+        call_kwargs = call_kwargs or {}
         time.sleep(self.hang_seconds)
 
         if self.mode == "delay":
-            result = call()
+            result = call(*call_args, **call_kwargs)
             event = ChaosEvent(
                 fault_type=self.name,
                 step_id=step_id,
@@ -142,13 +155,19 @@ class RateLimitStormFault(BaseFault):
 
     def trigger(
         self,
-        call: Callable[[], Any],
+        call: Callable[..., Any],
         *,
         step_id: str | None,
         step_name: str | None,
+        call_args: tuple[Any, ...] = (),
+        call_kwargs: dict[str, Any] | None = None,
+        edge_id: str | None = None,
+        from_node: str | None = None,
+        to_node: str | None = None,
     ) -> FaultOutcome:
+        call_kwargs = call_kwargs or {}
         if self._fired >= self.burst_count:
-            return FaultOutcome(result=call())
+            return FaultOutcome(result=call(*call_args, **call_kwargs))
 
         self._fired += 1
         message = f"429 Too Many Requests (attempt {self._fired}/{self.burst_count})"
@@ -223,6 +242,33 @@ def mutate_text_attrs(result: Any, mutator: Callable[[str], str]) -> Any:
     return result
 
 
+def _baseline_fallback(value: Any) -> Any:
+    """Return an immutable, judgeable fallback when `deepcopy` is unavailable."""
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+    if isinstance(value, dict):
+        for key in ("content", "text"):
+            dict_value = value.get(key)
+            if isinstance(dict_value, str):
+                return dict_value
+    for attr in ("content", "text"):
+        attr_value = getattr(value, attr, None)
+        if isinstance(attr_value, str):
+            return attr_value
+    try:
+        return repr(value)
+    except Exception:
+        return f"<unreprable {type(value).__name__}>"
+
+
+def snapshot_baseline(value: Any) -> Any:
+    """Capture a best-effort baseline before in-place corruption occurs."""
+    try:
+        return copy.deepcopy(value)
+    except Exception:
+        return _baseline_fallback(value)
+
+
 def _default_degrade(result: Any, rng: random.Random) -> Any:
     """Best-effort content corruption across common LLM response shapes."""
     return mutate_text_attrs(result, lambda text: garble_text(text, rng))
@@ -253,12 +299,19 @@ class SilentDegradationFault(BaseFault):
 
     def trigger(
         self,
-        call: Callable[[], Any],
+        call: Callable[..., Any],
         *,
         step_id: str | None,
         step_name: str | None,
+        call_args: tuple[Any, ...] = (),
+        call_kwargs: dict[str, Any] | None = None,
+        edge_id: str | None = None,
+        from_node: str | None = None,
+        to_node: str | None = None,
     ) -> FaultOutcome:
-        result = call()
+        call_kwargs = call_kwargs or {}
+        result = call(*call_args, **call_kwargs)
+        baseline = snapshot_baseline(result)
         degraded = self.degrade_fn(result)
         event = ChaosEvent(
             fault_type=self.name,
@@ -267,7 +320,7 @@ class SilentDegradationFault(BaseFault):
             outcome="degraded",
             message="output silently degraded (same shape, corrupted content)",
         )
-        return FaultOutcome(result=degraded, event=event)
+        return FaultOutcome(result=degraded, event=event, baseline=baseline)
 
 
 FAULT_REGISTRY: dict[str, type[BaseFault]] = {

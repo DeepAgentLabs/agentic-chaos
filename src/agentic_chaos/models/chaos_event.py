@@ -24,4 +24,8 @@ class ChaosEvent(BaseModel):
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     outcome: Outcome
     message: str
+    fidelity_score: float | None = None
+    edge_id: str | None = None
+    from_node: str | None = None
+    to_node: str | None = None
     detail: dict[str, Any] = Field(default_factory=dict)
