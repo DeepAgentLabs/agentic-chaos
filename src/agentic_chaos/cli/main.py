@@ -27,7 +27,7 @@ agent_app = typer.Typer(
     no_args_is_help=True,
 )
 drift_app = typer.Typer(
-    help="Prompt/model drift detection. Planned for v0.3.",
+    help="Prompt/model drift detection. Planned for v0.4.",
     no_args_is_help=True,
 )
 app.add_typer(chaos_app, name="chaos")
@@ -219,7 +219,7 @@ def agent_run(
 def drift_snapshot() -> None:
     """Prompt/model drift snapshotting. Not implemented yet."""
     console.print(
-        "[yellow]agentic-chaos drift snapshot[/yellow] is planned for v0.3. See ROADMAP.md."
+        "[yellow]agentic-chaos drift snapshot[/yellow] is planned for v0.4. See ROADMAP.md."
     )
     raise typer.Exit(code=1)
 
@@ -228,7 +228,7 @@ def drift_snapshot() -> None:
 def drift_compare() -> None:
     """Prompt/model drift comparison. Not implemented yet."""
     console.print(
-        "[yellow]agentic-chaos drift compare[/yellow] is planned for v0.3. See ROADMAP.md."
+        "[yellow]agentic-chaos drift compare[/yellow] is planned for v0.4. See ROADMAP.md."
     )
     raise typer.Exit(code=1)
 
