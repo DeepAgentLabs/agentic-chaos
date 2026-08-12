@@ -1,5 +1,59 @@
 ## agentic-chaos Development Reference
 
+## Ecosystem Context
+
+### Role in DeepAgentLabs
+
+`agentic-chaos` is the resilience and failure-validation package in the
+DeepAgentLabs ecosystem. It deliberately injects faults into LLM and agent
+workflows so teams can measure degraded behavior, recovery quality, and failure
+impact before those issues appear in production.
+
+### Owns
+
+- Fault models, injection primitives, chaos sessions, and experiment-oriented
+  resilience evidence
+- Chaos-specific artifacts that can be exported as AI Operations Specification
+  objects
+- Adapters that let external systems observe or consume chaos events without
+  taking ownership of the chaos logic itself
+
+### Does Not Own
+
+- The canonical schema or shared runtime contract — that belongs in
+  `ai-operations-spec`
+- General observability, profiling, or evaluation workflows — those belong in
+  `agenticlens`
+- Agent-governance or pre-action intervention logic — that belongs in
+  `agentic-sidecar`
+- A broad orchestration or control-plane surface — that belongs in
+  `deep-agentic-core-mcp`
+
+### Integrates With
+
+- `ai-operations-spec` for shared object shapes, evidence compatibility, and
+  export boundaries
+- `agenticlens` for analyzing chaos outcomes as part of operational evidence
+- `deep-agentic-core-mcp` when chaos capabilities need to be exposed through an
+  MCP-native interface
+- `agentic-sidecar` only at explicit coordination boundaries, such as evaluating
+  how an agent responds to induced failure
+
+### Current Roadmap Focus
+
+The next major step is structured experiment reports with provenance and
+synthetic resilience scenarios. Changes in this repo should move the package
+toward reproducible resilience evidence, not just ad hoc fault injection.
+
+### Before You Build Here
+
+- Put new shared concepts or cross-package object definitions in
+  `ai-operations-spec` first if they are meant to be ecosystem-wide
+- Reuse `agenticlens` for analysis and reporting patterns instead of rebuilding
+  a second observability layer here
+- Keep integrations thin: this package should generate and describe failure,
+  not become the dashboard, policy engine, or universal runtime abstraction
+
 ## Build and Run
 
 - Install: `make install` (runs `uv sync --extra dev`)
