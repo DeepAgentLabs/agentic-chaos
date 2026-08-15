@@ -24,8 +24,8 @@ impact before those issues appear in production.
   `ai-operations-spec`
 - General observability, profiling, or evaluation workflows — those belong in
   `agenticlens`
-- Agent-governance or pre-action intervention logic — that belongs in
-  `agentic-sidecar`
+- Agent supervision/governance or pre-action intervention logic — that belongs
+  in `agentic-sidecar`
 - A broad orchestration or control-plane surface — that belongs in
   `deep-agentic-core-mcp`
 
@@ -120,6 +120,9 @@ toward reproducible resilience evidence, not just ad hoc fault injection.
   usage text, or test fixtures that demonstrate expected usage.
 - When a roadmap item or milestone meaningfully changes status, update
   `README.md` and the roadmap document in the same change.
+- If that milestone or release changes the public ecosystem story, also update
+  `/home/pramodbn27/PyPi Projects/.github/profile/README.md` and, when
+  relevant, `/home/pramodbn27/PyPi Projects/.github/profile/ROADMAP.md`.
 - When work is packaged as a release-ready change, also update
   `pyproject.toml`, `src/agentic_chaos/__init__.py`, and `CHANGELOG.md`.
 
@@ -143,5 +146,6 @@ uv run pytest
 
 1. Bump version in `pyproject.toml`, `src/agentic_chaos/__init__.py`, and `CHANGELOG.md`
 2. Commit: `git commit -am "release: vX.Y.Z"`
-3. Tag: `git tag vX.Y.Z`
+3. Tag: create an annotated `vX.Y.Z` tag and use the latest `CHANGELOG.md`
+   release section as the tag description
 4. Push: `git push origin main --tags`

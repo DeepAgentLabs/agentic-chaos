@@ -11,7 +11,8 @@ Within the broader DeepAgentLabs architecture, Agentic Chaos is the resilience
 and failure-validation reference implementation for the **AI Operations
 Workflow Specification**. It injects, validates, tests, and proves resilience,
 while keeping its workflow artifacts compatible with the same shared
-operational model used by AgenticLens and the MCP layer.
+operational model used by AgenticLens, the MCP layer, and the future
+Control Tower control plane.
 
 If you also use AgenticLens, an optional integration lets you merge chaos
 events straight into an AgenticLens `Workflow`, so `agenticlens analyze`
