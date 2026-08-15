@@ -121,8 +121,8 @@ toward reproducible resilience evidence, not just ad hoc fault injection.
 - When a roadmap item or milestone meaningfully changes status, update
   `README.md` and the roadmap document in the same change.
 - If that milestone or release changes the public ecosystem story, also update
-  `/home/pramodbn27/PyPi Projects/.github/profile/README.md` and, when
-  relevant, `/home/pramodbn27/PyPi Projects/.github/profile/ROADMAP.md`.
+  the shared org-profile docs in the `.github` repository:
+  `profile/README.md` and, when relevant, `profile/ROADMAP.md`.
 - When work is packaged as a release-ready change, also update
   `pyproject.toml`, `src/agentic_chaos/__init__.py`, and `CHANGELOG.md`.
 
