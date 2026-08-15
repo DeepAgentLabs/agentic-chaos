@@ -28,6 +28,11 @@ validated against sibling projects before they are considered complete.
 - `deep-agentic-core-mcp`
   Exposes chaos capabilities to hosts and is a useful end-to-end check for
   user-facing experiment orchestration.
+- `agenticops-control-tower`
+  Coordinate with: once Control Tower ships real registry, inventory, and
+  operations surfaces, chaos status, experiment inventory, and resilience
+  posture should be representable there without moving chaos execution logic
+  out of this package.
 
 For roadmap planning, treat ecosystem links as:
 
