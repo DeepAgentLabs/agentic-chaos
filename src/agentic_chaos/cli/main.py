@@ -412,8 +412,7 @@ def drift_compare(
         save_alert_state(state_file, update_alert_state(report))
     else:
         console.print(
-            "\n[yellow]Suppressed unchanged drift report via cooldown "
-            f"state:[/yellow] {state_file}"
+            f"\n[yellow]Suppressed unchanged drift report via cooldown state:[/yellow] {state_file}"
         )
 
     if report.has_drift:

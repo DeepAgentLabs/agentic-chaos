@@ -27,9 +27,7 @@ def compare_snapshots(
                 kind="prompt",
                 changed=prompt_changed,
                 message=(
-                    "Prompt template changed."
-                    if prompt_changed
-                    else "Prompt template unchanged."
+                    "Prompt template changed." if prompt_changed else "Prompt template unchanged."
                 ),
                 detail={
                     "baseline_hash": baseline.prompt_hash,
