@@ -26,7 +26,11 @@ def compare_snapshots(
             DriftFinding(
                 kind="prompt",
                 changed=prompt_changed,
-                message="Prompt template changed." if prompt_changed else "Prompt template unchanged.",
+                message=(
+                    "Prompt template changed."
+                    if prompt_changed
+                    else "Prompt template unchanged."
+                ),
                 detail={
                     "baseline_hash": baseline.prompt_hash,
                     "current_hash": current.prompt_hash,
@@ -66,7 +70,10 @@ def compare_snapshots(
         )
 
     if baseline.output_text is not None or current.output_text is not None:
-        output_distance = compute_text_distance(baseline.output_text or "", current.output_text or "")
+        output_distance = compute_text_distance(
+            baseline.output_text or "",
+            current.output_text or "",
+        )
         output_changed = output_distance >= output_distance_threshold
         findings.append(
             DriftFinding(

@@ -11,7 +11,11 @@ from agenticlens.profiler.context import current_workflow  # noqa: E402
 from agentic_chaos.chaos.faults import TokenTimeoutFault  # noqa: E402
 from agentic_chaos.chaos.inject import chaos_call  # noqa: E402
 from agentic_chaos.chaos.session import chaos_session  # noqa: E402
-from agentic_chaos.integrations.agenticlens import attach_drift_report, attach_events, step_kwargs  # noqa: E402
+from agentic_chaos.integrations.agenticlens import (  # noqa: E402
+    attach_drift_report,
+    attach_events,
+    step_kwargs,
+)
 from agentic_chaos.models import ChaosReport  # noqa: E402
 
 
@@ -83,4 +87,4 @@ def test_attach_drift_report_sets_workflow_field() -> None:
 
     attach_drift_report(report, workflow)
 
-    assert getattr(workflow, "drift_report") == report
+    assert workflow.drift_report == report

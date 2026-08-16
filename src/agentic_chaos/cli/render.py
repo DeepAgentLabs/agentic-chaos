@@ -104,4 +104,7 @@ def render_drift_report(console: Console, report: DriftReport) -> None:
 
     console.print(table)
     summary_style = "red" if report.has_drift else "green"
-    console.print(f"\n[{summary_style}]Drift detected: {'yes' if report.has_drift else 'no'}[/{summary_style}]")
+    console.print(
+        f"\n[{summary_style}]Drift detected: "
+        f"{'yes' if report.has_drift else 'no'}[/{summary_style}]"
+    )

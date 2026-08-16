@@ -326,7 +326,9 @@ def drift_snapshot(
 def drift_compare(
     baseline: Path = typer.Argument(..., help="Baseline snapshot JSON created by drift snapshot."),
     snapshot: Path | None = typer.Option(
-        None, "--snapshot", help="Current snapshot JSON. If omitted, build one from the flags below."
+        None,
+        "--snapshot",
+        help="Current snapshot JSON. If omitted, build one from the flags below.",
     ),
     name: str | None = typer.Option(
         None, "--name", help="Name for an inline current snapshot. Defaults to the baseline name."
@@ -409,7 +411,10 @@ def drift_compare(
             console.print(f"\nSaved drift report to {save}")
         save_alert_state(state_file, update_alert_state(report))
     else:
-        console.print(f"\n[yellow]Suppressed unchanged drift report via cooldown state:[/yellow] {state_file}")
+        console.print(
+            "\n[yellow]Suppressed unchanged drift report via cooldown "
+            f"state:[/yellow] {state_file}"
+        )
 
     if report.has_drift:
         raise typer.Exit(code=2)
