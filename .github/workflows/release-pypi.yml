@@ -62,9 +62,12 @@ jobs:
 
           start = None
           end = None
-          heading = f"## {version} - "
+          headings = (
+              f"## [{version}] - ",
+              f"## {version} - ",
+          )
           for index, line in enumerate(changelog):
-              if line.startswith(heading):
+              if any(line.startswith(heading) for heading in headings):
                   start = index
                   continue
               if start is not None and line.startswith("## "):
