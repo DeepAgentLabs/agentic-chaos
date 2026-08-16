@@ -273,7 +273,144 @@ def test_agent_run_saves_handoff_edge_metadata(tmp_path: Path) -> None:
     assert data["chaos_events"][0]["to_node"] == "Executor"
 
 
-def test_drift_snapshot_not_implemented() -> None:
-    result = runner.invoke(app, ["drift", "snapshot"])
-    assert result.exit_code == 1
-    assert "v0.4" in result.output
+def test_drift_snapshot_saves_json(tmp_path: Path) -> None:
+    out = tmp_path / "baseline.json"
+
+    result = runner.invoke(
+        app,
+        [
+            "drift",
+            "snapshot",
+            "--name",
+            "support-agent",
+            "--save",
+            str(out),
+            "--prompt-text",
+            "You are a careful support agent.",
+            "--model",
+            "gpt-5-mini",
+            "--model-fingerprint",
+            "fp-a",
+            "--output-text",
+            "Refund approved.",
+            "--retrieval-item",
+            "doc-1",
+            "--retrieval-item",
+            "doc-2",
+        ],
+    )
+
+    assert result.exit_code == 0
+    data = json.loads(out.read_text())
+    assert data["name"] == "support-agent"
+    assert data["prompt_hash"]
+    assert data["retrieval_items"] == ["doc-1", "doc-2"]
+
+
+def test_drift_compare_detects_drift_and_saves_report(tmp_path: Path) -> None:
+    baseline = tmp_path / "baseline.json"
+    out = tmp_path / "drift_report.json"
+
+    baseline_result = runner.invoke(
+        app,
+        [
+            "drift",
+            "snapshot",
+            "--name",
+            "support-agent",
+            "--save",
+            str(baseline),
+            "--prompt-text",
+            "You are a careful support agent.",
+            "--model",
+            "gpt-5-mini",
+            "--model-fingerprint",
+            "fp-a",
+            "--output-text",
+            "Refund approved.",
+            "--retrieval-item",
+            "doc-1",
+        ],
+    )
+    assert baseline_result.exit_code == 0
+
+    result = runner.invoke(
+        app,
+        [
+            "drift",
+            "compare",
+            str(baseline),
+            "--prompt-text",
+            "You are a fast support agent.",
+            "--model",
+            "gpt-5-mini",
+            "--model-fingerprint",
+            "fp-b",
+            "--output-text",
+            "Please contact support.",
+            "--retrieval-item",
+            "doc-9",
+            "--save",
+            str(out),
+        ],
+    )
+
+    assert result.exit_code == 2
+    assert "drift detected: yes" in result.output.lower()
+    data = json.loads(out.read_text())
+    assert data["has_drift"] is True
+    assert any(finding["kind"] == "model" for finding in data["findings"])
+
+
+def test_drift_compare_suppresses_repeated_unchanged_report(tmp_path: Path) -> None:
+    baseline = tmp_path / "baseline.json"
+    report = tmp_path / "drift_report.json"
+    state = tmp_path / "state.json"
+
+    baseline_result = runner.invoke(
+        app,
+        [
+            "drift",
+            "snapshot",
+            "--name",
+            "retriever",
+            "--save",
+            str(baseline),
+            "--prompt-text",
+            "baseline",
+        ],
+    )
+    assert baseline_result.exit_code == 0
+
+    first = runner.invoke(
+        app,
+        [
+            "drift",
+            "compare",
+            str(baseline),
+            "--prompt-text",
+            "current",
+            "--save",
+            str(report),
+            "--state-path",
+            str(state),
+        ],
+    )
+    second = runner.invoke(
+        app,
+        [
+            "drift",
+            "compare",
+            str(baseline),
+            "--prompt-text",
+            "current",
+            "--save",
+            str(report),
+            "--state-path",
+            str(state),
+        ],
+    )
+
+    assert first.exit_code == 2
+    assert second.exit_code == 2
+    assert "suppressed unchanged drift report" in second.output.lower()
