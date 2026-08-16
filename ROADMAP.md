@@ -5,7 +5,7 @@
 - **v0.1** ✅ Complete — LLM Chaos Toolkit (3 faults, CLI, AgenticLens adapter)
 - **v0.2** ✅ Complete — Agent Failure Injector (3 agent faults, topology tracking, LangGraph adapter) — shipped 2026-07-13
 - **v0.3** ✅ Complete — Fidelity Judges & Handoff Chaos (`v0.3.0`)
-- **v0.4** 🚧 Planned — Prompt/Model Drift Detector
+- **v0.4** ✅ Complete — Prompt/Model Drift Detector (`v0.4.0`) — shipped 2026-08-15
 - **v0.5** 🚧 Planned — Streaming Faults, Provider Patching & Chaos Profiles
 - **v0.5.x** 🚧 Planned — Safety Rails (Circuit Breaker & Dry-Run)
 - **v0.6** 🚧 Planned — Pytest Plugin & Assertions
@@ -114,7 +114,7 @@ The package contains the following modules (shipped and planned):
 | `agentic_chaos.chaos` | ✅ Shipped (v0.1) | LLM-level fault injection — `TokenTimeoutFault`, `RateLimitStormFault`, `SilentDegradationFault` |
 | `agentic_chaos.agents` | ✅ Shipped (v0.2) | Agent-level fault injection — `ToolCallFailureFault`, `MemoryCorruptionFault`, `InfiniteLoopFault`, LangGraph adapter, topology tracking |
 | `agentic_chaos.judges` | ✅ Shipped (v0.3) | Fidelity Judges — LLM-as-judge scoring to determine if corrupted output is actually worse |
-| `agentic_chaos.drift` | 🚧 Planned (v0.4) | Prompt/model drift detection — snapshot, compare, detect silent changes |
+| `agentic_chaos.drift` | ✅ Shipped (v0.4) | Prompt/model drift detection — snapshot, compare, detect silent changes |
 | `agentic_chaos.integrations` | ✅ Shipped (v0.1) | Optional AgenticLens adapter (`attach_events()`, `step_kwargs()`) |
 | `agentic_chaos.safety` | 🚧 Planned (v0.5.x) | Circuit breaker (max-cost / max-failure-rate auto-abort) + `--dry-run` mode |
 
@@ -132,7 +132,7 @@ agentic-chaos/
       faults.py         # ToolCallFailure, MemoryCorruption, InfiniteLoop
       langgraph.py      # wrap_tool(), wrap_node()
       topology.py       # TopologyTracker, AgentTopology
-    drift/              # Placeholder (v0.4)
+    drift/              # Prompt/model drift detection (v0.4)
     integrations/       # Optional adapters
       agenticlens.py    # attach_events(), step_kwargs()
     cli/                # CLI entry point
@@ -377,7 +377,7 @@ failure where state degrades gradually rather than breaking all at once.
 - [x] README section + example (`examples/chaos_handoff_and_judges_demo.py`)
 - [ ] demo GIF
 
-### v0.4 — Prompt/Model Drift Detector (`agentic-chaos.drift`)
+### v0.4 — Prompt/Model Drift Detector (`agentic-chaos.drift`) ✅
 Different shape (monitoring/snapshotting vs. one-off fault injection), but
 lives in the same package and reuses the same export layer.
 
@@ -391,10 +391,10 @@ lives in the same package and reuses the same export layer.
   retrieval results for a fixed test query set
 
 **Deliverables:**
-- [ ] `agentic-chaos.drift` module + CLI subcommand
-- [ ] Local snapshot/baseline storage (simple JSON to start)
-- [ ] AgenticLens `DriftRecommender` adapter
-- [ ] Cooldown-protected scheduled drift checks — recurring drift runs
+- [x] `agentic-chaos.drift` module + CLI subcommand
+- [x] Local snapshot/baseline storage (simple JSON to start)
+- [x] AgenticLens `DriftRecommender` adapter surface (`attach_drift_report()`)
+- [x] Cooldown-protected scheduled drift checks — recurring drift runs
   (cron/CI-triggered) that only emit a report when the comparison actually
   changed vs. baseline, rate-limited per baseline/target so a persistent
   drift doesn't re-fire on every run. No new hard dependency (agentic-chaos
@@ -402,7 +402,7 @@ lives in the same package and reuses the same export layer.
   plus the cooldown logic, not an embedded scheduler. Pattern modeled on
   `devops-open-agent`'s proactive Kubernetes schedules (cron trigger +
   per-user alert cooldown, so N runs/day doesn't mean N alerts).
-- [ ] README section + example (scheduled drift check in CI) + demo GIF
+- [x] README section + example (scheduled drift check in CI)
 
 ### v0.5 — Streaming Faults, Provider Patching & Chaos Profiles
 

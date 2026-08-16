@@ -14,12 +14,15 @@ from agentic_chaos.chaos import (
     chaos_call,
     chaos_session,
 )
+from agentic_chaos.drift import DriftReport, DriftSnapshot, compare_snapshots
 from agentic_chaos.judges import DeepEvalJudge, HeuristicJudge, PydanticEvalsJudge, fidelity_session
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 
 __all__ = [
     "DeepEvalJudge",
+    "DriftReport",
+    "DriftSnapshot",
     "HandoffCorruptionFault",
     "HeuristicJudge",
     "InfiniteLoopFault",
@@ -33,6 +36,7 @@ __all__ = [
     "__version__",
     "chaos_call",
     "chaos_session",
+    "compare_snapshots",
     "fidelity_session",
     "wrap_node",
     "wrap_tool",

@@ -9,8 +9,9 @@ duck-typed against the shapes AgenticLens's `Workflow`/`StepHandle` happen to
 have, so this module only actually needs agenticlens installed if *you* pass
 it real AgenticLens objects (which requires you to have imported it anyway).
 
-If you don't have AgenticLens, ignore this module -- `agentic_chaos.chaos_call()`
-and the CLI's own `ChaosReport` output work with zero dependency on it.
+If you don't have AgenticLens, ignore this module -- `agentic_chaos.chaos_call()`,
+the drift helpers, and the CLI's own `ChaosReport` output work with zero
+dependency on it.
 """
 
 from typing import TYPE_CHECKING, Any
@@ -39,3 +40,15 @@ def step_kwargs(step: "StepHandle") -> dict[str, Any]:
     ```
     """
     return {"step_id": step.step.id, "step_name": step.step.name}
+
+
+def attach_drift_report(report: dict[str, Any], workflow: "Workflow") -> None:
+    """Attach a drift report (schema v1.4) onto an AgenticLens workflow-like object.
+
+    This mirrors `attach_events()` for drift use cases, so a future
+    AgenticLens-side `DriftRecommender` can inspect the same exported field
+    without a hard package dependency from this repo.
+    """
+    # AgenticLens's Workflow model is strict about undeclared fields, so use
+    # a low-level setattr to attach the additive v1.4 drift extension.
+    object.__setattr__(workflow, "drift_report", report)

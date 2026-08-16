@@ -2,6 +2,7 @@ from rich import box
 from rich.console import Console
 from rich.table import Table
 
+from agentic_chaos.drift import DriftReport
 from agentic_chaos.models.agent_topology import AgentTopology
 from agentic_chaos.models.chaos_event import ChaosEvent
 
@@ -72,4 +73,38 @@ def render_topology(console: Console, topology: AgentTopology) -> None:
 
     console.print(
         f"\n[bold]{len(topology.nodes)}[/bold] node(s), [bold]{len(topology.edges)}[/bold] edge(s)."
+    )
+
+
+def render_drift_report(console: Console, report: DriftReport) -> None:
+    """Render a `DriftReport` as a compact findings table."""
+    if not report.findings:
+        console.print("[green]No comparable drift signals were provided.[/green]")
+        return
+
+    table = Table(title="Drift Findings", box=box.SIMPLE_HEAVY)
+    table.add_column("Signal")
+    table.add_column("Changed")
+    table.add_column("Score")
+    table.add_column("Message")
+
+    for finding in report.findings:
+        style = "red" if finding.changed else "green"
+        score = "-"
+        if finding.score is not None:
+            score = f"{finding.score:.3f}"
+            if finding.threshold is not None:
+                score = f"{score} / {finding.threshold:.3f}"
+        table.add_row(
+            finding.kind,
+            f"[{style}]{'yes' if finding.changed else 'no'}[/{style}]",
+            score,
+            finding.message,
+        )
+
+    console.print(table)
+    summary_style = "red" if report.has_drift else "green"
+    console.print(
+        f"\n[{summary_style}]Drift detected: "
+        f"{'yes' if report.has_drift else 'no'}[/{summary_style}]"
     )

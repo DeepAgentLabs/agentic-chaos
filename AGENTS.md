@@ -144,8 +144,32 @@ uv run pytest
 
 ## Release
 
-1. Bump version in `pyproject.toml`, `src/agentic_chaos/__init__.py`, and `CHANGELOG.md`
-2. Commit: `git commit -am "release: vX.Y.Z"`
-3. Tag: create an annotated `vX.Y.Z` tag and use the latest `CHANGELOG.md`
-   release section as the tag description
-4. Push: `git push origin main --tags`
+Two phases, split by the merge to `main` — bumping happens before, and the
+tag-driven release automation happens after.
+
+**1. Pre-release (on the feature branch, before merge):** Bump version in
+`pyproject.toml`, `src/agentic_chaos/__init__.py`, and `CHANGELOG.md` (a
+dated release section under `[Unreleased]`). Commit as part of the
+branch's normal history; goes in with the rest of the PR.
+
+**2. Release (on `main`, once that branch has merged):** plain `git`, no
+manual `gh release` step required.
+
+1. Pull the merge commit on `main`.
+2. Tag: create an annotated `vX.Y.Z` tag pointing at the merge commit,
+   using the `CHANGELOG.md` release section for that version as the tag
+   message:
+   `git tag -a vX.Y.Z -F <file-with-that-section> --cleanup=verbatim`.
+   `--cleanup=verbatim` is required — git's default cleanup silently strips
+   lines starting with `#`, which would eat the changelog's `###` headers.
+3. Push the tag: `git push origin vX.Y.Z`.
+
+That tag push is the release trigger. `release-pypi.yml` runs automatically
+and does both of the following from the same tag:
+
+- publishes the package to PyPI via Trusted Publishing (OIDC)
+- creates the GitHub Release object for `vX.Y.Z`
+
+The GitHub Release title is the tag name, and its body is copied from the
+matching `CHANGELOG.md` section so the changelog, tag, PyPI release, and
+GitHub Releases page stay aligned.

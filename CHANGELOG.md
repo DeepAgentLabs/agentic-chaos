@@ -4,6 +4,33 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-08-15
+
+### Added
+
+- **Prompt/Model Drift Detector (v0.4)**:
+  - New `agentic_chaos.drift` module with `DriftSnapshot`,
+    `DriftReport`, `compare_snapshots()`, JSON storage helpers, and
+    cooldown-aware emission state.
+  - `agentic-chaos drift snapshot` CLI command for capturing local prompt,
+    model, output, and retrieval baselines as JSON.
+  - `agentic-chaos drift compare` CLI command for comparing a current run
+    to a stored baseline, returning exit code `2` on detected drift for
+    CI-friendly gating.
+  - Prompt hash/diff detection, model fingerprint/version detection,
+    output distribution distance checks, and retrieval set drift checks.
+  - Cooldown state files to suppress repeated unchanged drift reports
+    during scheduled cron/CI runs.
+  - `ChaosReport.drift_report` field (schema v1.4) for exported drift
+    findings alongside existing chaos artifacts.
+  - `attach_drift_report()` helper in the optional AgenticLens integration.
+  - New example: `examples/drift_detection_demo.py`.
+
+### Changed
+
+- Bumped package version to `0.4.0`.
+- `agentic-chaos drift` is now fully implemented instead of a placeholder.
+
 ## [0.3.0] - 2026-08-08
 
 ### Added

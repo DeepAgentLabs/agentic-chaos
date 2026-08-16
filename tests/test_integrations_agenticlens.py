@@ -11,7 +11,11 @@ from agenticlens.profiler.context import current_workflow  # noqa: E402
 from agentic_chaos.chaos.faults import TokenTimeoutFault  # noqa: E402
 from agentic_chaos.chaos.inject import chaos_call  # noqa: E402
 from agentic_chaos.chaos.session import chaos_session  # noqa: E402
-from agentic_chaos.integrations.agenticlens import attach_events, step_kwargs  # noqa: E402
+from agentic_chaos.integrations.agenticlens import (  # noqa: E402
+    attach_drift_report,
+    attach_events,
+    step_kwargs,
+)
 from agentic_chaos.models import ChaosReport  # noqa: E402
 
 
@@ -75,3 +79,12 @@ def test_chaos_report_is_valid_agenticlens_workflow_json() -> None:
     assert workflow.name == "Standalone Run"
     assert workflow.steps == []
     assert workflow.chaos_events[0]["fault_type"] == "token_timeout"
+
+
+def test_attach_drift_report_sets_workflow_field() -> None:
+    workflow = Workflow(name="Test", start_time=datetime.now(timezone.utc))
+    report = {"has_drift": True, "findings": [{"kind": "prompt", "changed": True}]}
+
+    attach_drift_report(report, workflow)
+
+    assert workflow.drift_report == report

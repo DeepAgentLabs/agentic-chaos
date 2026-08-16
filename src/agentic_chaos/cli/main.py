@@ -10,7 +10,20 @@ import agentic_chaos.agents  # noqa: F401 -- ensures agent faults are registered
 from agentic_chaos.agents.topology import get_active_tracker, reset_active_tracker
 from agentic_chaos.chaos.faults import FAULT_REGISTRY, resolve_faults
 from agentic_chaos.chaos.session import chaos_session
-from agentic_chaos.cli.render import render_chaos_events, render_topology
+from agentic_chaos.cli.render import render_chaos_events, render_drift_report, render_topology
+from agentic_chaos.drift import (
+    DriftSnapshot,
+    compare_snapshots,
+    default_state_path,
+    load_alert_state,
+    load_retrieval_items,
+    load_snapshot,
+    save_alert_state,
+    save_report,
+    save_snapshot,
+    should_emit_report,
+    update_alert_state,
+)
 from agentic_chaos.models.report import ChaosReport
 
 app = typer.Typer(
@@ -27,13 +40,56 @@ agent_app = typer.Typer(
     no_args_is_help=True,
 )
 drift_app = typer.Typer(
-    help="Prompt/model drift detection. Planned for v0.4.",
+    help="Prompt/model drift detection via local snapshots and comparisons.",
     no_args_is_help=True,
 )
 app.add_typer(chaos_app, name="chaos")
 app.add_typer(agent_app, name="agent")
 app.add_typer(drift_app, name="drift")
 console = Console()
+
+
+def _read_optional_text(value: str | None, path: Path | None) -> str | None:
+    if value is not None:
+        return value
+    if path is not None:
+        return path.read_text(encoding="utf-8")
+    return None
+
+
+def _collect_retrieval_items(
+    retrieval_items: list[str] | None,
+    retrieval_file: Path | None,
+) -> list[str]:
+    if retrieval_items:
+        return list(retrieval_items)
+    if retrieval_file is not None:
+        return load_retrieval_items(retrieval_file)
+    return []
+
+
+def _build_snapshot_from_inputs(
+    *,
+    name: str,
+    prompt_text: str | None,
+    prompt_file: Path | None,
+    output_text: str | None,
+    output_file: Path | None,
+    retrieval_items: list[str] | None,
+    retrieval_file: Path | None,
+    model: str | None,
+    model_fingerprint: str | None,
+    embedding_model: str | None,
+) -> DriftSnapshot:
+    return DriftSnapshot.create(
+        name=name,
+        prompt_text=_read_optional_text(prompt_text, prompt_file),
+        model_name=model,
+        model_fingerprint=model_fingerprint,
+        output_text=_read_optional_text(output_text, output_file),
+        retrieval_items=_collect_retrieval_items(retrieval_items, retrieval_file),
+        embedding_model=embedding_model,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -211,26 +267,156 @@ def agent_run(
 
 
 # ---------------------------------------------------------------------------
-# drift subcommand (placeholder)
+# drift subcommand
 # ---------------------------------------------------------------------------
 
 
 @drift_app.command("snapshot")
-def drift_snapshot() -> None:
-    """Prompt/model drift snapshotting. Not implemented yet."""
-    console.print(
-        "[yellow]agentic-chaos drift snapshot[/yellow] is planned for v0.4. See ROADMAP.md."
+def drift_snapshot(
+    name: str = typer.Option(..., "--name", help="Logical target name for this snapshot."),
+    save: Path = typer.Option(..., "--save", help="Where to write the snapshot JSON."),
+    prompt_text: str | None = typer.Option(
+        None, "--prompt-text", help="Prompt text to snapshot directly."
+    ),
+    prompt_file: Path | None = typer.Option(
+        None, "--prompt-file", help="Read prompt text from this file."
+    ),
+    output_text: str | None = typer.Option(
+        None, "--output-text", help="Captured model output text."
+    ),
+    output_file: Path | None = typer.Option(
+        None, "--output-file", help="Read captured output text from this file."
+    ),
+    retrieval_items: list[str] | None = typer.Option(
+        None,
+        "--retrieval-item",
+        help="Retrieved item identifier/text. Repeat the flag for multiple items.",
+    ),
+    retrieval_file: Path | None = typer.Option(
+        None,
+        "--retrieval-file",
+        help="File containing retrieval items as newline-delimited text or a JSON list.",
+    ),
+    model: str | None = typer.Option(None, "--model", help="Model name, e.g. gpt-5-mini."),
+    model_fingerprint: str | None = typer.Option(
+        None, "--model-fingerprint", help="Provider model/version fingerprint."
+    ),
+    embedding_model: str | None = typer.Option(
+        None, "--embedding-model", help="Embedding or retrieval model identifier."
+    ),
+) -> None:
+    """Capture a prompt/model/output/retrieval baseline snapshot."""
+    snapshot = _build_snapshot_from_inputs(
+        name=name,
+        prompt_text=prompt_text,
+        prompt_file=prompt_file,
+        output_text=output_text,
+        output_file=output_file,
+        retrieval_items=retrieval_items,
+        retrieval_file=retrieval_file,
+        model=model,
+        model_fingerprint=model_fingerprint,
+        embedding_model=embedding_model,
     )
-    raise typer.Exit(code=1)
+    save_snapshot(save, snapshot)
+    console.print(f"Saved drift snapshot to {save}")
 
 
 @drift_app.command("compare")
-def drift_compare() -> None:
-    """Prompt/model drift comparison. Not implemented yet."""
-    console.print(
-        "[yellow]agentic-chaos drift compare[/yellow] is planned for v0.4. See ROADMAP.md."
+def drift_compare(
+    baseline: Path = typer.Argument(..., help="Baseline snapshot JSON created by drift snapshot."),
+    snapshot: Path | None = typer.Option(
+        None,
+        "--snapshot",
+        help="Current snapshot JSON. If omitted, build one from the flags below.",
+    ),
+    name: str | None = typer.Option(
+        None, "--name", help="Name for an inline current snapshot. Defaults to the baseline name."
+    ),
+    prompt_text: str | None = typer.Option(None, "--prompt-text"),
+    prompt_file: Path | None = typer.Option(None, "--prompt-file"),
+    output_text: str | None = typer.Option(None, "--output-text"),
+    output_file: Path | None = typer.Option(None, "--output-file"),
+    retrieval_items: list[str] | None = typer.Option(None, "--retrieval-item"),
+    retrieval_file: Path | None = typer.Option(None, "--retrieval-file"),
+    model: str | None = typer.Option(None, "--model"),
+    model_fingerprint: str | None = typer.Option(None, "--model-fingerprint"),
+    embedding_model: str | None = typer.Option(None, "--embedding-model"),
+    save: Path | None = typer.Option(
+        None, "--save", help="Write the drift report if emission rules allow it."
+    ),
+    state_path: Path | None = typer.Option(
+        None, "--state-path", help="Cooldown state path. Defaults next to the baseline."
+    ),
+    cooldown_minutes: int = typer.Option(
+        1440,
+        "--cooldown-minutes",
+        min=0,
+        help="Minimum minutes between repeated emissions for the same unchanged drift fingerprint.",
+    ),
+    output_distance_threshold: float = typer.Option(
+        0.18, "--output-distance-threshold", min=0.0, max=1.0
+    ),
+    retrieval_distance_threshold: float = typer.Option(
+        0.4, "--retrieval-distance-threshold", min=0.0, max=1.0
+    ),
+    emit_only_on_change: bool = typer.Option(
+        True,
+        "--emit-only-on-change/--emit-always",
+        help="Suppress repeated reports while the drift fingerprint is unchanged.",
+    ),
+) -> None:
+    """Compare a current snapshot to a stored baseline, with cooldown-aware emission."""
+    if not baseline.exists():
+        console.print(f"[red]Baseline snapshot not found:[/red] {baseline}")
+        raise typer.Exit(code=1)
+
+    baseline_snapshot = load_snapshot(baseline)
+    current_snapshot = (
+        load_snapshot(snapshot)
+        if snapshot is not None
+        else _build_snapshot_from_inputs(
+            name=name or baseline_snapshot.name,
+            prompt_text=prompt_text,
+            prompt_file=prompt_file,
+            output_text=output_text,
+            output_file=output_file,
+            retrieval_items=retrieval_items,
+            retrieval_file=retrieval_file,
+            model=model,
+            model_fingerprint=model_fingerprint,
+            embedding_model=embedding_model,
+        )
     )
-    raise typer.Exit(code=1)
+    report = compare_snapshots(
+        baseline_snapshot,
+        current_snapshot,
+        output_distance_threshold=output_distance_threshold,
+        retrieval_distance_threshold=retrieval_distance_threshold,
+    )
+    render_drift_report(console, report)
+
+    state_file = state_path or default_state_path(baseline)
+    state = load_alert_state(state_file)
+    should_emit = should_emit_report(
+        report,
+        state,
+        cooldown_minutes=cooldown_minutes,
+        emit_only_on_change=emit_only_on_change,
+    )
+
+    if should_emit:
+        if save is not None:
+            save_report(save, report)
+            console.print(f"\nSaved drift report to {save}")
+        save_alert_state(state_file, update_alert_state(report))
+    else:
+        console.print(
+            f"\n[yellow]Suppressed unchanged drift report via cooldown state:[/yellow] {state_file}"
+        )
+
+    if report.has_drift:
+        raise typer.Exit(code=2)
 
 
 if __name__ == "__main__":

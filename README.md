@@ -24,9 +24,9 @@ tools that happen to compose.
 ## Status
 
 `agentic-chaos` is early-stage software. The **LLM Chaos Toolkit** (v0.1),
-**Agent Failure Injector** (v0.2), and **Fidelity Judges & Handoff Chaos**
-(`v0.3.0`) are available. A **Prompt/Model Drift Detector** remains planned
-for v0.4. See [ROADMAP.md](ROADMAP.md) for the full plan.
+**Agent Failure Injector** (v0.2), **Fidelity Judges & Handoff Chaos**
+(`v0.3.0`), and **Prompt/Model Drift Detector** (`v0.4.0`) are available.
+See [ROADMAP.md](ROADMAP.md) for the full plan.
 
 ### What's Next
 
@@ -35,8 +35,8 @@ for v0.4. See [ROADMAP.md](ROADMAP.md) for the full plan.
 - **Synthetic test scenarios** — prebuilt known-bad agent behaviors for
   consistent resilience validation
 - **Memory decay** — progressive corruption for long-running shared state
-- **Prompt/model drift detection** (v0.4) — snapshot, compare, and detect
-  silent changes
+- **Scheduled drift checks** — snapshot prompts/models/outputs and detect
+  silent changes before production behavior shifts further
 
 ## Installation
 
@@ -154,12 +154,91 @@ agentic-chaos agent run my_agent.py --inject tool_failure,memory_corruption --sa
 # Run a script with edge-scoped handoff chaos.
 agentic-chaos agent run my_agent.py --inject handoff_corruption --save report.json
 
+# Save a drift baseline, then compare a current run against it.
+agentic-chaos drift snapshot --name support-agent --save baseline.json --prompt-file prompt.txt --model gpt-5-mini --model-fingerprint fp-a
+agentic-chaos drift compare baseline.json --prompt-file prompt.txt --output-file answer.txt --model gpt-5-mini --model-fingerprint fp-b --save drift_report.json
+
 # List all available fault types (v0.1 + v0.3).
 agentic-chaos chaos list-faults
 ```
 
-`agentic-chaos drift ...` is a placeholder for the v0.4 module — running it
-today prints a pointer to [ROADMAP.md](ROADMAP.md).
+`agentic-chaos drift compare` exits with code `2` when drift is detected, so
+it can fail a CI job while still writing a JSON report when emission rules
+allow it.
+
+## Drift Detector (v0.4.0)
+
+Capture a baseline snapshot locally:
+
+```bash
+agentic-chaos drift snapshot \
+  --name support-agent \
+  --save baseline.json \
+  --prompt-file prompt.txt \
+  --output-file baseline_output.txt \
+  --retrieval-file retrieval.txt \
+  --model gpt-5-mini \
+  --model-fingerprint provider-fp-001 \
+  --embedding-model text-embed-1
+```
+
+Compare a current run against that baseline:
+
+```bash
+agentic-chaos drift compare baseline.json \
+  --prompt-file prompt.txt \
+  --output-file current_output.txt \
+  --retrieval-file retrieval.txt \
+  --model gpt-5-mini \
+  --model-fingerprint provider-fp-002 \
+  --save drift_report.json
+```
+
+The drift module checks four signal types:
+
+- Prompt drift via hash and inline diff metadata.
+- Model drift via model name, provider fingerprint, and embedding-model metadata.
+- Output drift via a lightweight text-distance score against the baseline.
+- Retrieval drift via set-distance on fixed retrieval results.
+
+Repeated scheduled runs can stay quiet until something actually changes:
+
+```bash
+agentic-chaos drift compare baseline.json \
+  --prompt-file prompt.txt \
+  --output-file current_output.txt \
+  --save drift_report.json \
+  --state-path .agentic-chaos/drift-state.json \
+  --cooldown-minutes 1440 \
+  --emit-only-on-change
+```
+
+### Scheduled CI Example
+
+```yaml
+name: Drift Check
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - run: uv sync --extra dev --frozen
+      - run: |
+          uv run agentic-chaos drift compare baselines/support-agent.json \
+            --prompt-file prompts/support.txt \
+            --output-file artifacts/latest-output.txt \
+            --save artifacts/drift_report.json \
+            --state-path artifacts/drift_state.json \
+            --cooldown-minutes 1440 \
+            --emit-only-on-change
+```
 
 ## Agent Failure Injector (v0.2)
 
@@ -223,6 +302,7 @@ print(tracker.topology.as_json())  # nodes + edges
 | [`examples/chaos_advanced_faults_demo.py`](examples/chaos_advanced_faults_demo.py) | nothing but `agentic_chaos` | `TokenTimeoutFault(mode="delay")` and a custom `SilentDegradationFault(degrade_fn=...)`. |
 | [`examples/chaos_agent_failure_demo.py`](examples/chaos_agent_failure_demo.py) | nothing but `agentic_chaos` | All three v0.2 agent faults: tool-call failure, memory corruption, infinite loop. Plus `wrap_tool()` and `TopologyTracker`. |
 | [`examples/chaos_handoff_and_judges_demo.py`](examples/chaos_handoff_and_judges_demo.py) | nothing but `agentic_chaos` | Edge-scoped handoff corruption plus a manual baseline capture that lets `fidelity_session()` score the recorded event safely for a pure downstream function. |
+| [`examples/drift_detection_demo.py`](examples/drift_detection_demo.py) | nothing but `agentic_chaos` | Creates a drift baseline and current snapshot, compares them, and writes a drift report JSON. |
 | [`examples/chaos_with_agenticlens_demo.py`](examples/chaos_with_agenticlens_demo.py) | `agentic-chaos[agenticlens]` | The optional integration: `attach_events()` + `step_kwargs()` merging chaos events onto a real AgenticLens `Workflow`. |
 
 Run any of them directly (`uv run python examples/...`), or the first two
