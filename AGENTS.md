@@ -152,6 +152,11 @@ tag-driven release automation happens after.
 dated release section under `[Unreleased]`). Commit as part of the
 branch's normal history; goes in with the rest of the PR.
 
+For `CHANGELOG.md`, write release headings in the bracketed form:
+`## [X.Y.Z] - YYYY-MM-DD`
+Example: `## [0.4.0] - 2026-08-15`
+Do not use `## X.Y.Z - YYYY-MM-DD` without brackets.
+
 **2. Release (on `main`, once that branch has merged):** plain `git`, no
 manual `gh release` step required.
 
