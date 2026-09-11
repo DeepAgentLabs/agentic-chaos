@@ -403,6 +403,37 @@ uv run pytest
 (see [`[tool.uv.sources]`](pyproject.toml) for the local sibling-checkout override
 used until `agenticlens` publishes a release with `chaos_events` support).
 
+## Instrumentation Overhead
+
+`chaos_call()`'s docstring claims it's "transparent" outside a
+`chaos_session()` block. Measured, not just asserted — run
+[`scripts/benchmark_overhead.py`](scripts/benchmark_overhead.py) yourself:
+
+```bash
+uv run python scripts/benchmark_overhead.py
+```
+
+Reference numbers from one measurement run (single machine, Windows,
+Python 3.14; a mean of 5 batches of 20,000 calls each — treat as an
+order-of-magnitude reference, not a certified cross-platform benchmark):
+
+| Path | Overhead vs. a direct call |
+| --- | --- |
+| `chaos_call()`, no active `chaos_session()` | **+0.16 µs/call** |
+| `chaos_call()`, session active, `SilentDegradationFault` triggering | **+29.8 µs/call** |
+
+The no-session number is what matters for "is it safe to leave `chaos_call()`
+calls in production code paths" — sub-microsecond, effectively free. The
+active-session number is measured using `SilentDegradationFault` specifically
+*because* it adds no artificial `time.sleep()`/raise of its own (unlike
+`TokenTimeoutFault`/`RateLimitStormFault`), so it isolates `chaos_call()`'s own
+dispatch cost: fault selection, `inspect.signature()` introspection in
+`_trigger_kwargs()`, `ChaosEvent` construction, and `snapshot_baseline()`'s
+`copy.deepcopy()` all run on every triggered call. That cost is only paid
+while a chaos experiment is actively running — not in normal production
+operation — but it's worth knowing before making a stronger performance claim
+about the fault-injection path itself.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).

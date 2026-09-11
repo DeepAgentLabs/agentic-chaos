@@ -1,9 +1,19 @@
 # agentic-chaos — Roadmap & Architecture
 
+## Implementation Audit
+
+The [2026-09-11 implementation audit](ROADMAP_AUDIT.md) maps this roadmap to
+source and tests. v0.1–v0.4 are substantially implemented as claimed, with
+one correction below: the v0.2 "LangGraph adapter" is a framework-agnostic
+`wrap_tool()`/`wrap_node()` helper with no LangGraph-specific code,
+dependency, or test — not a LangGraph integration. v0.5–v1.0 are correctly
+unimplemented; their 🚧 Planned markers match an empty search for
+corresponding code.
+
 ## Release Status
 
 - **v0.1** ✅ Complete — LLM Chaos Toolkit (3 faults, CLI, AgenticLens adapter)
-- **v0.2** ✅ Complete — Agent Failure Injector (3 agent faults, topology tracking, LangGraph adapter) — shipped 2026-07-13
+- **v0.2** ✅ Complete — Agent Failure Injector (3 agent faults, topology tracking, framework-agnostic `wrap_tool()`/`wrap_node()` helpers — no LangGraph-specific integration; see [audit](ROADMAP_AUDIT.md)) — shipped 2026-07-13
 - **v0.3** ✅ Complete — Fidelity Judges & Handoff Chaos (`v0.3.0`)
 - **v0.4** ✅ Complete — Prompt/Model Drift Detector (`v0.4.0`) — shipped 2026-08-15
 - **v0.5** 🚧 Planned — Streaming Faults, Provider Patching & Chaos Profiles
@@ -112,7 +122,7 @@ The package contains the following modules (shipped and planned):
 | Module | Status | Purpose |
 |--------|--------|---------|
 | `agentic_chaos.chaos` | ✅ Shipped (v0.1) | LLM-level fault injection — `TokenTimeoutFault`, `RateLimitStormFault`, `SilentDegradationFault` |
-| `agentic_chaos.agents` | ✅ Shipped (v0.2) | Agent-level fault injection — `ToolCallFailureFault`, `MemoryCorruptionFault`, `InfiniteLoopFault`, LangGraph adapter, topology tracking |
+| `agentic_chaos.agents` | ✅ Shipped (v0.2) | Agent-level fault injection — `ToolCallFailureFault`, `MemoryCorruptionFault`, `InfiniteLoopFault`, framework-agnostic `wrap_tool()`/`wrap_node()` helpers (no LangGraph-specific integration or dependency — see [audit](ROADMAP_AUDIT.md)), topology tracking |
 | `agentic_chaos.judges` | ✅ Shipped (v0.3) | Fidelity Judges — LLM-as-judge scoring to determine if corrupted output is actually worse |
 | `agentic_chaos.drift` | ✅ Shipped (v0.4) | Prompt/model drift detection — snapshot, compare, detect silent changes |
 | `agentic_chaos.integrations` | ✅ Shipped (v0.1) | Optional AgenticLens adapter (`attach_events()`, `step_kwargs()`) |
@@ -259,10 +269,14 @@ workflow level, not just the single-call level.
 - Infinite loop trigger — force agents to loop past N turns
 
 **Framework support:** LangGraph first (most structured), CrewAI/AutoGen as
-stretch goals.
+stretch goals. *(As shipped, `wrap_tool()`/`wrap_node()` are framework-agnostic
+Python-callable wrappers with no LangGraph-specific code or dependency — see
+[audit](ROADMAP_AUDIT.md) — so this line describes the original intent, not
+delivered scope.)*
 
 **Deliverables:**
-- [x] `agentic-chaos.agents` module (LangGraph adapter)
+- [x] `agentic_chaos.agents` module (framework-agnostic `wrap_tool()`/`wrap_node()`
+      helpers — no LangGraph-specific integration; see [audit](ROADMAP_AUDIT.md))
 - [x] `agent_topology` schema extension
 - [ ] AgenticLens `AgentResilienceRecommender` adapter + resilience score *(deferred to v0.9)*
 - [x] README section + 1 example (`examples/chaos_agent_failure_demo.py`, plain Python

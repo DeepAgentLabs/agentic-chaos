@@ -4,6 +4,14 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Added
+
+- `scripts/benchmark_overhead.py` and `make benchmark` — measures
+  `chaos_call()`'s per-call instrumentation overhead against a direct call,
+  both with no active `chaos_session()` and with a fault actively
+  triggering. Documented in README.md's new "Instrumentation Overhead"
+  section.
+
 ## [0.4.0] - 2026-08-15
 
 ### Added

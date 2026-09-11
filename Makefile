@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help install lint format format-check typecheck test test-cov clean build
+.PHONY: help install lint format format-check typecheck test test-cov clean build benchmark
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
@@ -32,5 +32,8 @@ clean: ## Remove build artifacts
 
 build: ## Build package distributions
 	uv run python -m build
+
+benchmark: ## Measure chaos_call() instrumentation overhead
+	uv run python scripts/benchmark_overhead.py
 
 check: lint format-check typecheck test ## Run all quality gates

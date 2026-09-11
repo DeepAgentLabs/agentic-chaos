@@ -32,8 +32,10 @@ class AgentTopology(BaseModel):
     they communicated.
 
     Serializes into the ``agent_topology`` field of a ``ChaosReport``
-    (schema v1.2). AgenticLens's ``AgentResilienceRecommender`` reads this
-    to produce resilience scores at the workflow level.
+    (schema v1.2). An ``AgentResilienceRecommender`` that reads this to
+    produce resilience scores at the workflow level is planned for
+    AgenticLens (see this repo's ROADMAP.md v0.9 entry) but does not exist
+    yet.
     """
 
     nodes: list[AgentNode] = Field(default_factory=list)
