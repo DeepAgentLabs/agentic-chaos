@@ -20,16 +20,23 @@ impact before those issues appear in production.
 
 ### Does Not Own
 
+- Standalone output scoring and release-gate computation — those belong in
+  `agentic-evals`; Lens owns the observability and evaluation workflows
+
 - The canonical schema or shared runtime contract — that belongs in
   `ai-operations-spec`
 - General observability, profiling, or evaluation workflows — those belong in
   `agenticlens`
 - Agent supervision/governance or pre-action intervention logic — that belongs
   in `agentic-sidecar`
-- A broad orchestration or control-plane surface — that belongs in
-  `deep-agentic-core-mcp`
+- Fleet orchestration and the control plane — those belong in
+  `agenticops-control-tower`; MCP-native access belongs in `deep-agentic-core-mcp`
 
 ### Integrates With
+
+- `agenticops-control-tower` as a consumer of explicitly attributed native
+  evidence; its deployment health remains separate from producer outcomes
+- `agentic-evals` for standalone scoring/report and release-gate boundaries
 
 - `ai-operations-spec` for shared object shapes, evidence compatibility, and
   export boundaries
