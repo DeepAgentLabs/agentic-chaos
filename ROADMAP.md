@@ -901,3 +901,24 @@ reference implementation of it.
 | 19 | v1.0 — ChaosHub (Shared Experiment Registry) | 3–5 weeks |
 | 20 | PyPI release v1.0 | ongoing |
 | 21 | Blog post / talk: "one schema, one chaos toolkit, full AI-infra reliability stack" | after v1.0 ships |
+
+## Adversarial containment validation (planned)
+
+Added 2026-10-11. Existing fault injection is implemented; integrated attack and
+containment validation remains planned within these existing milestones.
+
+- [ ] v0.5.x safety rails: bound time/cost/intensity; prove abort prevents further
+      injections and report already-running work separately.
+- [ ] v0.7 response poisoning: include injected prompt/tool-response instructions
+      and policy-bypass attacks alongside ordinary provider/tool failures.
+- [ ] v0.8 workflows: optional Sidecar/MCP coordination; inject failures into gate,
+      approval and evidence paths, including queued calls and revocation races.
+- [ ] v0.9 probes: measure forbidden dispatches, calls after acknowledged stop or
+      revocation, authority violations and acknowledgement latency. Keep containment
+      separate from recovery, task success and output quality.
+- [ ] Publish seeds, payloads, policy/configuration versions, expected outcomes and
+      observed dispatch evidence; include deliberately bypassed enforcement as a
+      negative control that containment assertions must detect.
+- [ ] Use Evals for scoring and Lens/Tower for evidence. Run attacks on isolated
+      test targets with synthetic credentials; injection or timeouts alone do not
+      prove containment. Coordinate common semantics with AI Operations Specification.

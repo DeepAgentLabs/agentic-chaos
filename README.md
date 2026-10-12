@@ -454,3 +454,9 @@ health. This link is a Tower-local contract, not a normative AIOS schema.
 See [Control Tower's evidence contract](https://github.com/DeepAgentLabs/agenticops-control-tower/blob/main/docs/ecosystem-alignment.md).
 Remote collection and operator posture views remain planned; these local
 readers do not establish end-to-end integration or stable AIOS conformance.
+
+## Operational safety roadmap
+
+See [planned safety acceptance criteria](ROADMAP.md#adversarial-containment-validation-planned) for responsibilities and
+dependencies. These additions do not claim implemented end-to-end containment
+or integrity protection.
