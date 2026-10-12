@@ -138,3 +138,28 @@ def test_async_call_cancellation():
 def test_patch_requires_session():
     with pytest.raises(RuntimeError, match="active"):
         patch_openai(SimpleNamespace())
+
+
+@pytest.mark.parametrize("consume", [False, True])
+def test_stream_proxy_closes_source_once(consume):
+    class Source:
+        closes = 0
+
+        def __iter__(self):
+            return self
+
+        def __next__(self):
+            return "chunk"
+
+        def close(self):
+            self.closes += 1
+
+    source = Source()
+    resource = SimpleNamespace(create=lambda **kwargs: source)
+    with chaos_session([StreamCutFault()]):
+        patch_anthropic(SimpleNamespace(messages=resource))
+        with resource.create(stream=True) as stream:
+            if consume:
+                assert list(stream) == ["chunk"]
+        stream.close()
+    assert source.closes == 1

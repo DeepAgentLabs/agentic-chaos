@@ -32,19 +32,30 @@ class _Stream:
     def __init__(self, source: Any, wrapped: Any) -> None:
         self.source = source
         self.wrapped = wrapped
+        self.started = False
+        self.closed = False
 
     def __iter__(self) -> "_Stream":
         return self
 
     def __next__(self) -> Any:
-        return next(self.wrapped)
+        self.started = True
+        try:
+            return next(self.wrapped)
+        except BaseException:
+            self.closed = True
+            raise
 
     def close(self) -> None:
+        if self.closed:
+            return
+        self.closed = True
         self.wrapped.close()
         # An unstarted Python generator doesn't execute its finally block.
-        close = getattr(self.source, "close", None)
-        if close is not None:
-            close()
+        if not self.started:
+            close = getattr(self.source, "close", None)
+            if close is not None:
+                close()
 
     def __enter__(self) -> "_Stream":
         return self
@@ -60,20 +71,31 @@ class _AsyncStream:
     def __init__(self, source: Any, wrapped: Any) -> None:
         self.source = source
         self.wrapped = wrapped
+        self.started = False
+        self.closed = False
 
     def __aiter__(self) -> "_AsyncStream":
         return self
 
     async def __anext__(self) -> Any:
-        return await self.wrapped.__anext__()
+        self.started = True
+        try:
+            return await self.wrapped.__anext__()
+        except BaseException:
+            self.closed = True
+            raise
 
     async def close(self) -> None:
+        if self.closed:
+            return
+        self.closed = True
         await self.wrapped.aclose()
-        close = getattr(self.source, "aclose", None) or getattr(self.source, "close", None)
-        if close is not None:
-            result = close()
-            if hasattr(result, "__await__"):
-                await result
+        if not self.started:
+            close = getattr(self.source, "aclose", None) or getattr(self.source, "close", None)
+            if close is not None:
+                result = close()
+                if hasattr(result, "__await__"):
+                    await result
 
     async def aclose(self) -> None:
         await self.close()
