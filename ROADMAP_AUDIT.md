@@ -260,3 +260,15 @@ commit (verified by path).
    the AIOS export narrative in the "Architecture" section from drifting
    further apart — right now the architecture section states an AIOS-export
    goal with no corresponding code anywhere in the package.
+
+## v0.5 follow-through — 2026-10-12
+
+The v0.5 missing findings above describe the September audit commit. v0.5.0
+now implements four streaming faults, explicit reversible provider client
+patches, named TOML profiles, seeded probability on every fault, and auth/context
+errors. Regression coverage includes stream lifecycle and cancellation, optional
+real provider SDKs with mocked/no transport calls, CLI profiles, and actual Lens,
+MCP and Tower readers. See `docs/v0.5.md` for API coverage and boundaries.
+
+v0.2.x structured reports/canonical AIOS exports and v0.5.x–v1.0 remain planned.
+The older integration gaps are not closed by v0.5.

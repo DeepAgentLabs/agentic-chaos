@@ -8,7 +8,8 @@ from rich.console import Console
 
 import agentic_chaos.agents  # noqa: F401 -- ensures agent faults are registered
 from agentic_chaos.agents.topology import get_active_tracker, reset_active_tracker
-from agentic_chaos.chaos.faults import FAULT_REGISTRY, resolve_faults
+from agentic_chaos.chaos.faults import FAULT_REGISTRY, BaseFault, resolve_faults
+from agentic_chaos.chaos.profiles import load_profile
 from agentic_chaos.chaos.session import chaos_session
 from agentic_chaos.cli.render import render_chaos_events, render_drift_report, render_topology
 from agentic_chaos.drift import (
@@ -99,7 +100,7 @@ def _build_snapshot_from_inputs(
 
 def _run_script_with_chaos(
     script: Path,
-    inject: str,
+    inject: list[BaseFault],
     *,
     include_topology: bool = False,
 ) -> tuple[Any, datetime, datetime, Exception | None]:
@@ -130,10 +131,14 @@ def chaos_run(
         help="Path to a Python script that calls agentic_chaos.chaos_call(). No other "
         "library is required -- this works on any plain Python script.",
     ),
-    inject: str = typer.Option(
-        ...,
+    inject: str | None = typer.Option(
+        None,
         "--inject",
         help="Comma-separated fault names to enable, e.g. 'token_timeout,rate_limit_storm'.",
+    ),
+    profile: str | None = typer.Option(None, "--profile", help="Named chaos.toml profile."),
+    profile_file: Path = typer.Option(
+        Path("chaos.toml"), "--profile-file", help="TOML profile file."
     ),
     save: Path | None = typer.Option(
         None, "--save", help="Save the resulting chaos report to this file."
@@ -151,12 +156,20 @@ def chaos_run(
         raise typer.Exit(code=1)
 
     try:
-        resolve_faults(inject)
-    except ValueError as exc:
+        if (inject is None) == (profile is None):
+            raise ValueError("Provide exactly one of --inject or --profile")
+        configured = (
+            load_profile(profile, profile_file)
+            if profile is not None
+            else resolve_faults(inject or "")
+        )
+        if not configured:
+            raise ValueError("At least one fault is required")
+    except (ValueError, OSError) as exc:
         console.print(f"[red]{exc}[/red]")
         raise typer.Exit(code=1) from exc
 
-    session, started_at, ended_at, crashed = _run_script_with_chaos(script, inject)
+    session, started_at, ended_at, crashed = _run_script_with_chaos(script, configured)
 
     if crashed is not None:
         console.print(f"[red]Script raised under chaos:[/red] {crashed!r}")
@@ -196,8 +209,8 @@ def agent_run(
         help="Path to a Python script that uses agent-level chaos_call() wrappers "
         "(wrap_tool, wrap_node, or direct chaos_call with agent faults).",
     ),
-    inject: str = typer.Option(
-        ...,
+    inject: str | None = typer.Option(
+        None,
         "--inject",
         help="Comma-separated fault names to enable, e.g. 'tool_failure,memory_corruption'.",
     ),
@@ -205,6 +218,10 @@ def agent_run(
         "generic",
         "--framework",
         help="Agent framework hint (generic, langgraph, crewai, autogen). Currently informational.",
+    ),
+    profile: str | None = typer.Option(None, "--profile", help="Named chaos.toml profile."),
+    profile_file: Path = typer.Option(
+        Path("chaos.toml"), "--profile-file", help="TOML profile file."
     ),
     save: Path | None = typer.Option(
         None,
@@ -227,15 +244,23 @@ def agent_run(
         raise typer.Exit(code=1)
 
     try:
-        resolve_faults(inject)
-    except ValueError as exc:
+        if (inject is None) == (profile is None):
+            raise ValueError("Provide exactly one of --inject or --profile")
+        configured = (
+            load_profile(profile, profile_file)
+            if profile is not None
+            else resolve_faults(inject or "")
+        )
+        if not configured:
+            raise ValueError("At least one fault is required")
+    except (ValueError, OSError) as exc:
         console.print(f"[red]{exc}[/red]")
         raise typer.Exit(code=1) from exc
 
     if framework not in ("generic", "langgraph", "crewai", "autogen"):
         console.print(f"[yellow]Unknown framework '{framework}', using generic.[/yellow]")
 
-    session, started_at, ended_at, crashed = _run_script_with_chaos(script, inject)
+    session, started_at, ended_at, crashed = _run_script_with_chaos(script, configured)
 
     if crashed is not None:
         console.print(f"[red]Script raised under chaos:[/red] {crashed!r}")

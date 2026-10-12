@@ -48,7 +48,8 @@ impact before those issues appear in production.
 
 ### Current Roadmap Focus
 
-The next major step is structured experiment reports with provenance and
+v0.5 streaming faults, provider patches, and profiles are implemented. The
+next major step is safety rails, alongside structured reports with provenance and
 synthetic resilience scenarios. Changes in this repo should move the package
 toward reproducible resilience evidence, not just ad hoc fault injection.
 

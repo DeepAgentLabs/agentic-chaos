@@ -1,0 +1,16 @@
+[profiles.production-like]
+faults = ["rate_limit_storm", "token_timeout"]
+probability = 0.1
+seed = 42
+
+[profiles.stress-test]
+faults = ["rate_limit_storm", "silent_degradation", "token_timeout"]
+probability = 0.8
+seed = 42
+
+[profiles.streaming-demo]
+faults = ["stream_cut"]
+probability = 1.0
+
+[profiles.streaming-demo.parameters.stream_cut]
+after_chunks = 2

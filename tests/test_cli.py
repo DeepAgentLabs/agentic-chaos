@@ -137,7 +137,7 @@ def test_chaos_run_saves_report_even_when_script_crashes(tmp_path: Path) -> None
 
 def test_agent_run_requires_inject_option() -> None:
     result = runner.invoke(app, ["agent", "run", "dummy.py"])
-    assert result.exit_code == 2  # missing required --inject
+    assert result.exit_code == 1  # requires --inject or --profile
 
 
 def test_agent_run_missing_script() -> None:

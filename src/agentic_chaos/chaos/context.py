@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from contextvars import ContextVar
 from typing import Any
 
@@ -12,6 +13,7 @@ class ChaosSession:
     def __init__(self, faults: list[BaseFault]) -> None:
         self.faults = faults
         self.events: list[ChaosEvent] = []
+        self.cleanups: list[Callable[[], None]] = []
 
     def events_as_json(self) -> list[dict[str, Any]]:
         """JSON-serialized events, ready to drop into any `chaos_events` array

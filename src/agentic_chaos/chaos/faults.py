@@ -60,6 +60,17 @@ class BaseFault(ABC):
 
     name: str
 
+    def __init__(self, probability: float = 1.0, seed: int | None = None) -> None:
+        if not 0.0 <= probability <= 1.0:
+            raise ValueError("probability must be between 0.0 and 1.0")
+        self.probability = probability
+        self._trigger_rng = random.Random(seed)
+
+    def should_trigger(self) -> bool:
+        return self.probability == 1.0 or (
+            self.probability > 0.0 and self._trigger_rng.random() < self.probability
+        )
+
     @abstractmethod
     def trigger(
         self,
@@ -93,7 +104,15 @@ class TokenTimeoutFault(BaseFault):
 
     name = "token_timeout"
 
-    def __init__(self, hang_seconds: float = 2.0, mode: str = "raise") -> None:
+    def __init__(
+        self,
+        hang_seconds: float = 2.0,
+        mode: str = "raise",
+        *,
+        probability: float = 1.0,
+        seed: int | None = None,
+    ) -> None:
+        super().__init__(probability, seed)
         if mode not in ("raise", "delay"):
             raise ValueError("mode must be 'raise' or 'delay'")
         self.hang_seconds = hang_seconds
@@ -148,7 +167,15 @@ class RateLimitStormFault(BaseFault):
 
     name = "rate_limit_storm"
 
-    def __init__(self, burst_count: int = 3, retry_after: float = 1.0) -> None:
+    def __init__(
+        self,
+        burst_count: int = 3,
+        retry_after: float = 1.0,
+        *,
+        probability: float = 1.0,
+        seed: int | None = None,
+    ) -> None:
+        super().__init__(probability, seed)
         self.burst_count = burst_count
         self.retry_after = retry_after
         self._fired = 0
@@ -293,7 +320,9 @@ class SilentDegradationFault(BaseFault):
         self,
         degrade_fn: Callable[[Any], Any] | None = None,
         seed: int | None = None,
+        probability: float = 1.0,
     ) -> None:
+        super().__init__(probability, seed)
         self._rng = random.Random(seed)
         self.degrade_fn = degrade_fn or (lambda result: _default_degrade(result, self._rng))
 

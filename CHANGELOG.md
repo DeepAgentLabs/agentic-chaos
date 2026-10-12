@@ -4,6 +4,32 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-12
+
+### Added
+
+- Four lazy sync/async stream faults: cut, bounded hang, slow first-token
+  delivery, and slow inter-chunk delivery; `chaos_stream()` / `chaos_astream()`
+  emit events when delivery is affected and close owned upstream streams.
+- Reversible, context-scoped patches for explicit OpenAI, Anthropic, and
+  Google Gen AI client instances, with optional SDK dependencies.
+- `AuthErrorFault` (401/403) and `ContextLengthFault` (400), using package
+  exceptions that carry their chaos events.
+- Seeded per-call/per-stream probability on every fault (defaults to 1.0).
+- Named `chaos.toml` profiles with constructor parameters, Python
+  `load_profile()`, and `--profile` / `--profile-file` on both run commands.
+- `chaos_acall()` for async call injection with cancellable provider work
+  and isolated event buffering.
+- Offline examples, reproducible demo GIF, API guide, real SDK smoke tests,
+  and Lens/Tower/MCP sibling compatibility checks in CI.
+
+### Changed
+
+- Package version is `0.5.0`; native ChaosReport/event shape is unchanged.
+- Both run commands require exactly one of `--inject` or `--profile`.
+- Python 3.10 uses the conditional `tomli` dependency for TOML loading.
+- Structured experiment/AIOS export backlog and v0.5.x safety rails remain planned.
+
 ### Added
 
 - `scripts/benchmark_overhead.py` and `make benchmark` — measures

@@ -6,9 +6,10 @@ The [2026-09-11 implementation audit](ROADMAP_AUDIT.md) maps this roadmap to
 source and tests. v0.1–v0.4 are substantially implemented as claimed, with
 one correction below: the v0.2 "LangGraph adapter" is a framework-agnostic
 `wrap_tool()`/`wrap_node()` helper with no LangGraph-specific code,
-dependency, or test — not a LangGraph integration. v0.5–v1.0 are correctly
+dependency, or test — not a LangGraph integration. At the audited commit, v0.5–v1.0 were correctly
 unimplemented; their 🚧 Planned markers match an empty search for
-corresponding code.
+corresponding code. v0.5 has since been implemented with new tests; see
+[the v0.5 guide](docs/v0.5.md).
 
 ## Release Status
 
@@ -16,7 +17,7 @@ corresponding code.
 - **v0.2** ✅ Complete — Agent Failure Injector (3 agent faults, topology tracking, framework-agnostic `wrap_tool()`/`wrap_node()` helpers — no LangGraph-specific integration; see [audit](ROADMAP_AUDIT.md)) — shipped 2026-07-13
 - **v0.3** ✅ Complete — Fidelity Judges & Handoff Chaos (`v0.3.0`)
 - **v0.4** ✅ Complete — Prompt/Model Drift Detector (`v0.4.0`) — shipped 2026-08-15
-- **v0.5** 🚧 Planned — Streaming Faults, Provider Patching & Chaos Profiles
+- **v0.5** ✅ Complete — Streaming Faults, Provider Patching & Chaos Profiles
 - **v0.5.x** 🚧 Planned — Safety Rails (Circuit Breaker & Dry-Run)
 - **v0.6** 🚧 Planned — Pytest Plugin & Assertions
 - **v0.7** 🚧 Planned — Fault Cascades, Adaptive Intensity & Response Poisoning
@@ -418,7 +419,7 @@ lives in the same package and reuses the same export layer.
   per-user alert cooldown, so N runs/day doesn't mean N alerts).
 - [x] README section + example (scheduled drift check in CI)
 
-### v0.5 — Streaming Faults, Provider Patching & Chaos Profiles
+### v0.5 — Streaming Faults, Provider Patching & Chaos Profiles ✅
 
 Closes the biggest remaining gaps in fault coverage and adoption friction.
 
@@ -429,10 +430,10 @@ Closes the biggest remaining gaps in fault coverage and adoption friction.
 - `SlowChunksFault` — slow inter-chunk delivery to simulate degraded throughput
 
 **Provider auto-patching (opt-in helpers):**
-- `patch_openai(faults=[...])` — monkey-patch the OpenAI client so all calls
+- `patch_openai(client, faults=[...])` — monkey-patch the OpenAI client so all calls
   are automatically wrapped; no need to change every call site to `chaos_call()`
-- `patch_anthropic(faults=[...])` — same for Anthropic/Claude
-- `patch_google(faults=[...])` — same for Google Gemini
+- `patch_anthropic(client, faults=[...])` — same for Anthropic/Claude
+- `patch_google(client, faults=[...])` — same for Google Gemini
 - Patches are reversible and scoped to `chaos_session()` lifetime
 
 **Chaos profiles (named presets via `chaos.toml`):**
@@ -458,12 +459,18 @@ agentic-chaos chaos run my_app.py --profile production-like
 - `ContextLengthFault` — simulate context-length-exceeded errors
 
 **Deliverables:**
-- [ ] 4 streaming fault classes
-- [ ] Provider patching helpers (OpenAI, Anthropic, Gemini)
-- [ ] `chaos.toml` profile loader + `--profile` CLI flag
-- [ ] `probability` parameter on all fault classes
-- [ ] `AuthErrorFault` + `ContextLengthFault`
-- [ ] README section + example + demo GIF
+- [x] 4 streaming fault classes
+- [x] Provider patching helpers (OpenAI, Anthropic, Gemini)
+- [x] `chaos.toml` profile loader + `--profile` CLI flag
+- [x] `probability` parameter on all fault classes
+- [x] `AuthErrorFault` + `ContextLengthFault`
+- [x] README section + example + demo GIF
+
+Implemented in `v0.5.0`. See [the guide](docs/v0.5.md) for supported provider
+methods, bounded hang semantics, probability selection, and compatibility tests.
+SDKs remain optional; patches operate on explicit client instances. Native
+ChaosReport events retain their existing shape; this does not close the v0.2.x
+structured report / canonical AIOS export backlog or v0.5.x safety rails.
 
 ### v0.5.x — Safety Rails (Circuit Breaker & Dry-Run)
 

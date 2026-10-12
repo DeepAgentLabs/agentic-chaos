@@ -64,6 +64,17 @@ jobs:
           repository: DeepAgentLabs/agenticlens
           path: agenticlens
 
+      - name: Check out Control Tower native artifact reader
+        uses: actions/checkout@v7
+        with:
+          repository: DeepAgentLabs/agenticops-control-tower
+          path: agenticops-control-tower
+      - name: Check out MCP fault discovery adapter
+        uses: actions/checkout@v7
+        with:
+          repository: DeepAgentLabs/mcp-server
+          path: mcp-server
+
       - name: Install uv
         uses: astral-sh/setup-uv@v7
         with:
@@ -84,11 +95,21 @@ jobs:
         working-directory: agentic-chaos
         run: uv run pytest
 
+  test-provider-sdks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+      - name: Install optional SDKs
+        run: uv sync --frozen --extra dev --extra providers --python 3.12
+      - name: Real SDK smoke tests (no provider network calls)
+        run: uv run --frozen pytest tests/test_provider_sdks.py
+
   # Proves the built distribution's own metadata has no hard agenticlens
   # dependency -- built with only the core dev extra, no sibling checkout.
   package:
     runs-on: ubuntu-latest
-    needs: [test, test-agenticlens-integration]
+    needs: [test, test-agenticlens-integration, test-provider-sdks]
     steps:
       - uses: actions/checkout@v7
       - name: Install uv
@@ -105,3 +126,9 @@ jobs:
         run: |
           uv run --frozen python -m build
           uv run --frozen python -m twine check dist/*
+      - name: Verify clean Python 3.10 wheel install (no dev extras)
+        run: |
+          uv python install 3.10
+          uv venv --python 3.10 /tmp/chaos-wheel-smoke
+          uv pip install --python /tmp/chaos-wheel-smoke/bin/python dist/*.whl
+          /tmp/chaos-wheel-smoke/bin/python -c "import tomli, agentic_chaos; assert agentic_chaos.__version__ == '0.5.0'; print('Python 3.10 wheel import passed')"
