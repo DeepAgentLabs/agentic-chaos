@@ -25,7 +25,8 @@ tools that happen to compose.
 
 `agentic-chaos` is early-stage software. The **LLM Chaos Toolkit** (v0.1),
 **Agent Failure Injector** (v0.2), **Fidelity Judges & Handoff Chaos**
-(`v0.3.0`), and **Prompt/Model Drift Detector** (`v0.4.0`) are available.
+(`v0.3.0`), **Prompt/Model Drift Detector** (`v0.4.0`), and
+**Streaming Faults, Provider Patching & Chaos Profiles** (`v0.5.0`) are available.
 See [ROADMAP.md](ROADMAP.md) for the full plan.
 
 ### What's Next
@@ -34,9 +35,8 @@ See [ROADMAP.md](ROADMAP.md) for the full plan.
   hypothesis, injection point provenance, observed behavior, and verdict
 - **Synthetic test scenarios** — prebuilt known-bad agent behaviors for
   consistent resilience validation
-- **Memory decay** — progressive corruption for long-running shared state
-- **Scheduled drift checks** — snapshot prompts/models/outputs and detect
-  silent changes before production behavior shifts further
+- **Safety rails (v0.5.x)** — circuit breaker and dry-run support
+- **Pytest integration (v0.6)** — reusable assertions and CI resilience checks
 
 ## Installation
 
@@ -165,6 +165,45 @@ agentic-chaos chaos list-faults
 `agentic-chaos drift compare` exits with code `2` when drift is detected, so
 it can fail a CI job while still writing a JSON report when emission rules
 allow it.
+
+## Streaming, Provider Patches & Profiles (v0.5.0)
+
+```python
+from agentic_chaos import StreamCutFault, chaos_session, chaos_stream
+
+with chaos_session([StreamCutFault(after_chunks=2)]) as session:
+    print(list(chaos_stream(iter(["Hello", " world", "!"]))))
+# ['Hello', ' world']; one degraded event, source closed without reading ahead.
+```
+
+New faults: `StreamCutFault`, `StreamHangFault`, `SlowTTFTFault`,
+`SlowChunksFault`, `AuthErrorFault`, and `ContextLengthFault`. Every fault
+accepts `probability=0.0..1.0` and an optional `seed` for reproducible sampling.
+Use `chaos_astream()` for async streams and `chaos_acall()` for async calls.
+
+`patch_openai(client)`, `patch_anthropic(client)`, and `patch_google(client)`
+wrap the supported methods of an existing client inside `chaos_session()`;
+patches restore automatically on exit. SDKs are optional. Install individual
+SDKs or `pip install agentic-chaos[providers]`. Anthropic's high-level
+`messages.stream()` helper is outside this patch surface; use `messages.create(stream=True)`.
+Simulated auth/context errors use this package's exceptions, not SDK exceptions.
+
+```bash
+agentic-chaos chaos run examples/chaos_streaming_demo.py \
+  --profile streaming-demo --profile-file examples/chaos.toml --save report.json
+```
+
+Profiles also work with `agent run`; choose exactly one of `--inject` and
+`--profile`. A profile with multiple faults still requires explicit fault
+selection at each call site. Streaming fault selection is sampled once per
+stream. Consume and close streams inside the session.
+
+See the [v0.5 guide](docs/v0.5.md) for parameters, provider method coverage,
+cancellation behavior, profiles, and sibling compatibility. Native reports
+remain compatible with Lens, MCP, and Tower; canonical AIOS export remains
+separate unfinished work.
+
+![Offline v0.5 demo](docs/assets/v0.5-demo.gif)
 
 ## Drift Detector (v0.4.0)
 
@@ -460,3 +499,9 @@ readers do not establish end-to-end integration or stable AIOS conformance.
 See [planned safety acceptance criteria](ROADMAP.md#adversarial-containment-validation-planned) for responsibilities and
 dependencies. These additions do not claim implemented end-to-end containment
 or integrity protection.
+
+### v0.5 examples
+
+- [Streaming demo](examples/chaos_streaming_demo.py): offline cut and event capture.
+- [Provider patch demo](examples/chaos_provider_patching_demo.py): injected auth error and restoration.
+- [TOML profiles](examples/chaos.toml): production, stress, and executable streaming presets.
