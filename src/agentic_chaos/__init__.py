@@ -14,7 +14,9 @@ from agentic_chaos.chaos import (
     chaos_call,
     chaos_session,
 )
+from agentic_chaos.chaos.async_call import chaos_acall
 from agentic_chaos.chaos.faults import FAULT_REGISTRY
+from agentic_chaos.chaos.profiles import load_profile
 from agentic_chaos.chaos.provider_faults import AuthErrorFault, ContextLengthFault
 from agentic_chaos.chaos.streaming import (
     SlowChunksFault,
@@ -25,6 +27,7 @@ from agentic_chaos.chaos.streaming import (
     chaos_stream,
 )
 from agentic_chaos.drift import DriftReport, DriftSnapshot, compare_snapshots
+from agentic_chaos.integrations.providers import patch_anthropic, patch_google, patch_openai
 from agentic_chaos.judges import DeepEvalJudge, HeuristicJudge, PydanticEvalsJudge, fidelity_session
 
 for _fault in (
@@ -40,6 +43,11 @@ for _fault in (
 __version__ = "0.4.0"
 
 __all__ = [
+    "load_profile",
+    "chaos_acall",
+    "patch_openai",
+    "patch_anthropic",
+    "patch_google",
     "AuthErrorFault",
     "ContextLengthFault",
     "SlowChunksFault",

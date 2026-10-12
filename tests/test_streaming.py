@@ -46,9 +46,11 @@ def test_delay_schedule(monkeypatch, fault):
 
 
 def test_hang_is_bounded_and_records_error():
-    with chaos_session([StreamHangFault(delay_seconds=0)]) as session:
-        with pytest.raises(StreamHangError) as exc:
-            list(chaos_stream(iter([1, 2])))
+    with (
+        chaos_session([StreamHangFault(delay_seconds=0)]) as session,
+        pytest.raises(StreamHangError) as exc,
+    ):
+        list(chaos_stream(iter([1, 2])))
     assert exc.value.event is session.events[0]
 
 

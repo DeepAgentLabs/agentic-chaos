@@ -27,6 +27,7 @@ dev = [
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "ruff" },
+    { name = "tomli" },
     { name = "twine" },
 ]
 
@@ -40,16 +41,33 @@ requires-dist = [
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=5.0" },
     { name = "rich", specifier = ">=13.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.6" },
+    { name = "tomli", marker = "extra == 'dev'", specifier = ">=2.0" },
     { name = "twine", marker = "extra == 'dev'", specifier = ">=5.1" },
     { name = "typer", specifier = ">=0.12" },
 ]
 provides-extras = ["agenticlens", "dev"]
 
 [[package]]
+name = "agentic-evals"
+version = "0.7.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "jsonschema" },
+    { name = "pydantic" },
+    { name = "pyyaml" },
+    { name = "referencing" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a5/9d/7dafcf0b6e9ee9ed95256980035a892091e4f2b1d2800192e456970c4a9a/agentic_evals-0.7.0.tar.gz", hash = "sha256:85e2605ebe83f40426af1a80e6c5b19c62d00f8e7103ae7de8f73bb74ef39418", size = 274337, upload-time = "2026-10-04T05:46:23.682Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/33/3d/e9ca6d9f91c76a6d549e6b99264daabb130ffd412e42261c9ba69cf373af/agentic_evals-0.7.0-py3-none-any.whl", hash = "sha256:06580bfb0587dfba49b9abf12d70de0d3c8a3a384fff92a0e1480ba097ec4b04", size = 73689, upload-time = "2026-10-04T05:46:22.2Z" },
+]
+
+[[package]]
 name = "agenticlens"
-version = "0.4.6"
+version = "0.5.0"
 source = { editable = "../agenticlens" }
 dependencies = [
+    { name = "agentic-evals" },
     { name = "jsonschema" },
     { name = "pydantic" },
     { name = "pyyaml" },
@@ -60,7 +78,11 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "agentic-evals", specifier = ">=0.1.1,<1" },
     { name = "build", marker = "extra == 'dev'", specifier = ">=1.2" },
+    { name = "fastapi", marker = "extra == 'api'", specifier = ">=0.115,<1" },
+    { name = "fastapi", marker = "extra == 'dev'", specifier = ">=0.115,<1" },
+    { name = "httpx2", marker = "extra == 'dev'", specifier = ">=1.0" },
     { name = "jsonschema", specifier = ">=4.23" },
     { name = "langgraph", marker = "extra == 'langgraph'", specifier = ">=1.0,<2" },
     { name = "langgraph", marker = "extra == 'multi-agent'", specifier = ">=1.0,<2" },
@@ -76,8 +98,10 @@ requires-dist = [
     { name = "twine", marker = "extra == 'dev'", specifier = ">=5.1" },
     { name = "typer", specifier = ">=0.12" },
     { name = "types-pyyaml", marker = "extra == 'dev'", specifier = ">=6.0" },
+    { name = "uvicorn", marker = "extra == 'api'", specifier = ">=0.30,<1" },
+    { name = "uvicorn", marker = "extra == 'dev'", specifier = ">=0.30,<1" },
 ]
-provides-extras = ["dev", "docs", "langgraph", "multi-agent"]
+provides-extras = ["api", "dev", "docs", "langgraph", "multi-agent"]
 
 [[package]]
 name = "annotated-doc"
