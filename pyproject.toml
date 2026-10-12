@@ -31,6 +31,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+providers = ["openai>=1.0", "anthropic>=0.40", "google-genai>=1.0"]
 # Only needed for agentic_chaos.integrations.agenticlens -- core chaos_call()/
 # chaos_session()/the CLI never require it. 0.1.2 is on PyPI but predates
 # chaos_events support; this floor needs the not-yet-released version that
