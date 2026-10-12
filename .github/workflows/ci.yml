@@ -72,7 +72,7 @@ jobs:
       - name: Check out MCP fault discovery adapter
         uses: actions/checkout@v7
         with:
-          repository: DeepAgentLabs/deep-agentic-core-mcp
+          repository: DeepAgentLabs/mcp-server
           path: mcp-server
 
       - name: Install uv
