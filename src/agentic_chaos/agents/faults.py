@@ -108,7 +108,10 @@ class ToolCallFailureFault(BaseFault):
         timeout_seconds: float = 5.0,
         error_message: str = "Tool execution failed",
         tool_name: str | None = None,
+        probability: float = 1.0,
+        seed: int | None = None,
     ) -> None:
+        super().__init__(probability, seed)
         if mode not in ("error", "timeout", "empty"):
             raise ValueError("mode must be 'error', 'timeout', or 'empty'")
         self.mode = mode
@@ -278,7 +281,9 @@ class MemoryCorruptionFault(BaseFault):
         mode: str = "garble",
         seed: int | None = None,
         rate: float = 0.25,
+        probability: float = 1.0,
     ) -> None:
+        super().__init__(probability, seed)
         if mode not in self._CORRUPTORS:
             raise ValueError(f"mode must be one of {sorted(self._CORRUPTORS)}")
         if mode == "decay" and not 0.0 < rate <= 1.0:
@@ -356,7 +361,9 @@ class HandoffCorruptionFault(BaseFault):
         mode: str = "corrupt",
         delay_seconds: float = 1.0,
         seed: int | None = None,
+        probability: float = 1.0,
     ) -> None:
+        super().__init__(probability, seed)
         if mode not in ("corrupt", "drop", "delay"):
             raise ValueError("mode must be 'corrupt', 'drop', or 'delay'")
         self.from_node = from_node
@@ -464,7 +471,10 @@ class InfiniteLoopFault(BaseFault):
         self,
         force_turns: int = 5,
         continue_value: Any = "I need to continue processing this request.",
+        probability: float = 1.0,
+        seed: int | None = None,
     ) -> None:
+        super().__init__(probability, seed)
         self.force_turns = force_turns
         self.continue_value = continue_value
         self._fired = 0
