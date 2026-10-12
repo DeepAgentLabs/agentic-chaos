@@ -1,5 +1,9 @@
 # agentic-chaos Website
 
+The [v0.5 API guide](v0.5.md) covers streaming faults, reversible provider
+patches, profiles, examples, and sibling compatibility. The hosted docs page
+includes the [offline demo GIF](assets/v0.5-demo.gif).
+
 Modern, responsive website for the agentic-chaos project.
 
 ## 📁 Structure

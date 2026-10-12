@@ -133,6 +133,18 @@
 
     <div class="docs-container">
         <div class="docs-content">
+            <section id="v05">
+                <h2>v0.5: Streaming, Provider Patches &amp; Profiles</h2>
+                <p>Cut or freeze sync/async streams, delay first-token or chunk delivery,
+                simulate authentication and context-length errors, and sample every fault
+                with a seeded probability. Existing provider clients can be patched reversibly
+                within a chaos session; SDKs remain optional.</p>
+                <p>Both run commands accept <code>--profile NAME --profile-file chaos.toml</code>.
+                Choose exactly one of <code>--profile</code> and <code>--inject</code>.</p>
+                <p><a href="https://github.com/DeepAgentLabs/agentic-chaos/blob/main/docs/v0.5.md">API guide, provider coverage, examples and sibling compatibility</a></p>
+                <img src="../assets/v0.5-demo.gif" alt="Offline streaming and reversible provider patch demo" style="max-width:100%">
+            </section>
+
             <h1>📚 Documentation</h1>
             <p>Complete guide to using agentic-chaos for resilience testing.</p>
 
@@ -373,7 +385,7 @@ attach_events(session, workflow)
                 <ul>
                     <li><strong><a href="https://github.com/DeepAgentLabs/agentic-chaos" target="_blank">GitHub Repository</a></strong> – Source code, issues, discussions</li>
                     <li><strong><a href="https://github.com/DeepAgentLabs/agentic-chaos/blob/main/README.md" target="_blank">README</a></strong> – Project overview</li>
-                    <li><strong><a href="https://github.com/DeepAgentLabs/agentic-chaos/blob/main/ROADMAP.md" target="_blank">Roadmap</a></strong> – v0.4 through v1.0 plans (v0.1–v0.3 shipped)</li>
+                    <li><strong><a href="https://github.com/DeepAgentLabs/agentic-chaos/blob/main/ROADMAP.md" target="_blank">Roadmap</a></strong> – v0.5.x through v1.0 plans (v0.1–v0.5 shipped)</li>
                     <li><strong><a href="../explorer/">Fault Explorer</a></strong> – Interactive fault playground</li>
                     <li><strong><a href="../blog/">Blog & Case Studies</a></strong> – Real-world examples</li>
                 </ul>
