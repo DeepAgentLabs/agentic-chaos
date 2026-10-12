@@ -46,5 +46,10 @@ class chaos_session:  # noqa: N801 -- lowercase to read as a context manager, li
         traceback: TracebackType | None,
     ) -> Literal[False]:
         assert self._token is not None
-        active_session.reset(self._token)
+        try:
+            assert self.session is not None
+            for cleanup in reversed(self.session.cleanups):
+                cleanup()
+        finally:
+            active_session.reset(self._token)
         return False
