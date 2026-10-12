@@ -126,3 +126,9 @@ jobs:
         run: |
           uv run --frozen python -m build
           uv run --frozen python -m twine check dist/*
+      - name: Verify clean Python 3.10 wheel install (no dev extras)
+        run: |
+          uv python install 3.10
+          uv venv --python 3.10 /tmp/chaos-wheel-smoke
+          uv pip install --python /tmp/chaos-wheel-smoke/bin/python dist/*.whl
+          /tmp/chaos-wheel-smoke/bin/python -c "import tomli, agentic_chaos; assert agentic_chaos.__version__ == '0.5.0'; print('Python 3.10 wheel import passed')"
