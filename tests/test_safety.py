@@ -479,11 +479,13 @@ def test_stream_close_failures_count_as_failed_completions():
         def close(self):
             raise ValueError("close failed")
 
-    with chaos_session(
-        [StreamCutFault(after_chunks=9)], breaker=CircuitBreaker(max_failure_rate=1)
-    ) as session:
-        with pytest.raises(ValueError, match="close failed"):
-            list(chaos_stream(Source()))
+    with (
+        chaos_session(
+            [StreamCutFault(after_chunks=9)], breaker=CircuitBreaker(max_failure_rate=1)
+        ) as session,
+        pytest.raises(ValueError, match="close failed"),
+    ):
+        list(chaos_stream(Source()))
     assert list(session.safety.failures) == [True]
     assert session.safety.in_flight == 0
 
@@ -498,11 +500,13 @@ def test_stream_close_failures_count_as_failed_completions():
             async def aclose(self):
                 raise ValueError("async close failed")
 
-        with chaos_session(
-            [StreamCutFault(after_chunks=9)], breaker=CircuitBreaker(max_failure_rate=0)
-        ) as session:
-            with pytest.raises(ChaosAbortedError):
-                await chaos_astream(AsyncSource()).__anext__()
+        with (
+            chaos_session(
+                [StreamCutFault(after_chunks=9)], breaker=CircuitBreaker(max_failure_rate=0)
+            ) as session,
+            pytest.raises(ChaosAbortedError),
+        ):
+            await chaos_astream(AsyncSource()).__anext__()
         assert list(session.safety.failures) == [True]
         assert session.safety.abort["threshold"] == "max_failure_rate"
         assert session.safety.in_flight == 0

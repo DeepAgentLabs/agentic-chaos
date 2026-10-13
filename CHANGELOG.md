@@ -22,6 +22,13 @@ All notable changes to this project are documented here.
 - Safety API guide, offline example, reproducible demo GIF, containment tests
   with a bypass negative control, and Lens/Tower/MCP/AIOS compatibility checks.
 
+### Fixed
+
+- Pass-through fault eligibility and finite burst/turn previews do not invent
+  injections; admission reserves capacity and commits only observed fault events.
+- Stream cleanup exceptions count as failed completions; delivery rechecks
+  safety after an upstream read returns.
+
 ### Changed
 
 - Package version is `0.5.2`; v0.5.x safety rails are complete. Limits are

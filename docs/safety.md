@@ -33,7 +33,9 @@ with chaos_session([], breaker=CircuitBreaker(
   Stream-provider creation is a separate guarded operation. Cancellation counts
   as a failed completion when its worker finishes. This is operational exception
   rate, not recovery quality or a resilience score.
-- `max_injections` admits at most that many injections; the next injection
+- `max_injections` reserves capacity before fault execution and commits the
+  count only when a fault event is produced. Eventless completions release their
+  reservation. Built-in pass-through predicates skip admission. The next eligible injection
   attempt aborts. It does not count preview records. Slow-stream delay faults
   count once per stream even if they delay multiple chunks.
 - Duration is elapsed monotonic time checked at admission, dispatch, stream
@@ -66,7 +68,11 @@ agentic-chaos agent run my_agent.py --profile staging --profile-file chaos.toml 
 ```
 
 `chaos_session(..., dry_run=True)` uses the same configured selection and seeded
-probability. It executes targets and delivers original stream chunks without
+probability, tool/edge predicates, and finite burst/turn state. Selection RNG and
+preview counters use private copies; original fault state stays unchanged.
+Custom pass-through faults should implement `eligible()` and, if stateful,
+`advance_preview()` (use independent scalar preview state); their trigger is
+never executed to discover eligibility during dry-run. It executes targets and delivers original stream chunks without
 fault mutation, delay, error, or skipped calls. This can still make real API calls
 and spend money. Preview records live in `planned_events` (`would_inject`) rather
 than `chaos_events`, so consumers do not mistake a plan for an observed failure.
