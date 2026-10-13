@@ -32,7 +32,11 @@ validated against sibling projects before they are considered complete.
 
 - `agenticlens`
   Validates that chaos artifacts, resilience evidence, and extension fields
-  remain analyzable by the observability/evaluation layer.
+  remain analyzable by the observability/evaluation layer. AgenticLens 0.7.0
+  diagnoses structured-trace spans carrying `chaos.injected` /
+  `chaos.fault_type` / `chaos.event_id` as injected faults and uses them as
+  ground truth for faulty-step attribution accuracy; `span_attributes()` and
+  `mark_span()` (0.5.3) write those markers.
 - `ai-operations-spec`
   Provides the canonical artifact and semantic model that chaos reports should
   align with when they claim interoperability.
@@ -126,7 +130,7 @@ The package contains the following modules (shipped and planned):
 | `agentic_chaos.agents` | ✅ Shipped (v0.2) | Agent-level fault injection — `ToolCallFailureFault`, `MemoryCorruptionFault`, `InfiniteLoopFault`, framework-agnostic `wrap_tool()`/`wrap_node()` helpers (no LangGraph-specific integration or dependency — see [audit](ROADMAP_AUDIT.md)), topology tracking |
 | `agentic_chaos.judges` | ✅ Shipped (v0.3) | Fidelity Judges — LLM-as-judge scoring to determine if corrupted output is actually worse |
 | `agentic_chaos.drift` | ✅ Shipped (v0.4) | Prompt/model drift detection — snapshot, compare, detect silent changes |
-| `agentic_chaos.integrations` | ✅ Shipped (v0.1) | Optional AgenticLens adapter (`attach_events()`, `step_kwargs()`) |
+| `agentic_chaos.integrations` | ✅ Shipped (v0.1) | Optional AgenticLens adapter (`attach_events()`, `step_kwargs()`; `span_attributes()`/`mark_span()` since 0.5.3) |
 | `agentic_chaos.safety` | ✅ Shipped (0.5.2) | Circuit breaker (max-cost / max-failure-rate auto-abort) + `--dry-run` mode |
 
 ## Package Layout (current)
@@ -145,7 +149,7 @@ agentic-chaos/
       topology.py       # TopologyTracker, AgentTopology
     drift/              # Prompt/model drift detection (v0.4)
     integrations/       # Optional adapters
-      agenticlens.py    # attach_events(), step_kwargs()
+      agenticlens.py    # attach_events(), step_kwargs(), span_attributes(), mark_span()
     cli/                # CLI entry point
     models/             # ChaosReport, ChaosEvent, schema extensions
 ```
@@ -180,6 +184,12 @@ schema — `agenticlens analyze` reads `chaos_events` alongside its normal
 cost/latency data. The `ChaosImpactRecommender` (in the agenticlens repo)
 reports resilience findings. Neither package imports the other at the core
 level.
+
+For AgenticLens structured traces (`trace()` runs), `mark_span(span, event)`
+tags the span a fault hit. `agenticlens diagnose` then reports it as an
+`injected_fault` and attributes downstream failures to it, and
+`agenticlens attribution-accuracy` treats it as the known faulty step, so a
+chaos campaign doubles as a controlled-failure benchmark for diagnosis.
 
 Developers contributing to `agentic-chaos` should be able to ask:
 
