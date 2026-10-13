@@ -4,6 +4,28 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-10-13
+
+### Added
+
+- `agentic_chaos.export.to_aios_run()` derives an AI Operations Specification
+  v0.4-draft `run` artifact from a `ChaosReport` (or its JSON), following the
+  reviewed mapping in ai-operations-spec's
+  `reviews/framework-mappings/agentic-chaos.md`. Each event becomes a step-scoped
+  occurrence plus a `reliability_event` that `signals-on` it. Package-specific
+  fields ride in the `io.deepagentlabs.agentic-chaos` extension. The export claims
+  no recovery, step outcome, or retry chain the native events cannot show.
+- `--save-aios PATH` on `chaos run` and `agent run`; the run status is `failed`
+  when the script crashes.
+- Tests that validate exports against the published v0.4 run schema when an
+  `ai-operations-spec` checkout sits next to this repo; CI checks one out in the
+  sibling-integration job.
+
+### Changed
+
+- Package version is `0.5.1`. The native `ChaosReport` and event shape are
+  unchanged.
+
 ## [0.5.0] - 2026-10-12
 
 ### Added
