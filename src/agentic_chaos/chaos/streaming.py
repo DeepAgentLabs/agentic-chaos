@@ -175,6 +175,8 @@ def chaos_stream(
                     if not session.dry_run:
                         time.sleep(fault.delay_seconds)
                     session.safety.check()
+                if session is not None:
+                    session.safety.check()
                 count += 1
                 yield chunk
         except GeneratorExit:
@@ -255,6 +257,8 @@ def chaos_astream(
                         emitted = True
                     if not session.dry_run:
                         await asyncio.sleep(fault.delay_seconds)
+                    session.safety.check()
+                if session is not None:
                     session.safety.check()
                 count += 1
                 yield chunk

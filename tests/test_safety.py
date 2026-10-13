@@ -370,3 +370,33 @@ def test_breaker_configuration_is_copied_per_session():
         breaker.max_cost_usd = 100
         with pytest.raises(ChaosAbortedError):
             session.record_cost(1)
+
+
+def test_abort_during_upstream_read_blocks_delivery():
+    async def run():
+        entered = asyncio.Event()
+        release = asyncio.Event()
+        closed = []
+
+        async def source():
+            try:
+                entered.set()
+                await release.wait()
+                yield "must not be delivered"
+            finally:
+                closed.append(True)
+
+        with chaos_session(
+            [StreamCutFault(after_chunks=9)], breaker=CircuitBreaker(max_cost_usd=1)
+        ) as session:
+            stream = chaos_astream(source())
+            task = asyncio.create_task(stream.__anext__())
+            await entered.wait()
+            with pytest.raises(ChaosAbortedError):
+                session.record_cost(1)
+            release.set()
+            with pytest.raises(ChaosAbortedError):
+                await task
+        assert closed == [True] and session.safety.in_flight == 0
+
+    asyncio.run(run())
