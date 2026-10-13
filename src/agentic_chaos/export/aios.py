@@ -81,6 +81,8 @@ def to_aios_run(
 
     if not report.id.strip():
         raise ValueError("report.id must be a non-blank string to become an AIOS Run id")
+    if report.aborted:
+        status = "cancelled"
     run_id = report.id
     started_at = _timestamp(report.start_time)
     ended_at = _timestamp(report.end_time) if report.end_time is not None else None
@@ -302,6 +304,18 @@ def _extension(report: ChaosReport, producer_version: str | None) -> dict[str, A
         "producer_version": producer_version,
         "report_id": report.id,
         "report_name": report.name,
+    }
+    extension["safety"] = {
+        field: getattr(report, field)
+        for field in (
+            "aborted",
+            "abort_reason",
+            "dry_run",
+            "planned_events",
+            "cost_usd",
+            "injections",
+            "in_flight",
+        )
     }
     if report.agent_topology is not None:
         extension["agent_topology"] = report.agent_topology
