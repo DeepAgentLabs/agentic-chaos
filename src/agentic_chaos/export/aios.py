@@ -23,7 +23,6 @@ or in `attributes`, which AIOS consumers must preserve.
 
 from __future__ import annotations
 
-import re
 from datetime import datetime, timezone
 from typing import Any
 
@@ -80,6 +79,8 @@ def to_aios_run(
     if not isinstance(report, ChaosReport):
         report = ChaosReport.model_validate(report)
 
+    if not report.id.strip():
+        raise ValueError("report.id must be a non-blank string to become an AIOS Run id")
     run_id = report.id
     started_at = _timestamp(report.start_time)
     ended_at = _timestamp(report.end_time) if report.end_time is not None else None
@@ -218,29 +219,45 @@ def _step_for(
     occurrence_type: str,
     steps: dict[str, dict[str, Any]],
 ) -> tuple[dict[str, Any], bool]:
-    """Return the Step this event correlates to, and whether it was just created."""
-    step_id = raw_event.get("step_id")
-    step_name = raw_event.get("step_name")
-    if step_id:
+    """Return the Step this event correlates to, and whether it was just created.
+
+    AIOS step IDs are generated per run (`<run>:step:<n>`) so they are always
+    valid and can never collide with each other or with the run's own objects;
+    the producer's native `step_id`/`step_name` are kept in `attributes`.
+    """
+    step_id = _clean(raw_event.get("step_id"))
+    step_name = _clean(raw_event.get("step_name"))
+    if step_id is not None:
         key = f"id:{step_id}"
-        aios_id = str(step_id)
-    elif step_name:
+    elif step_name is not None:
         key = f"name:{step_name}"
-        aios_id = f"{run_id}:step:{_slug(str(step_name))}"
     else:
         key = _UNATTRIBUTED_STEP
-        aios_id = f"{run_id}:step:{_UNATTRIBUTED_STEP}"
     if key in steps:
         return steps[key], False
-    step: dict[str, Any] = {
-        "id": aios_id,
-        "category": _STEP_CATEGORY_BY_OCCURRENCE[occurrence_type],
-        "name": str(step_name) if step_name else (str(step_id) if step_id else "unattributed"),
-    }
+    attributes: dict[str, Any] = {}
+    if step_id is not None:
+        attributes["native_step_id"] = step_id
+    if step_name is not None:
+        attributes["native_step_name"] = step_name
     if key == _UNATTRIBUTED_STEP:
-        step["attributes"] = {"reason": "chaos event carried no step_id or step_name"}
+        attributes["reason"] = "chaos event carried no step_id or step_name"
+    step: dict[str, Any] = {
+        "id": f"{run_id}:step:{len(steps) + 1}",
+        "category": _STEP_CATEGORY_BY_OCCURRENCE[occurrence_type],
+        "name": step_name or step_id or "unattributed",
+        "attributes": attributes,
+    }
     steps[key] = step
     return step, True
+
+
+def _clean(value: Any) -> str | None:
+    """A usable correlation value, or None for missing/blank ones."""
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text or None
 
 
 def _evidence_attributes(
@@ -337,8 +354,3 @@ def _event_time(value: Any, fallback: str) -> str:
         except ValueError:
             return fallback
     return fallback
-
-
-def _slug(value: str) -> str:
-    slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
-    return slug or "step"
