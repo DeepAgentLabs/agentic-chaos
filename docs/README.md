@@ -118,3 +118,6 @@ To contribute website improvements:
 ## 📄 License
 
 Website content © 2026 DeepAgentLabs. MIT License.
+
+The [0.5.2 safety guide](safety.md) covers circuit breakers, dry-run, accounting,
+abort evidence, and compatible sibling readers.

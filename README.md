@@ -26,7 +26,8 @@ tools that happen to compose.
 `agentic-chaos` is early-stage software. The **LLM Chaos Toolkit** (v0.1),
 **Agent Failure Injector** (v0.2), **Fidelity Judges & Handoff Chaos**
 (`v0.3.0`), **Prompt/Model Drift Detector** (`v0.4.0`), and
-**Streaming Faults, Provider Patching & Chaos Profiles** (`v0.5.0`) are available.
+**Streaming Faults, Provider Patching & Chaos Profiles** (`v0.5.0`) and
+**Safety Rails** (`0.5.2`) are available.
 See [ROADMAP.md](ROADMAP.md) for the full plan.
 
 ### What's Next
@@ -35,7 +36,7 @@ See [ROADMAP.md](ROADMAP.md) for the full plan.
   hypothesis, injection point provenance, observed behavior, and verdict
 - **Synthetic test scenarios** — prebuilt known-bad agent behaviors for
   consistent resilience validation
-- **Safety rails (v0.5.x)** — circuit breaker and dry-run support
+- **Safety rails (v0.5.x)** ✅ — circuit breaker and dry-run support (0.5.2)
 - **Pytest integration (v0.6)** — reusable assertions and CI resilience checks
 
 ## Installation
@@ -545,3 +546,23 @@ or integrity protection.
 - [Streaming demo](examples/chaos_streaming_demo.py): offline cut and event capture.
 - [Provider patch demo](examples/chaos_provider_patching_demo.py): injected auth error and restoration.
 - [TOML profiles](examples/chaos.toml): production, stress, and executable streaming presets.
+
+## Safety rails (0.5.2)
+
+Use `chaos_session(..., breaker=CircuitBreaker(max_cost_usd=5,
+max_failure_rate=0.5), dry_run=True)` to preview fault selection with guarded
+execution. Record cost explicitly with `session.record_cost()` or
+`session.record_usage()` using supplied prices. Abort blocks later instrumented
+calls and injections; already-running work is reported separately.
+
+```bash
+agentic-chaos chaos run examples/chaos_customer_support_demo.py \
+  --inject rate_limit_storm --dry-run --save preview.json
+```
+
+Dry-run executes target calls normally, so it can still incur API spend.
+The [safety guide](docs/safety.md) defines cooperative time limits, rolling
+failure accounting, report fields, AIOS mapping, and sibling compatibility.
+See the [offline example](examples/chaos_safety_demo.py).
+
+![Safety rails demo](docs/assets/safety-demo.gif)

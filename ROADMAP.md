@@ -18,7 +18,7 @@ corresponding code. v0.5 has since been implemented with new tests; see
 - **v0.3** ✅ Complete — Fidelity Judges & Handoff Chaos (`v0.3.0`)
 - **v0.4** ✅ Complete — Prompt/Model Drift Detector (`v0.4.0`) — shipped 2026-08-15
 - **v0.5** ✅ Complete — Streaming Faults, Provider Patching & Chaos Profiles
-- **v0.5.x** 🚧 Planned — Safety Rails (Circuit Breaker & Dry-Run)
+- **v0.5.x** ✅ Complete — Safety Rails (Circuit Breaker & Dry-Run), released as `0.5.2`
 - **v0.6** 🚧 Planned — Pytest Plugin & Assertions
 - **v0.7** 🚧 Planned — Fault Cascades, Adaptive Intensity & Response Poisoning
 - **v0.8** 🚧 Planned — Chaos Workflows, Declarative Experiments & Explosion Radius
@@ -127,7 +127,7 @@ The package contains the following modules (shipped and planned):
 | `agentic_chaos.judges` | ✅ Shipped (v0.3) | Fidelity Judges — LLM-as-judge scoring to determine if corrupted output is actually worse |
 | `agentic_chaos.drift` | ✅ Shipped (v0.4) | Prompt/model drift detection — snapshot, compare, detect silent changes |
 | `agentic_chaos.integrations` | ✅ Shipped (v0.1) | Optional AgenticLens adapter (`attach_events()`, `step_kwargs()`) |
-| `agentic_chaos.safety` | 🚧 Planned (v0.5.x) | Circuit breaker (max-cost / max-failure-rate auto-abort) + `--dry-run` mode |
+| `agentic_chaos.safety` | ✅ Shipped (0.5.2) | Circuit breaker (max-cost / max-failure-rate auto-abort) + `--dry-run` mode |
 
 ## Package Layout (current)
 
@@ -472,7 +472,7 @@ methods, bounded hang semantics, probability selection, and compatibility tests.
 SDKs remain optional; patches operate on explicit client instances. Native
 ChaosReport events retain their existing shape. `0.5.1` adds the AIOS v0.4-draft
 Run export (`to_aios_run()`, `--save-aios`); the rest of the v0.2.x structured
-report backlog and the v0.5.x safety rails remain open.
+report backlog remain open; v0.5.x safety rails ship in `0.5.2`.
 
 ### v0.5.x — Safety Rails (Circuit Breaker & Dry-Run)
 
@@ -496,15 +496,15 @@ with chaos_session([...], breaker=CircuitBreaker(max_cost_usd=5.0, max_failure_r
 # -> aborts the session and raises ChaosAbortedError once either threshold is crossed,
 #    instead of letting an unattended run keep injecting faults
 ```
-Thresholds check cumulative cost (from token/pricing data, mirroring
-AgenticLens's cost intelligence) and rolling failure rate across the active
-session. An aborted session still emits a `ChaosReport` — with `aborted=True`
+Thresholds check explicitly recorded cumulative cost (or token usage with
+caller-supplied prices) and a rolling completed-operation exception rate.
+See [the safety guide](docs/safety.md) for exact limits and accounting. An aborted session still emits a `ChaosReport` — with `aborted=True`
 and the triggering threshold recorded — so the run stays diagnosable rather
 than just disappearing.
 
 **Dry-run mode:**
 ```bash
-agentic-chaos chaos run my_app.py --inject rate_limit_storm,cascade --dry-run
+agentic-chaos chaos run my_app.py --inject rate_limit_storm --dry-run
 # -> reports which faults would fire, at which call sites, under this config —
 #    no fault actually injected, no target function call skipped or altered
 ```
@@ -514,11 +514,21 @@ apply --dry-run` or an admission webhook lets you validate a Chaos Mesh
 CRD before it takes effect.
 
 **Deliverables:**
-- [ ] `agentic_chaos.safety` module — `CircuitBreaker`, `ChaosAbortedError`
-- [ ] `max_cost_usd` / `max_failure_rate` thresholds on `chaos_session()`
-- [ ] `aborted` + triggering-threshold fields on `ChaosReport`
-- [ ] `--dry-run` flag on `chaos run` / `agent run` CLI commands
-- [ ] README section + example + demo GIF
+- [x] `agentic_chaos.safety` module — `CircuitBreaker`, `ChaosAbortedError`
+- [x] `max_cost_usd` / `max_failure_rate` thresholds on `chaos_session()`
+- [x] `aborted` + triggering-threshold fields on `ChaosReport`
+- [x] `--dry-run` flag on `chaos run` / `agent run` CLI commands
+- [x] README section + example + demo GIF
+
+**Shipped in 0.5.2:** shared sync/async/stream/provider guards, cost/failure-rate
+limits, cooperative duration and injection limits, additive abort/preview reports,
+CLI flags, regression/containment tests, offline example and reproducible GIF.
+Direct uninstrumented calls and already-running work remain outside cooperative
+abort; `in_flight_at_abort` records the latter. Dry-run still executes targets.
+AIOS preserves safety metadata in the existing producer extension and maps abort
+to `cancelled`. Lens/Tower/MCP/AIOS compatibility is covered by sibling tests;
+no sibling runtime change or release is required. Structured ExperimentReport
+and synthetic-scenario work remain open.
 
 ### v0.6 — Pytest Plugin & Assertions
 
@@ -911,12 +921,12 @@ reference implementation of it.
 | 20 | PyPI release v1.0 | ongoing |
 | 21 | Blog post / talk: "one schema, one chaos toolkit, full AI-infra reliability stack" | after v1.0 ships |
 
-## Adversarial containment validation (planned)
+## Adversarial containment validation
 
 Added 2026-10-11. Existing fault injection is implemented; integrated attack and
 containment validation remains planned within these existing milestones.
 
-- [ ] v0.5.x safety rails: bound time/cost/intensity; prove abort prevents further
+- [x] v0.5.x safety rails: bound time/cost/intensity; prove abort prevents further
       injections and report already-running work separately.
 - [ ] v0.7 response poisoning: include injected prompt/tool-response instructions
       and policy-bypass attacks alongside ordinary provider/tool failures.
