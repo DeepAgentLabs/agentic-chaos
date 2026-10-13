@@ -414,3 +414,35 @@ def test_drift_compare_suppresses_repeated_unchanged_report(tmp_path: Path) -> N
     assert first.exit_code == 2
     assert second.exit_code == 2
     assert "suppressed unchanged drift report" in second.output.lower()
+
+
+def test_chaos_run_saves_aios_run_artifact(tmp_path: Path) -> None:
+    script = tmp_path / "app.py"
+    script.write_text(_CAUGHT_FAULT_SCRIPT)
+    out = tmp_path / "run.aios.json"
+
+    result = runner.invoke(
+        app, ["chaos", "run", str(script), "--inject", "token_timeout", "--save-aios", str(out)]
+    )
+
+    assert result.exit_code == 0
+    artifact = json.loads(out.read_text())
+    assert artifact["spec_version"] == "0.4-draft"
+    assert artifact["status"] == "completed"
+    assert artifact["steps"][0]["name"] == "Planner"
+    assert artifact["evidence"][0]["attributes"]["fault_type"] == "token_timeout"
+
+
+def test_chaos_run_marks_aios_run_failed_when_script_crashes(tmp_path: Path) -> None:
+    script = tmp_path / "app.py"
+    script.write_text(_UNCAUGHT_FAULT_SCRIPT)
+    out = tmp_path / "run.aios.json"
+
+    result = runner.invoke(
+        app, ["chaos", "run", str(script), "--inject", "token_timeout", "--save-aios", str(out)]
+    )
+
+    assert result.exit_code == 1
+    artifact = json.loads(out.read_text())
+    assert artifact["status"] == "failed"
+    assert artifact["events"][-1]["event_name"] == "aiops.run.failed"
