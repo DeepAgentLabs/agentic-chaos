@@ -74,6 +74,7 @@ class SafetyState:
         self.cost = 0.0
         self.failures: deque[bool] = deque(maxlen=breaker.window_size if breaker else 20)
         self.injections = 0
+        self._reserved_injections = 0
         self.in_flight = 0
         self.abort: dict[str, Any] | None = None
 
@@ -104,13 +105,26 @@ class SafetyState:
             self.check()
             self.in_flight += 1
 
-    def inject(self) -> None:
+    def reserve_injection(self) -> None:
         with self.lock:
             self.check()
             b = self.breaker
-            if b and b.max_injections is not None and self.injections >= b.max_injections:
-                self._abort("max_injections", b.max_injections, self.injections)
-            self.injections += 1
+            admitted = self.injections + self._reserved_injections
+            if b and b.max_injections is not None and admitted >= b.max_injections:
+                self._abort("max_injections", b.max_injections, admitted)
+            self._reserved_injections += 1
+
+    def complete_injection(self, injected: bool) -> None:
+        with self.lock:
+            self._reserved_injections -= 1
+            if injected:
+                self.injections += 1
+
+    def inject(self) -> None:
+        """Commit a stream fault at its observed delivery boundary."""
+        with self.lock:
+            self.reserve_injection()
+            self.complete_injection(True)
 
     def finish(self, failed: bool) -> None:
         with self.lock:

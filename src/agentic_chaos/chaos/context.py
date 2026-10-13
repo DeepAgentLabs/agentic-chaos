@@ -1,5 +1,6 @@
 from collections.abc import Callable
 from contextvars import ContextVar
+from copy import copy, deepcopy
 from typing import Any
 
 from agentic_chaos.chaos.faults import BaseFault
@@ -21,10 +22,20 @@ class ChaosSession:
     ) -> None:
         self.faults = faults
         self.dry_run = dry_run
+        self._preview_faults: dict[int, BaseFault] = {}
         self.planned_events: list[dict[str, Any]] = []
         self.safety = safety if safety is not None else SafetyState(breaker)
         self.events: list[ChaosEvent] = []
         self.cleanups: list[Callable[[], None]] = []
+
+    def preview_fault(self, fault: BaseFault) -> BaseFault:
+        """Keep selection RNG and stateful eligibility separate from real faults."""
+        key = id(fault)
+        if key not in self._preview_faults:
+            shadow = copy(fault)
+            shadow._trigger_rng = deepcopy(fault._trigger_rng)
+            self._preview_faults[key] = shadow
+        return self._preview_faults[key]
 
     def record_cost(self, cost_usd: float) -> None:
         """Record actual/estimated cost explicitly; may raise ChaosAbortedError."""

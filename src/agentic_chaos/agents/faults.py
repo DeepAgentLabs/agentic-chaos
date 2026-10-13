@@ -119,6 +119,9 @@ class ToolCallFailureFault(BaseFault):
         self.error_message = error_message
         self.tool_name = tool_name
 
+    def eligible(self, *, step_name: str | None = None, **kwargs: Any) -> bool:
+        return self.tool_name is None or self.tool_name == step_name
+
     def trigger(
         self,
         call: Callable[..., Any],
@@ -372,6 +375,20 @@ class HandoffCorruptionFault(BaseFault):
         self.delay_seconds = delay_seconds
         self._rng = random.Random(seed)
 
+    def eligible(
+        self,
+        *,
+        edge_id: str | None = None,
+        from_node: str | None = None,
+        to_node: str | None = None,
+        **kwargs: Any,
+    ) -> bool:
+        return (
+            edge_id is not None
+            and (self.from_node is None or self.from_node == from_node)
+            and (self.to_node is None or self.to_node == to_node)
+        )
+
     def trigger(
         self,
         call: Callable[..., Any],
@@ -478,6 +495,12 @@ class InfiniteLoopFault(BaseFault):
         self.force_turns = force_turns
         self.continue_value = continue_value
         self._fired = 0
+
+    def eligible(self, **kwargs: Any) -> bool:
+        return self._fired < self.force_turns
+
+    def advance_preview(self) -> None:
+        self._fired += 1
 
     def trigger(
         self,

@@ -31,6 +31,7 @@ async def chaos_acall(
     loop = asyncio.get_running_loop()
     pending: list[Future[T]] = []
     isolated = ChaosSession(session.faults, dry_run=session.dry_run, safety=session.safety)
+    isolated._preview_faults = session._preview_faults
     cancelled = asyncio.Event()
 
     async def dispatch(call_args: tuple[Any, ...], call_kwargs: dict[str, Any]) -> T:
