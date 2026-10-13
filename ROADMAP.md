@@ -317,7 +317,8 @@ toolkit itself.
 
 **Deliverables:**
 - [ ] structured `ExperimentReport` model with provenance fields
-- [ ] report export to JSON (AI Operations Specification-compatible)
+- [x] report export to JSON (AI Operations Specification-compatible) —
+      `agentic_chaos.export.to_aios_run()` and `--save-aios` in `0.5.1`
 - [ ] 4+ synthetic scenario fixtures in `tests/synthetic/`
 - [ ] CLI `--report` flag to emit structured reports
 - [ ] README section with report schema example
@@ -469,8 +470,9 @@ agentic-chaos chaos run my_app.py --profile production-like
 Implemented in `v0.5.0`. See [the guide](docs/v0.5.md) for supported provider
 methods, bounded hang semantics, probability selection, and compatibility tests.
 SDKs remain optional; patches operate on explicit client instances. Native
-ChaosReport events retain their existing shape; this does not close the v0.2.x
-structured report / canonical AIOS export backlog or v0.5.x safety rails.
+ChaosReport events retain their existing shape. `0.5.1` adds the AIOS v0.4-draft
+Run export (`to_aios_run()`, `--save-aios`); the rest of the v0.2.x structured
+report backlog and the v0.5.x safety rails remain open.
 
 ### v0.5.x — Safety Rails (Circuit Breaker & Dry-Run)
 

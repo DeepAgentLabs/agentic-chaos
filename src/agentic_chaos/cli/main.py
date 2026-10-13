@@ -1,3 +1,4 @@
+import json
 import runpy
 from datetime import datetime, timezone
 from pathlib import Path
@@ -25,6 +26,7 @@ from agentic_chaos.drift import (
     should_emit_report,
     update_alert_state,
 )
+from agentic_chaos.export.aios import to_aios_run
 from agentic_chaos.models.report import ChaosReport
 
 app = typer.Typer(
@@ -103,20 +105,49 @@ def _run_script_with_chaos(
     inject: list[BaseFault],
     *,
     include_topology: bool = False,
-) -> tuple[Any, datetime, datetime, Exception | None]:
+) -> tuple[Any, datetime, datetime, BaseException | None]:
     """Run a script within a chaos_session and return (session, start, end, crash).
 
     Shared by `chaos run` and `agent run` to avoid code duplication.
     """
     started_at = datetime.now(timezone.utc)
-    crashed: Exception | None = None
+    crashed: BaseException | None = None
     with chaos_session(inject) as session:
         try:
             runpy.run_path(str(script), run_name="__main__")
+        except SystemExit as exc:
+            # Capture a failing sys.exit() so reports are still saved; the command
+            # re-raises it afterwards with the script's own exit code.
+            if exc.code not in (None, 0):
+                crashed = exc
         except Exception as exc:
             crashed = exc
     ended_at = datetime.now(timezone.utc)
     return session, started_at, ended_at, crashed
+
+
+def _exit_code(crashed: BaseException) -> int:
+    """Preserve a script's own non-zero sys.exit() code; other crashes exit 1."""
+    if isinstance(crashed, SystemExit):
+        return crashed.code if isinstance(crashed.code, int) else 1
+    return 1
+
+
+def _save_reports(
+    report: ChaosReport,
+    *,
+    save: Path | None,
+    save_aios: Path | None,
+    crashed: BaseException | None,
+) -> None:
+    """Write the native report and/or its AIOS Run export, as requested."""
+    if save is not None:
+        save.write_text(report.model_dump_json(indent=2), encoding="utf-8")
+        console.print(f"\nSaved chaos report to {save}")
+    if save_aios is not None:
+        artifact = to_aios_run(report, status="failed" if crashed is not None else "completed")
+        save_aios.write_text(json.dumps(artifact, indent=2), encoding="utf-8")
+        console.print(f"Saved AIOS v0.4-draft run artifact to {save_aios}")
 
 
 # ---------------------------------------------------------------------------
@@ -142,6 +173,11 @@ def chaos_run(
     ),
     save: Path | None = typer.Option(
         None, "--save", help="Save the resulting chaos report to this file."
+    ),
+    save_aios: Path | None = typer.Option(
+        None,
+        "--save-aios",
+        help="Also save the run as an AI Operations Specification v0.4-draft Run artifact.",
     ),
 ) -> None:
     """Run a script with the requested faults active, then report what happened.
@@ -176,18 +212,16 @@ def chaos_run(
 
     render_chaos_events(console, session.events)
 
-    if save is not None:
-        report = ChaosReport(
-            name=script.stem,
-            start_time=started_at,
-            end_time=ended_at,
-            chaos_events=session.events_as_json(),
-        )
-        save.write_text(report.model_dump_json(indent=2), encoding="utf-8")
-        console.print(f"\nSaved chaos report to {save}")
+    report = ChaosReport(
+        name=script.stem,
+        start_time=started_at,
+        end_time=ended_at,
+        chaos_events=session.events_as_json(),
+    )
+    _save_reports(report, save=save, save_aios=save_aios, crashed=crashed)
 
     if crashed is not None:
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=_exit_code(crashed))
 
 
 @chaos_app.command("list-faults")
@@ -228,6 +262,11 @@ def agent_run(
         "--save",
         help="Save the resulting chaos report to this file. If the script "
         "uses TopologyTracker, topology data is included automatically.",
+    ),
+    save_aios: Path | None = typer.Option(
+        None,
+        "--save-aios",
+        help="Also save the run as an AI Operations Specification v0.4-draft Run artifact.",
     ),
 ) -> None:
     """Run an agent script with agent-level faults active, then report what happened.
@@ -276,19 +315,17 @@ def agent_run(
     # Reset the active tracker to prevent leaking across sequential invocations.
     reset_active_tracker()
 
-    if save is not None:
-        report = ChaosReport(
-            name=script.stem,
-            start_time=started_at,
-            end_time=ended_at,
-            chaos_events=session.events_as_json(),
-            agent_topology=topology_data,
-        )
-        save.write_text(report.model_dump_json(indent=2), encoding="utf-8")
-        console.print(f"\nSaved chaos report to {save}")
+    report = ChaosReport(
+        name=script.stem,
+        start_time=started_at,
+        end_time=ended_at,
+        chaos_events=session.events_as_json(),
+        agent_topology=topology_data,
+    )
+    _save_reports(report, save=save, save_aios=save_aios, crashed=crashed)
 
     if crashed is not None:
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=_exit_code(crashed))
 
 
 # ---------------------------------------------------------------------------
