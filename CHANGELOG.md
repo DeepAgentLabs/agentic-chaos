@@ -4,6 +4,17 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [0.5.3] - 2026-10-13
+
+### Added
+
+- `agentic_chaos.integrations.agenticlens.span_attributes(event)` and
+  `mark_span(span, event)`: tag an AgenticLens structured-trace span with
+  `chaos.injected`, `chaos.fault_type`, `chaos.event_id`, and `chaos.outcome`.
+  AgenticLens 0.7.0 diagnoses such spans as injected faults and uses them as
+  ground truth for `agenticlens attribution-accuracy`. Both helpers are
+  duck-typed; the module still never imports AgenticLens at runtime.
+
 ## [0.5.2] - 2026-10-13
 
 ### Added
