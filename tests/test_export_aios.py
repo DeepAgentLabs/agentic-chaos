@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -101,7 +102,12 @@ def test_maps_report_events_onto_run_steps_occurrences_and_evidence() -> None:
     assert artifact["id"] == "report-1"
     assert artifact["started_at"] == "2026-10-13T12:00:00Z"
     assert artifact["ended_at"] == "2026-10-13T12:00:02Z"
-    assert [step["id"] for step in artifact["steps"]] == ["planner", "report-1:step:search-tool"]
+    assert [step["id"] for step in artifact["steps"]] == ["report-1:step:1", "report-1:step:2"]
+    assert artifact["steps"][0]["attributes"] == {
+        "native_step_id": "planner",
+        "native_step_name": "Planner",
+    }
+    assert artifact["steps"][1]["attributes"] == {"native_step_name": "Search Tool"}
     assert [step["category"] for step in artifact["steps"]] == ["model", "tool"]
     assert [o["type"] for o in artifact["occurrences"]] == [
         "model_interaction",
@@ -149,7 +155,8 @@ def test_non_errored_outcomes_keep_their_outcome_and_skip_failure_events() -> No
 def test_unattributed_events_land_on_an_explicit_placeholder_step() -> None:
     artifact = to_aios_run(_report([_event(1)]))
 
-    assert artifact["steps"][0]["id"] == "report-1:step:unattributed"
+    assert artifact["steps"][0]["id"] == "report-1:step:1"
+    assert artifact["steps"][0]["name"] == "unattributed"
     assert "reason" in artifact["steps"][0]["attributes"]
     assert graph_errors(artifact) == []
 
@@ -237,9 +244,52 @@ def test_export_validates_against_the_published_v04_schema() -> None:
         registry=registry,
         format_checker=jsonschema.FormatChecker(),
     )
+    spec_semantics = _spec_semantic_checker()
     for artifact in (
         to_aios_run(_live_report()),
         to_aios_run(_report([_event(1)]), status="failed", workflow_id="wf"),
+        to_aios_run(_report([_event(1, step_id="report-1"), _event(2, step_name="A B")])),
     ):
         errors = [error.message for error in validator.iter_errors(artifact)]
         assert errors == []
+        assert spec_semantics(artifact) == []
+
+
+def _spec_semantic_checker():
+    """The spec repository's own semantic-conformance checker (tests/test_v04_schema.py)."""
+    spec_tests = SPEC_ROOT / "tests" / "test_v04_schema.py"
+    if not spec_tests.exists():
+        pytest.skip("ai-operations-spec semantic checker unavailable")
+    spec = importlib.util.spec_from_file_location("aios_v04_semantics", spec_tests)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.semantic_errors
+
+
+def test_blank_report_id_is_rejected() -> None:
+    report = _report([])
+    report.id = "  "
+    with pytest.raises(ValueError, match="non-blank"):
+        to_aios_run(report)
+
+
+def test_step_ids_never_collide_or_self_reference() -> None:
+    artifact = to_aios_run(
+        _report(
+            [
+                _event(1, step_id="report-1"),  # same as the run id
+                _event(2, step_name="A B"),
+                _event(3, step_name="A-B"),  # would share a slug with "A B"
+                _event(4, step_id="   ", step_name="Named"),  # blank id falls back to name
+            ]
+        )
+    )
+
+    step_ids = [step["id"] for step in artifact["steps"]]
+    assert len(step_ids) == len(set(step_ids)) == 4
+    assert "report-1" not in step_ids
+    assert artifact["steps"][3]["attributes"] == {"native_step_name": "Named"}
+    contains = [rel for rel in artifact["relationships"] if rel["type"] == "contains"]
+    assert all(rel["source"]["id"] != rel["target"]["id"] for rel in contains)
+    assert graph_errors(artifact) == []
