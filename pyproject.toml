@@ -34,11 +34,10 @@ dependencies = [
 [project.optional-dependencies]
 providers = ["openai>=1.0", "anthropic>=0.40", "google-genai>=1.0"]
 # Only needed for agentic_chaos.integrations.agenticlens -- core chaos_call()/
-# chaos_session()/the CLI never require it. 0.1.2 is on PyPI but predates
-# chaos_events support; this floor needs the not-yet-released version that
-# adds it. See [tool.uv.sources].
+# chaos_session()/the CLI never require it. 0.7.0 is the first AgenticLens
+# release that diagnoses spans tagged by span_attributes()/mark_span().
 agenticlens = [
-  "agenticlens>=0.1.3",
+  "agenticlens>=0.7.0",
 ]
 dev = [
   "tomli>=2.0",
@@ -63,9 +62,8 @@ Changelog = "https://github.com/DeepAgentLabs/agentic-chaos/blob/main/CHANGELOG.
 packages = ["src/agentic_chaos"]
 
 [tool.uv.sources]
-# PyPI's agenticlens is stuck on 0.1.2, which predates chaos_events support --
-# resolve from the sibling checkout instead during local development. Remove
-# once agenticlens>=0.1.3 (or whatever adds chaos_events) is released.
+# Resolve agenticlens from the sibling checkout during local development and in
+# the integration CI job, so changes on both sides are tested together.
 agenticlens = { path = "../agenticlens", editable = true }
 
 [tool.ruff]

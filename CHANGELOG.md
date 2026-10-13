@@ -15,6 +15,10 @@ All notable changes to this project are documented here.
   ground truth for `agenticlens attribution-accuracy`. Both helpers are
   duck-typed; the module still never imports AgenticLens at runtime.
 
+### Changed
+
+- The optional `agenticlens` extra now requires `agenticlens>=0.7.0`.
+
 ## [0.5.2] - 2026-10-13
 
 ### Added
