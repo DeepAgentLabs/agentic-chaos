@@ -153,8 +153,8 @@ def _patch(
                     return await original(*args, **kwargs)
                 if isinstance(fault, StreamFault):
                     if not (streaming or kwargs.get("stream", False)):
-                        return await original(*args, **kwargs)
-                    return wrap_stream(await original(*args, **kwargs))
+                        return await chaos_acall(original, *args, faults=[], **kwargs)
+                    return wrap_stream(await chaos_acall(original, *args, faults=[], **kwargs))
                 return await chaos_acall(
                     original, *args, faults=[fault.name], step_name=provider, **kwargs
                 )
@@ -168,8 +168,8 @@ def _patch(
                     return original(*args, **kwargs)
                 if isinstance(fault, StreamFault):
                     if not (streaming or kwargs.get("stream", False)):
-                        return original(*args, **kwargs)
-                    return wrap_stream(original(*args, **kwargs))
+                        return chaos_call(original, *args, faults=[], **kwargs)
+                    return wrap_stream(chaos_call(original, *args, faults=[], **kwargs))
                 return chaos_call(
                     original, *args, faults=[fault.name], step_name=provider, **kwargs
                 )

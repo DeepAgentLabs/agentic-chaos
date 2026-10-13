@@ -127,9 +127,11 @@ def chaos_stream(
         count = 0
         emitted = False
         failed = False
-        if session is not None:
-            session.safety.begin()
+        admitted = False
         try:
+            if session is not None:
+                session.safety.begin()
+                admitted = True
             while True:
                 if session is not None:
                     session.safety.check()
@@ -186,7 +188,7 @@ def chaos_stream(
                 if close is not None:
                     close()
             finally:
-                if session is not None:
+                if session is not None and admitted:
                     session.safety.finish(failed)
 
     return deliver()
@@ -206,9 +208,11 @@ def chaos_astream(
         count = 0
         emitted = False
         failed = False
-        if session is not None:
-            session.safety.begin()
+        admitted = False
         try:
+            if session is not None:
+                session.safety.begin()
+                admitted = True
             while True:
                 if session is not None:
                     session.safety.check()
@@ -267,7 +271,7 @@ def chaos_astream(
                     if hasattr(result, "__await__"):
                         await result
             finally:
-                if session is not None:
+                if session is not None and admitted:
                     session.safety.finish(failed)
 
     return deliver()
