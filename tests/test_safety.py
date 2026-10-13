@@ -400,3 +400,111 @@ def test_abort_during_upstream_read_blocks_delivery():
         assert closed == [True] and session.safety.in_flight == 0
 
     asyncio.run(run())
+
+
+def test_stateful_pass_through_does_not_consume_injection_budget():
+    from agentic_chaos.chaos.faults import RateLimitStormError
+
+    with chaos_session(
+        [RateLimitStormFault(burst_count=1)], breaker=CircuitBreaker(max_injections=1)
+    ) as session:
+        with pytest.raises(RateLimitStormError):
+            chaos_call(lambda: "ok")
+        assert chaos_call(lambda: "recovered") == "recovered"
+        assert session.safety.injections == 1
+        assert session.safety.abort is None
+
+
+def test_preview_eligibility_and_state_are_separate_from_real_faults():
+    from agentic_chaos import HandoffCorruptionFault, InfiniteLoopFault, ToolCallFailureFault
+
+    rate = RateLimitStormFault(burst_count=1)
+    loop = InfiniteLoopFault(force_turns=1)
+    tool = ToolCallFailureFault(tool_name="search")
+    handoff = HandoffCorruptionFault(from_node="a", to_node="b")
+    with chaos_session([rate, loop, tool, handoff], dry_run=True) as session:
+        for name in (rate.name, loop.name):
+            for _ in range(3):
+                assert chaos_call(lambda: "original", faults=[name]) == "original"
+        chaos_call(lambda: "ok", faults=[tool.name], step_name="unrelated")
+        chaos_call(lambda: "ok", faults=[handoff.name])
+        chaos_call(
+            lambda: "ok",
+            faults=[handoff.name],
+            _chaos_edge_id="ab",
+            _chaos_from_node="wrong",
+            _chaos_to_node="b",
+        )
+        chaos_call(lambda: "ok", faults=[tool.name], step_name="search")
+        chaos_call(
+            lambda: "ok",
+            faults=[handoff.name],
+            _chaos_edge_id="ab",
+            _chaos_from_node="a",
+            _chaos_to_node="b",
+        )
+    assert [item["fault_type"] for item in session.planned_events] == [
+        rate.name,
+        loop.name,
+        tool.name,
+        handoff.name,
+    ]
+    assert rate._fired == loop._fired == 0
+    assert session.safety.injections == 0
+
+
+def test_custom_eventless_fault_releases_reserved_injection():
+    from agentic_chaos.chaos.faults import BaseFault, FaultOutcome
+
+    class PassThrough(BaseFault):
+        name = "pass_through"
+
+        def trigger(self, call, **kwargs):
+            return FaultOutcome(result=call())
+
+    with chaos_session([PassThrough()], breaker=CircuitBreaker(max_injections=1)) as session:
+        for _ in range(3):
+            assert chaos_call(lambda: "ok") == "ok"
+    assert session.safety.injections == 0
+
+
+def test_stream_close_failures_count_as_failed_completions():
+    class Source:
+        def __iter__(self):
+            return self
+
+        def __next__(self):
+            raise StopIteration
+
+        def close(self):
+            raise ValueError("close failed")
+
+    with chaos_session(
+        [StreamCutFault(after_chunks=9)], breaker=CircuitBreaker(max_failure_rate=1)
+    ) as session:
+        with pytest.raises(ValueError, match="close failed"):
+            list(chaos_stream(Source()))
+    assert list(session.safety.failures) == [True]
+    assert session.safety.in_flight == 0
+
+    async def run():
+        class AsyncSource:
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self):
+                raise StopAsyncIteration
+
+            async def aclose(self):
+                raise ValueError("async close failed")
+
+        with chaos_session(
+            [StreamCutFault(after_chunks=9)], breaker=CircuitBreaker(max_failure_rate=0)
+        ) as session:
+            with pytest.raises(ChaosAbortedError):
+                await chaos_astream(AsyncSource()).__anext__()
+        assert list(session.safety.failures) == [True]
+        assert session.safety.abort["threshold"] == "max_failure_rate"
+        assert session.safety.in_flight == 0
+
+    asyncio.run(run())

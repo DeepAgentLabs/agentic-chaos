@@ -77,7 +77,7 @@ def _select(names: list[str] | None) -> tuple[ChaosSession | None, StreamFault |
         raise ValueError("Select one fault with faults=[...] for each stream")
     if not candidates:
         return session, None
-    fault = candidates[0]
+    fault = session.preview_fault(candidates[0]) if session.dry_run else candidates[0]
     if not isinstance(fault, StreamFault):
         raise TypeError("chaos_stream() requires a streaming fault")
     return session, fault if fault.should_trigger() else None
@@ -189,6 +189,9 @@ def chaos_stream(
             try:
                 if close is not None:
                     close()
+            except BaseException:
+                failed = True
+                raise
             finally:
                 if session is not None and admitted:
                     session.safety.finish(failed)
@@ -274,6 +277,9 @@ def chaos_astream(
                     result = close()
                     if hasattr(result, "__await__"):
                         await result
+            except BaseException:
+                failed = True
+                raise
             finally:
                 if session is not None and admitted:
                     session.safety.finish(failed)
