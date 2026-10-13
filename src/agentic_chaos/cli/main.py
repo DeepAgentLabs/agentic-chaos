@@ -105,20 +105,32 @@ def _run_script_with_chaos(
     inject: list[BaseFault],
     *,
     include_topology: bool = False,
-) -> tuple[Any, datetime, datetime, Exception | None]:
+) -> tuple[Any, datetime, datetime, BaseException | None]:
     """Run a script within a chaos_session and return (session, start, end, crash).
 
     Shared by `chaos run` and `agent run` to avoid code duplication.
     """
     started_at = datetime.now(timezone.utc)
-    crashed: Exception | None = None
+    crashed: BaseException | None = None
     with chaos_session(inject) as session:
         try:
             runpy.run_path(str(script), run_name="__main__")
+        except SystemExit as exc:
+            # Capture a failing sys.exit() so reports are still saved; the command
+            # re-raises it afterwards with the script's own exit code.
+            if exc.code not in (None, 0):
+                crashed = exc
         except Exception as exc:
             crashed = exc
     ended_at = datetime.now(timezone.utc)
     return session, started_at, ended_at, crashed
+
+
+def _exit_code(crashed: BaseException) -> int:
+    """Preserve a script's own non-zero sys.exit() code; other crashes exit 1."""
+    if isinstance(crashed, SystemExit):
+        return crashed.code if isinstance(crashed.code, int) else 1
+    return 1
 
 
 def _save_reports(
@@ -126,7 +138,7 @@ def _save_reports(
     *,
     save: Path | None,
     save_aios: Path | None,
-    crashed: Exception | None,
+    crashed: BaseException | None,
 ) -> None:
     """Write the native report and/or its AIOS Run export, as requested."""
     if save is not None:
@@ -209,7 +221,7 @@ def chaos_run(
     _save_reports(report, save=save, save_aios=save_aios, crashed=crashed)
 
     if crashed is not None:
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=_exit_code(crashed))
 
 
 @chaos_app.command("list-faults")
@@ -313,7 +325,7 @@ def agent_run(
     _save_reports(report, save=save, save_aios=save_aios, crashed=crashed)
 
     if crashed is not None:
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=_exit_code(crashed))
 
 
 # ---------------------------------------------------------------------------

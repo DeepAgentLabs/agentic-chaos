@@ -446,3 +446,30 @@ def test_chaos_run_marks_aios_run_failed_when_script_crashes(tmp_path: Path) -> 
     artifact = json.loads(out.read_text())
     assert artifact["status"] == "failed"
     assert artifact["events"][-1]["event_name"] == "aiops.run.failed"
+
+
+def test_chaos_run_saves_aios_artifact_when_script_calls_sys_exit(tmp_path: Path) -> None:
+    script = tmp_path / "app.py"
+    script.write_text(_CAUGHT_FAULT_SCRIPT + "\nimport sys\nsys.exit(3)\n")
+    out = tmp_path / "run.aios.json"
+
+    result = runner.invoke(
+        app, ["chaos", "run", str(script), "--inject", "token_timeout", "--save-aios", str(out)]
+    )
+
+    assert result.exit_code == 3  # the script's own exit code is preserved
+    artifact = json.loads(out.read_text())
+    assert artifact["status"] == "failed"
+
+
+def test_chaos_run_treats_sys_exit_zero_as_success(tmp_path: Path) -> None:
+    script = tmp_path / "app.py"
+    script.write_text(_CAUGHT_FAULT_SCRIPT + "\nimport sys\nsys.exit(0)\n")
+    out = tmp_path / "run.aios.json"
+
+    result = runner.invoke(
+        app, ["chaos", "run", str(script), "--inject", "token_timeout", "--save-aios", str(out)]
+    )
+
+    assert result.exit_code == 0
+    assert json.loads(out.read_text())["status"] == "completed"
