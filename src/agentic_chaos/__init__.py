@@ -40,9 +40,13 @@ for _fault in (
 ):
     FAULT_REGISTRY[_fault.name] = _fault
 
+from agentic_chaos.safety import ChaosAbortedError, CircuitBreaker
+
 __version__ = "0.5.1"
 
 __all__ = [
+    "CircuitBreaker",
+    "ChaosAbortedError",
     "load_profile",
     "chaos_acall",
     "patch_openai",
