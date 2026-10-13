@@ -20,9 +20,8 @@ from agentic_chaos import (
 from agentic_chaos.export import to_aios_run
 from agentic_chaos.models import ChaosReport
 
-SPEC_SCHEMAS = (
-    Path(__file__).resolve().parents[2] / "ai-operations-spec" / "specification" / "v0.4" / "schemas"
-)
+SPEC_ROOT = Path(__file__).resolve().parents[2] / "ai-operations-spec"
+SPEC_SCHEMAS = SPEC_ROOT / "specification" / "v0.4" / "schemas"
 START = datetime(2026, 10, 13, 12, 0, tzinfo=timezone.utc)
 
 
