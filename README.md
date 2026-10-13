@@ -439,6 +439,34 @@ when you import it yourself. See
 [`examples/chaos_with_agenticlens_demo.py`](examples/chaos_with_agenticlens_demo.py)
 for a runnable version of the above.
 
+### Marking structured-trace spans for AgenticLens diagnosis
+
+AgenticLens 0.7.0 adds failure diagnosis over its structured `trace()` runs.
+Tag the span a fault hit and AgenticLens treats it as ground truth:
+
+```python
+from agenticlens import SpanType, trace
+from agentic_chaos.chaos import chaos_call, chaos_session
+from agentic_chaos.integrations.agenticlens import mark_span
+
+with chaos_session(["silent_degradation"]) as session:
+    with trace("support-agent") as recording:
+        with recording.span("kb_search", SpanType.RETRIEVAL) as handle:
+            docs = chaos_call(search, question)
+        if session.events:
+            mark_span(handle.span, session.events[-1])
+recording.save("run.json")
+```
+
+```bash
+agenticlens diagnose run.json            # reports the injected fault and what it caused
+agenticlens attribution-accuracy runs/   # how often diagnosis finds the injected step
+```
+
+`span_attributes(event)` returns the same markers (`chaos.injected`,
+`chaos.fault_type`, `chaos.event_id`, `chaos.outcome`) as a dict for spans you
+build yourself.
+
 This works because `agentic-chaos`'s own report format (`ChaosReport`) and
 AgenticLens's `chaos_events` field share a documented JSON shape (schema
 v1.1, see
