@@ -71,6 +71,7 @@ def _select(names: list[str] | None) -> tuple[ChaosSession | None, StreamFault |
     session = get_active_session()
     if session is None:
         return None, None
+    session.safety.check()
     candidates = session.select_faults(names)
     if len(candidates) > 1:
         raise ValueError("Select one fault with faults=[...] for each stream")
@@ -103,6 +104,7 @@ def _event(
             "after_chunks": fault.after_chunks,
         },
     )
+    session.safety.inject()
     session.events.append(event)
     return event
 
@@ -124,8 +126,13 @@ def chaos_stream(
     def deliver() -> Iterator[Any]:
         count = 0
         emitted = False
+        failed = False
+        if session is not None:
+            session.safety.begin()
         try:
             while True:
+                if session is not None:
+                    session.safety.check()
                 if (
                     fault is not None
                     and session is not None
@@ -134,11 +141,17 @@ def chaos_stream(
                         and count >= fault.after_chunks
                     )
                 ):
-                    event = _event(session, fault, count, step_id, step_name)
-                    if isinstance(fault, StreamHangFault):
-                        time.sleep(fault.delay_seconds)
-                        raise StreamHangError(event.message, event)
-                    return
+                    if session.dry_run:
+                        if not emitted:
+                            session.plan(fault, step_id, step_name)
+                            emitted = True
+                    else:
+                        event = _event(session, fault, count, step_id, step_name)
+                        if isinstance(fault, StreamHangFault):
+                            time.sleep(fault.delay_seconds)
+                            session.safety.check()
+                            raise StreamHangError(event.message, event)
+                        return
                 try:
                     chunk = next(source)
                 except StopIteration:
@@ -152,15 +165,29 @@ def chaos_stream(
                     )
                 ):
                     if not emitted:
-                        _event(session, fault, count, step_id, step_name)
+                        if session.dry_run:
+                            session.plan(fault, step_id, step_name)
+                        else:
+                            _event(session, fault, count, step_id, step_name)
                         emitted = True
-                    time.sleep(fault.delay_seconds)
+                    if not session.dry_run:
+                        time.sleep(fault.delay_seconds)
+                    session.safety.check()
                 count += 1
                 yield chunk
+        except GeneratorExit:
+            raise
+        except BaseException:
+            failed = True
+            raise
         finally:
             close = getattr(source, "close", None)
-            if close is not None:
-                close()
+            try:
+                if close is not None:
+                    close()
+            finally:
+                if session is not None:
+                    session.safety.finish(failed)
 
     return deliver()
 
@@ -178,8 +205,13 @@ def chaos_astream(
     async def deliver() -> AsyncIterator[Any]:
         count = 0
         emitted = False
+        failed = False
+        if session is not None:
+            session.safety.begin()
         try:
             while True:
+                if session is not None:
+                    session.safety.check()
                 if (
                     fault is not None
                     and session is not None
@@ -188,11 +220,17 @@ def chaos_astream(
                         and count >= fault.after_chunks
                     )
                 ):
-                    event = _event(session, fault, count, step_id, step_name)
-                    if isinstance(fault, StreamHangFault):
-                        await asyncio.sleep(fault.delay_seconds)
-                        raise StreamHangError(event.message, event)
-                    return
+                    if session.dry_run:
+                        if not emitted:
+                            session.plan(fault, step_id, step_name)
+                            emitted = True
+                    else:
+                        event = _event(session, fault, count, step_id, step_name)
+                        if isinstance(fault, StreamHangFault):
+                            await asyncio.sleep(fault.delay_seconds)
+                            session.safety.check()
+                            raise StreamHangError(event.message, event)
+                        return
                 try:
                     chunk = await source.__anext__()
                 except StopAsyncIteration:
@@ -206,16 +244,30 @@ def chaos_astream(
                     )
                 ):
                     if not emitted:
-                        _event(session, fault, count, step_id, step_name)
+                        if session.dry_run:
+                            session.plan(fault, step_id, step_name)
+                        else:
+                            _event(session, fault, count, step_id, step_name)
                         emitted = True
-                    await asyncio.sleep(fault.delay_seconds)
+                    if not session.dry_run:
+                        await asyncio.sleep(fault.delay_seconds)
+                    session.safety.check()
                 count += 1
                 yield chunk
+        except GeneratorExit:
+            raise
+        except BaseException:
+            failed = True
+            raise
         finally:
             close = getattr(source, "aclose", None) or getattr(source, "close", None)
-            if close is not None:
-                result = close()
-                if hasattr(result, "__await__"):
-                    await result
+            try:
+                if close is not None:
+                    result = close()
+                    if hasattr(result, "__await__"):
+                        await result
+            finally:
+                if session is not None:
+                    session.safety.finish(failed)
 
     return deliver()
