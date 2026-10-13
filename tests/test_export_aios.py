@@ -247,6 +247,29 @@ def test_export_validates_against_the_published_v04_schema() -> None:
     spec_semantics = _spec_semantic_checker()
     for artifact in (
         to_aios_run(_live_report()),
+        to_aios_run(
+            _report([]).model_copy(
+                update={
+                    "aborted": True,
+                    "abort_reason": {
+                        "threshold": "max_cost_usd",
+                        "limit": 1,
+                        "observed": 1,
+                        "in_flight_at_abort": 0,
+                    },
+                }
+            )
+        ),
+        to_aios_run(
+            _report([]).model_copy(
+                update={
+                    "dry_run": True,
+                    "planned_events": [
+                        {"fault_type": "rate_limit_storm", "outcome": "would_inject"}
+                    ],
+                }
+            )
+        ),
         to_aios_run(_report([_event(1)]), status="failed", workflow_id="wf"),
         to_aios_run(_report([_event(1, step_id="report-1"), _event(2, step_name="A B")])),
     ):

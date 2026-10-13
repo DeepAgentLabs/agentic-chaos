@@ -472,7 +472,7 @@ methods, bounded hang semantics, probability selection, and compatibility tests.
 SDKs remain optional; patches operate on explicit client instances. Native
 ChaosReport events retain their existing shape. `0.5.1` adds the AIOS v0.4-draft
 Run export (`to_aios_run()`, `--save-aios`); the rest of the v0.2.x structured
-report backlog remain open; v0.5.x safety rails ship in `0.5.2`.
+report backlog remains open; v0.5.x safety rails ship in `0.5.2`.
 
 ### v0.5.x — Safety Rails (Circuit Breaker & Dry-Run)
 

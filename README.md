@@ -36,7 +36,6 @@ See [ROADMAP.md](ROADMAP.md) for the full plan.
   hypothesis, injection point provenance, observed behavior, and verdict
 - **Synthetic test scenarios** — prebuilt known-bad agent behaviors for
   consistent resilience validation
-- **Safety rails (v0.5.x)** ✅ — circuit breaker and dry-run support (0.5.2)
 - **Pytest integration (v0.6)** — reusable assertions and CI resilience checks
 
 ## Installation
@@ -537,7 +536,7 @@ readers do not establish end-to-end integration or stable AIOS conformance.
 
 ## Operational safety roadmap
 
-See [planned safety acceptance criteria](ROADMAP.md#adversarial-containment-validation-planned) for responsibilities and
+See [safety acceptance criteria](ROADMAP.md#adversarial-containment-validation) for responsibilities and
 dependencies. These additions do not claim implemented end-to-end containment
 or integrity protection.
 

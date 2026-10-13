@@ -71,7 +71,8 @@ def to_aios_run(
 
     `status` is the Run's outcome as the caller observed it (for example
     `"failed"` when the target script crashed or timed out); the native report
-    does not record it. `workflow_id`, when given, adds a `run-of` link to an
+    does not otherwise record it. An aborted report overrides status to
+    `"cancelled"`. `workflow_id`, when given, adds a `run-of` link to an
     external Workflow definition.
     """
     if status not in _RUN_STATUSES:
