@@ -28,6 +28,7 @@ from agentic_chaos.drift import (
 )
 from agentic_chaos.export.aios import to_aios_run
 from agentic_chaos.models.report import ChaosReport
+from agentic_chaos.safety import CircuitBreaker
 
 app = typer.Typer(
     name="agentic-chaos",
@@ -105,6 +106,8 @@ def _run_script_with_chaos(
     inject: list[BaseFault],
     *,
     include_topology: bool = False,
+    dry_run: bool = False,
+    breaker: CircuitBreaker | None = None,
 ) -> tuple[Any, datetime, datetime, BaseException | None]:
     """Run a script within a chaos_session and return (session, start, end, crash).
 
@@ -112,7 +115,7 @@ def _run_script_with_chaos(
     """
     started_at = datetime.now(timezone.utc)
     crashed: BaseException | None = None
-    with chaos_session(inject) as session:
+    with chaos_session(inject, breaker=breaker, dry_run=dry_run) as session:
         try:
             runpy.run_path(str(script), run_name="__main__")
         except SystemExit as exc:
@@ -171,6 +174,27 @@ def chaos_run(
     profile_file: Path = typer.Option(
         Path("chaos.toml"), "--profile-file", help="TOML profile file."
     ),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Record planned faults; target calls still execute."
+    ),
+    max_cost_usd: float | None = typer.Option(
+        None, "--max-cost-usd", help="Abort at explicitly recorded cost budget."
+    ),
+    max_failure_rate: float | None = typer.Option(
+        None, "--max-failure-rate", help="Abort above rolling failure rate."
+    ),
+    failure_window: int = typer.Option(
+        20, "--failure-window", help="Completed operations in rolling window."
+    ),
+    min_calls: int = typer.Option(
+        1, "--min-calls", help="Completions before checking failure rate."
+    ),
+    max_duration_seconds: float | None = typer.Option(
+        None, "--max-duration-seconds", help="Cooperative elapsed-time limit."
+    ),
+    max_injections: int | None = typer.Option(
+        None, "--max-injections", help="Maximum admitted fault injections."
+    ),
     save: Path | None = typer.Option(
         None, "--save", help="Save the resulting chaos report to this file."
     ),
@@ -201,27 +225,44 @@ def chaos_run(
         )
         if not configured:
             raise ValueError("At least one fault is required")
+        breaker = CircuitBreaker(
+            max_cost_usd=max_cost_usd,
+            max_failure_rate=max_failure_rate,
+            window_size=failure_window,
+            min_calls=min_calls,
+            max_duration_seconds=max_duration_seconds,
+            max_injections=max_injections,
+        )
     except (ValueError, OSError) as exc:
         console.print(f"[red]{exc}[/red]")
         raise typer.Exit(code=1) from exc
 
-    session, started_at, ended_at, crashed = _run_script_with_chaos(script, configured)
+    session, started_at, ended_at, crashed = _run_script_with_chaos(
+        script, configured, dry_run=dry_run, breaker=breaker
+    )
 
     if crashed is not None:
         console.print(f"[red]Script raised under chaos:[/red] {crashed!r}")
 
     render_chaos_events(console, session.events)
+    if session.dry_run:
+        console.print({"planned_events": session.planned_events})
+    if session.safety.abort is not None:
+        console.print({"abort_reason": session.safety.abort})
 
     report = ChaosReport(
         name=script.stem,
         start_time=started_at,
         end_time=ended_at,
         chaos_events=session.events_as_json(),
+        **session.report_fields(),
     )
     _save_reports(report, save=save, save_aios=save_aios, crashed=crashed)
 
     if crashed is not None:
         raise typer.Exit(code=_exit_code(crashed))
+    if session.safety.abort is not None:
+        raise typer.Exit(code=1)
 
 
 @chaos_app.command("list-faults")
@@ -256,6 +297,27 @@ def agent_run(
     profile: str | None = typer.Option(None, "--profile", help="Named chaos.toml profile."),
     profile_file: Path = typer.Option(
         Path("chaos.toml"), "--profile-file", help="TOML profile file."
+    ),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Record planned faults; target calls still execute."
+    ),
+    max_cost_usd: float | None = typer.Option(
+        None, "--max-cost-usd", help="Abort at explicitly recorded cost budget."
+    ),
+    max_failure_rate: float | None = typer.Option(
+        None, "--max-failure-rate", help="Abort above rolling failure rate."
+    ),
+    failure_window: int = typer.Option(
+        20, "--failure-window", help="Completed operations in rolling window."
+    ),
+    min_calls: int = typer.Option(
+        1, "--min-calls", help="Completions before checking failure rate."
+    ),
+    max_duration_seconds: float | None = typer.Option(
+        None, "--max-duration-seconds", help="Cooperative elapsed-time limit."
+    ),
+    max_injections: int | None = typer.Option(
+        None, "--max-injections", help="Maximum admitted fault injections."
     ),
     save: Path | None = typer.Option(
         None,
@@ -292,6 +354,14 @@ def agent_run(
         )
         if not configured:
             raise ValueError("At least one fault is required")
+        breaker = CircuitBreaker(
+            max_cost_usd=max_cost_usd,
+            max_failure_rate=max_failure_rate,
+            window_size=failure_window,
+            min_calls=min_calls,
+            max_duration_seconds=max_duration_seconds,
+            max_injections=max_injections,
+        )
     except (ValueError, OSError) as exc:
         console.print(f"[red]{exc}[/red]")
         raise typer.Exit(code=1) from exc
@@ -299,12 +369,18 @@ def agent_run(
     if framework not in ("generic", "langgraph", "crewai", "autogen"):
         console.print(f"[yellow]Unknown framework '{framework}', using generic.[/yellow]")
 
-    session, started_at, ended_at, crashed = _run_script_with_chaos(script, configured)
+    session, started_at, ended_at, crashed = _run_script_with_chaos(
+        script, configured, dry_run=dry_run, breaker=breaker
+    )
 
     if crashed is not None:
         console.print(f"[red]Script raised under chaos:[/red] {crashed!r}")
 
     render_chaos_events(console, session.events)
+    if session.dry_run:
+        console.print({"planned_events": session.planned_events})
+    if session.safety.abort is not None:
+        console.print({"abort_reason": session.safety.abort})
 
     # Pick up topology if the script registered a TopologyTracker.
     tracker = get_active_tracker()
@@ -320,12 +396,15 @@ def agent_run(
         start_time=started_at,
         end_time=ended_at,
         chaos_events=session.events_as_json(),
+        **session.report_fields(),
         agent_topology=topology_data,
     )
     _save_reports(report, save=save, save_aios=save_aios, crashed=crashed)
 
     if crashed is not None:
         raise typer.Exit(code=_exit_code(crashed))
+    if session.safety.abort is not None:
+        raise typer.Exit(code=1)
 
 
 # ---------------------------------------------------------------------------

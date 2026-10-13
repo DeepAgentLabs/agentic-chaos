@@ -71,6 +71,24 @@ class BaseFault(ABC):
             self.probability > 0.0 and self._trigger_rng.random() < self.probability
         )
 
+    def eligible(
+        self,
+        *,
+        step_name: str | None = None,
+        edge_id: str | None = None,
+        from_node: str | None = None,
+        to_node: str | None = None,
+    ) -> bool:
+        """Non-mutating applicability predicate, after probability selection.
+
+        Custom faults with pass-through conditions should override this hook.
+        """
+        return True
+
+    def advance_preview(self) -> None:
+        """Advance only the session's private preview copy; never inject a fault."""
+        return None
+
     @abstractmethod
     def trigger(
         self,
@@ -179,6 +197,12 @@ class RateLimitStormFault(BaseFault):
         self.burst_count = burst_count
         self.retry_after = retry_after
         self._fired = 0
+
+    def eligible(self, **kwargs: Any) -> bool:
+        return self._fired < self.burst_count
+
+    def advance_preview(self) -> None:
+        self._fired += 1
 
     def trigger(
         self,

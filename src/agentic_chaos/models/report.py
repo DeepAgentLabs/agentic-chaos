@@ -26,3 +26,10 @@ class ChaosReport(BaseModel):
     chaos_events: list[dict[str, Any]] = Field(default_factory=list)
     agent_topology: dict[str, Any] | None = None
     drift_report: dict[str, Any] | None = None
+    aborted: bool = False
+    abort_reason: dict[str, Any] | None = None
+    dry_run: bool = False
+    planned_events: list[dict[str, Any]] = Field(default_factory=list)
+    cost_usd: float = 0.0
+    injections: int = 0
+    in_flight: int = 0

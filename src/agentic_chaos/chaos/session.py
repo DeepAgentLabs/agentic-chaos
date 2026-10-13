@@ -5,6 +5,7 @@ from typing import Literal
 
 from agentic_chaos.chaos.context import ChaosSession, active_session
 from agentic_chaos.chaos.faults import BaseFault, resolve_faults
+from agentic_chaos.safety import CircuitBreaker
 
 
 class chaos_session:  # noqa: N801 -- lowercase to read as a context manager, like contextlib.suppress
@@ -27,7 +28,15 @@ class chaos_session:  # noqa: N801 -- lowercase to read as a context manager, li
     ```
     """
 
-    def __init__(self, faults: "str | Sequence[str | BaseFault]") -> None:
+    def __init__(
+        self,
+        faults: "str | Sequence[str | BaseFault]",
+        *,
+        breaker: CircuitBreaker | None = None,
+        dry_run: bool = False,
+    ) -> None:
+        self.breaker = breaker
+        self.dry_run = dry_run
         self.faults = resolve_faults(faults)
         self.session: ChaosSession | None = None
         self._token: Token[ChaosSession | None] | None = None
@@ -35,7 +44,7 @@ class chaos_session:  # noqa: N801 -- lowercase to read as a context manager, li
     def __enter__(self) -> ChaosSession:
         if active_session.get() is not None:
             raise RuntimeError("Nested chaos_session() blocks are not supported.")
-        self.session = ChaosSession(faults=self.faults)
+        self.session = ChaosSession(faults=self.faults, breaker=self.breaker, dry_run=self.dry_run)
         self._token = active_session.set(self.session)
         return self.session
 
@@ -51,5 +60,7 @@ class chaos_session:  # noqa: N801 -- lowercase to read as a context manager, li
             for cleanup in reversed(self.session.cleanups):
                 cleanup()
         finally:
+            assert self.session is not None
+            self.session.safety.close()
             active_session.reset(self._token)
         return False

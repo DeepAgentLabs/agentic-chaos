@@ -49,7 +49,8 @@ impact before those issues appear in production.
 ### Current Roadmap Focus
 
 v0.5 streaming faults, provider patches, and profiles are implemented. The
-next major step is safety rails, alongside structured reports with provenance and
+v0.5.x safety rails ship in 0.5.2. The next major step is the pytest plugin
+and assertions, alongside structured reports with provenance and
 synthetic resilience scenarios. Changes in this repo should move the package
 toward reproducible resilience evidence, not just ad hoc fault injection.
 

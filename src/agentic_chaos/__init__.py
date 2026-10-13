@@ -29,6 +29,7 @@ from agentic_chaos.chaos.streaming import (
 from agentic_chaos.drift import DriftReport, DriftSnapshot, compare_snapshots
 from agentic_chaos.integrations.providers import patch_anthropic, patch_google, patch_openai
 from agentic_chaos.judges import DeepEvalJudge, HeuristicJudge, PydanticEvalsJudge, fidelity_session
+from agentic_chaos.safety import ChaosAbortedError, CircuitBreaker
 
 for _fault in (
     AuthErrorFault,
@@ -40,9 +41,12 @@ for _fault in (
 ):
     FAULT_REGISTRY[_fault.name] = _fault
 
-__version__ = "0.5.1"
+
+__version__ = "0.5.2"
 
 __all__ = [
+    "CircuitBreaker",
+    "ChaosAbortedError",
     "load_profile",
     "chaos_acall",
     "patch_openai",

@@ -272,3 +272,13 @@ MCP and Tower readers. See `docs/v0.5.md` for API coverage and boundaries.
 
 v0.2.x structured reports/canonical AIOS exports and v0.5.x–v1.0 remain planned.
 The older integration gaps are not closed by v0.5.
+
+## v0.5.x follow-through — 2026-10-13
+
+0.5.2 implements circuit breakers, cost and rolling failure limits, cooperative
+duration/injection bounds, dry-run, and additive safety report metadata.
+The safety guide describes dispatch boundaries, in-flight limitations and
+explicit cost accounting. New tests cover containment (including a bypass
+negative control), streams, async cancellation and actual sibling readers.
+The earlier v0.5.x missing findings are historical; v0.6–v1.0 and the remaining
+structured ExperimentReport/synthetic-scenario backlog remain open.

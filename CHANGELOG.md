@@ -4,6 +4,38 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-10-13
+
+### Added
+
+- Session-scoped `CircuitBreaker` / `ChaosAbortedError`, explicit cost and
+  token-price accounting, rolling failure-rate limits, cooperative elapsed-time
+  limits, and maximum injection counts.
+- Shared sync/async/stream/provider safety checks; sticky abort blocks later
+  instrumented dispatches, with already-running work recorded separately.
+- Python and CLI dry-run: selected faults are previewed without changing target
+  calls or stream delivery. Targets still execute and may incur real API spend.
+- Additive native report fields for abort reason, preview plans, cost, injection
+  count, and in-flight work. CLI saves evidence and exits nonzero on abort.
+- AIOS export preserves safety fields in the producer extension and maps an
+  aborted run to `cancelled`, without inventing preview failure evidence.
+- Safety API guide, offline example, reproducible demo GIF, containment tests
+  with a bypass negative control, and Lens/Tower/MCP/AIOS compatibility checks.
+
+### Fixed
+
+- Pass-through fault eligibility and finite burst/turn previews do not invent
+  injections; admission reserves capacity and commits only observed fault events.
+- Stream cleanup exceptions count as failed completions; delivery rechecks
+  safety after an upstream read returns.
+
+### Changed
+
+- Package version is `0.5.2`; v0.5.x safety rails are complete. Limits are
+  cooperative and require instrumentation; unknown costs and already-running
+  external work are not silently controlled. No sibling patch release required.
+
+
 ## [0.5.1] - 2026-10-13
 
 ### Added

@@ -64,6 +64,40 @@ def chaos_call(
     if session is None:
         return fn(*args, **kwargs)
 
+    session.safety.begin()
+    failed = False
+    try:
+        return _session_call(
+            session,
+            fn,
+            args,
+            kwargs,
+            step_id,
+            step_name,
+            _chaos_edge_id,
+            _chaos_from_node,
+            _chaos_to_node,
+            faults,
+        )
+    except BaseException:
+        failed = True
+        raise
+    finally:
+        session.safety.finish(failed)
+
+
+def _session_call(
+    session: Any,
+    fn: Callable[..., T],
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
+    step_id: str | None,
+    step_name: str | None,
+    _chaos_edge_id: str | None,
+    _chaos_from_node: str | None,
+    _chaos_to_node: str | None,
+    faults: list[str] | None,
+) -> T:
     candidates = session.select_faults(faults)
     if not candidates:
         return fn(*args, **kwargs)
@@ -74,27 +108,45 @@ def chaos_call(
             "Pass faults=[...] to chaos_call() to pick which one applies at this call site."
         )
 
-    if not candidates[0].should_trigger():
+    fault = session.preview_fault(candidates[0]) if session.dry_run else candidates[0]
+    if not fault.should_trigger() or not fault.eligible(
+        step_name=step_name,
+        edge_id=_chaos_edge_id,
+        from_node=_chaos_from_node,
+        to_node=_chaos_to_node,
+    ):
+        return fn(*args, **kwargs)
+
+    if session.dry_run:
+        session.plan(fault, step_id, step_name)
+        fault.advance_preview()
         return fn(*args, **kwargs)
 
     def invoke(*call_args: Any, **call_kwargs: Any) -> T:
+        session.safety.check()
         if not call_args and not call_kwargs:
             return fn(*args, **kwargs)
         return fn(*call_args, **call_kwargs)
 
-    outcome = candidates[0].trigger(
-        invoke,
-        step_id=step_id,
-        step_name=step_name,
-        **_trigger_kwargs(
-            candidates[0],
-            args,
-            kwargs,
-            _chaos_edge_id,
-            _chaos_from_node,
-            _chaos_to_node,
-        ),
-    )
+    session.safety.reserve_injection()
+    injected = False
+    try:
+        outcome = fault.trigger(
+            invoke,
+            step_id=step_id,
+            step_name=step_name,
+            **_trigger_kwargs(
+                fault,
+                args,
+                kwargs,
+                _chaos_edge_id,
+                _chaos_from_node,
+                _chaos_to_node,
+            ),
+        )
+        injected = outcome.event is not None
+    finally:
+        session.safety.complete_injection(injected)
     if outcome.event is not None:
         score_outcome(
             outcome.event,
