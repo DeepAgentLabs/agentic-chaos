@@ -40,7 +40,7 @@ for _fault in (
 ):
     FAULT_REGISTRY[_fault.name] = _fault
 
-__version__ = "0.5.0"
+__version__ = "0.5.1"
 
 __all__ = [
     "load_profile",
