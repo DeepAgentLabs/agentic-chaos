@@ -115,6 +115,7 @@ class SafetyState:
             b = self.breaker
             if self.abort is not None:
                 return
+            self.check()
             if b and b.max_failure_rate is not None and len(self.failures) >= b.min_calls:
                 rate = sum(self.failures) / len(self.failures)
                 if rate > b.max_failure_rate:

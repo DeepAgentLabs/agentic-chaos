@@ -44,8 +44,8 @@ class ChaosSession:
         for value in (input_tokens, output_tokens):
             if isinstance(value, bool) or not isinstance(value, int) or value < 0:
                 raise ValueError("token counts must be non-negative integers")
-        for value in (input_usd_per_million, output_usd_per_million):
-            if isinstance(value, bool) or not math.isfinite(value) or value < 0:
+        for price in (input_usd_per_million, output_usd_per_million):
+            if isinstance(price, bool) or not math.isfinite(price) or price < 0:
                 raise ValueError("prices must be finite and non-negative")
         self.record_cost(
             (input_tokens * input_usd_per_million + output_tokens * output_usd_per_million)

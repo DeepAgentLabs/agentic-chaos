@@ -33,11 +33,17 @@ async def chaos_acall(
     isolated = ChaosSession(session.faults, dry_run=session.dry_run, safety=session.safety)
     cancelled = asyncio.Event()
 
+    async def dispatch(call_args: tuple[Any, ...], call_kwargs: dict[str, Any]) -> T:
+        session.safety.check()
+        if cancelled.is_set():
+            raise asyncio.CancelledError
+        return await fn(*call_args, **call_kwargs)
+
     def invoke(*call_args: Any, **call_kwargs: Any) -> T:
         session.safety.check()
         if cancelled.is_set():
             raise asyncio.CancelledError
-        future = asyncio.run_coroutine_threadsafe(fn(*call_args, **call_kwargs), loop)
+        future = asyncio.run_coroutine_threadsafe(dispatch(call_args, call_kwargs), loop)
         pending.append(future)
         if cancelled.is_set():
             future.cancel()
