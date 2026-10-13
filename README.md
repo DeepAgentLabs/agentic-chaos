@@ -200,10 +200,44 @@ stream. Consume and close streams inside the session.
 
 See the [v0.5 guide](docs/v0.5.md) for parameters, provider method coverage,
 cancellation behavior, profiles, and sibling compatibility. Native reports
-remain compatible with Lens, MCP, and Tower; canonical AIOS export remains
-separate unfinished work.
+remain compatible with Lens, MCP, and Tower. Since `0.5.1` a report can also be
+exported as an AI Operations Specification Run artifact; see
+[AIOS Run export](#aios-run-export).
 
 ![Offline v0.5 demo](docs/assets/v0.5-demo.gif)
+
+## AIOS Run export
+
+The native `ChaosReport` stays this package's own format. To hand chaos
+evidence to tools that speak the
+[AI Operations Specification](https://github.com/DeepAgentLabs/ai-operations-spec),
+export it as a v0.4-draft `run` artifact:
+
+```bash
+agentic-chaos chaos run app.py --inject token_timeout --save-aios run.aios.json
+```
+
+```python
+from agentic_chaos.export import to_aios_run
+
+artifact = to_aios_run(report, status="completed", workflow_id="support-workflow")
+```
+
+| ChaosReport | AIOS v0.4-draft Run |
+|---|---|
+| the report | `run` (plus one `request` for the experiment) |
+| `step_id` / `step_name` on events | `steps`, each `contains`-ed once by the run |
+| each chaos event | one occurrence (`model_interaction`, `tool_invocation`, `memory_operation`, or `context`), `observed-in` its step |
+| each chaos event | one `reliability_event` evidence object that `signals-on` that occurrence |
+| timestamps | `aiops.run.*`, `aiops.<kind>.failed`, `aiops.reliability.detected` events |
+| topology, drift, raw event detail | `io.deepagentlabs.agentic-chaos` extension and evidence `attributes` |
+
+The export only states what the report records. Steps carry no status, every
+reliability event is `detected` (never `recovered`), and no retry chains are
+inferred. The run status is what the caller observed: the CLI writes `failed`
+when the script crashes. The tests validate exports against the published v0.4
+schema and the spec's own semantic checks when an `ai-operations-spec` checkout
+sits next to this repo.
 
 ## Drift Detector (v0.4.0)
 
