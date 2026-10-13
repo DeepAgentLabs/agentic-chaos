@@ -136,4 +136,4 @@ jobs:
           uv python install 3.10
           uv venv --python 3.10 /tmp/chaos-wheel-smoke
           uv pip install --python /tmp/chaos-wheel-smoke/bin/python dist/*.whl
-          /tmp/chaos-wheel-smoke/bin/python -c "import tomli, agentic_chaos; assert agentic_chaos.__version__ == '0.5.2'; print('Python 3.10 wheel import passed')"
+          /tmp/chaos-wheel-smoke/bin/python -c "import tomli, agentic_chaos; from importlib.metadata import version; assert agentic_chaos.__version__ == version('agentic-chaos'), (agentic_chaos.__version__, version('agentic-chaos')); print('Python 3.10 wheel import passed')"

@@ -91,7 +91,7 @@ toward reproducible resilience evidence, not just ad hoc fault injection.
 | `src/agentic_chaos/agents/langgraph.py` | LangGraph adapter (`wrap_tool()`, `wrap_node()`) |
 | `src/agentic_chaos/agents/topology.py` | `TopologyTracker`, `AgentTopology` |
 | `src/agentic_chaos/drift/` | Prompt/model drift detection (shipped in v0.4.0) |
-| `src/agentic_chaos/integrations/` | Optional adapters (AgenticLens: `attach_events()`, `step_kwargs()`) |
+| `src/agentic_chaos/integrations/` | Optional adapters (AgenticLens: `attach_events()`, `step_kwargs()`, `span_attributes()`, `mark_span()`) |
 | `src/agentic_chaos/cli/` | CLI entry point and subcommands |
 | `src/agentic_chaos/models/` | `ChaosReport`, `ChaosEvent`, schema extensions |
 | `tests/` | Pytest test suite |

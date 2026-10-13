@@ -12,7 +12,7 @@ resolution-markers = [
 
 [[package]]
 name = "agentic-chaos"
-version = "0.5.2"
+version = "0.5.3"
 source = { editable = "." }
 dependencies = [
     { name = "pydantic" },
@@ -77,7 +77,7 @@ wheels = [
 
 [[package]]
 name = "agenticlens"
-version = "0.6.1"
+version = "0.7.0"
 source = { editable = "../agenticlens" }
 dependencies = [
     { name = "agentic-evals" },
