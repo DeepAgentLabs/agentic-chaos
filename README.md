@@ -235,9 +235,15 @@ artifact = to_aios_run(report, status="completed", workflow_id="support-workflow
 The export only states what the report records. Steps carry no status, every
 reliability event is `detected` (never `recovered`), and no retry chains are
 inferred. The run status is what the caller observed: the CLI writes `failed`
-when the script crashes. The tests validate exports against the published v0.4
-schema and the spec's own semantic checks when an `ai-operations-spec` checkout
-sits next to this repo.
+when the script crashes (a failing `sys.exit()` keeps its exit code). AIOS step
+IDs are generated per run (`<run id>:step:<n>`); the native `step_id` and
+`step_name` stay in each step's `attributes`.
+
+Every test run checks the exports against local graph rules. When an
+`ai-operations-spec` checkout sits next to this repo and `jsonschema` is
+installed (CI's sibling-integration job), the tests also validate them against
+the published v0.4 run schema and run the spec repository's own
+`semantic_errors()` checker.
 
 ## Drift Detector (v0.4.0)
 

@@ -16,7 +16,14 @@ All notable changes to this project are documented here.
   fields ride in the `io.deepagentlabs.agentic-chaos` extension. The export claims
   no recovery, step outcome, or retry chain the native events cannot show.
 - `--save-aios PATH` on `chaos run` and `agent run`; the run status is `failed`
-  when the script crashes.
+  when the script crashes. AIOS step IDs are generated per run, so they are always
+  valid and collision-free; native `step_id`/`step_name` go in step `attributes`.
+
+### Fixed
+
+- `chaos run` / `agent run` now catch a target script's failing `sys.exit()`, so
+  `--save` / `--save-aios` still write their reports. The command then exits with
+  the script's own exit code; `sys.exit(0)` counts as success.
 - Tests that validate exports against the published v0.4 run schema when an
   `ai-operations-spec` checkout sits next to this repo; CI checks one out in the
   sibling-integration job.
