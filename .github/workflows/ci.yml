@@ -69,6 +69,11 @@ jobs:
         with:
           repository: DeepAgentLabs/agenticops-control-tower
           path: agenticops-control-tower
+      - name: Check out ai-operations-spec (AIOS run export schema check)
+        uses: actions/checkout@v7
+        with:
+          repository: DeepAgentLabs/ai-operations-spec
+          path: ai-operations-spec
       - name: Check out MCP fault discovery adapter
         uses: actions/checkout@v7
         with:
@@ -131,4 +136,4 @@ jobs:
           uv python install 3.10
           uv venv --python 3.10 /tmp/chaos-wheel-smoke
           uv pip install --python /tmp/chaos-wheel-smoke/bin/python dist/*.whl
-          /tmp/chaos-wheel-smoke/bin/python -c "import tomli, agentic_chaos; assert agentic_chaos.__version__ == '0.5.0'; print('Python 3.10 wheel import passed')"
+          /tmp/chaos-wheel-smoke/bin/python -c "import tomli, agentic_chaos; assert agentic_chaos.__version__ == '0.5.1'; print('Python 3.10 wheel import passed')"
