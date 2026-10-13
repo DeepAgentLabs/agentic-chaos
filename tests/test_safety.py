@@ -339,3 +339,34 @@ def test_async_stream_abort_closes_and_rejects_further_reads():
         assert session.safety.in_flight == 0
 
     asyncio.run(run())
+
+
+def test_inherited_async_context_cannot_dispatch_after_session_exit():
+    async def run():
+        release = asyncio.Event()
+        calls = []
+
+        async def child():
+            await release.wait()
+
+            async def target():
+                calls.append("forbidden")
+
+            await chaos_acall(target)
+
+        with chaos_session([]):
+            task = asyncio.create_task(child())
+        release.set()
+        with pytest.raises(RuntimeError, match="ended"):
+            await task
+        assert calls == []
+
+    asyncio.run(run())
+
+
+def test_breaker_configuration_is_copied_per_session():
+    breaker = CircuitBreaker(max_cost_usd=1)
+    with chaos_session([], breaker=breaker) as session:
+        breaker.max_cost_usd = 100
+        with pytest.raises(ChaosAbortedError):
+            session.record_cost(1)

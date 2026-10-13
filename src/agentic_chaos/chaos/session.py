@@ -60,5 +60,7 @@ class chaos_session:  # noqa: N801 -- lowercase to read as a context manager, li
             for cleanup in reversed(self.session.cleanups):
                 cleanup()
         finally:
+            assert self.session is not None
+            self.session.safety.close()
             active_session.reset(self._token)
         return False

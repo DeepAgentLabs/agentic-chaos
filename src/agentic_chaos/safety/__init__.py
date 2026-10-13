@@ -3,6 +3,7 @@
 import math
 import time
 from collections import deque
+from copy import copy
 from threading import RLock
 from typing import Any
 
@@ -12,7 +13,7 @@ class ChaosAbortedError(RuntimeError):
 
 
 class CircuitBreaker:
-    """Immutable configuration copied into fresh state for each session.
+    """Limit configuration copied into fresh state for each session.
 
     Failure rate counts completed wrapped operations (exceptions or errored faults),
     over the last ``window_size`` completions after ``min_calls`` samples.
@@ -66,7 +67,8 @@ class SafetyState:
     """Shared, locked state for a session, including async worker contexts."""
 
     def __init__(self, breaker: CircuitBreaker | None) -> None:
-        self.breaker = breaker
+        self.breaker = copy(breaker)
+        self.closed = False
         self.lock = RLock()
         self.started = time.monotonic()
         self.cost = 0.0
@@ -87,6 +89,8 @@ class SafetyState:
 
     def check(self) -> None:
         with self.lock:
+            if self.closed:
+                raise RuntimeError("Chaos session has ended")
             if self.abort is not None:
                 raise ChaosAbortedError(f"Chaos aborted: {self.abort['threshold']}")
             b = self.breaker
@@ -113,7 +117,7 @@ class SafetyState:
             self.in_flight -= 1
             self.failures.append(failed)
             b = self.breaker
-            if self.abort is not None:
+            if self.abort is not None or self.closed:
                 return
             self.check()
             if b and b.max_failure_rate is not None and len(self.failures) >= b.min_calls:
@@ -143,3 +147,7 @@ class SafetyState:
                 "injections": self.injections,
                 "in_flight": self.in_flight,
             }
+
+    def close(self) -> None:
+        with self.lock:
+            self.closed = True
