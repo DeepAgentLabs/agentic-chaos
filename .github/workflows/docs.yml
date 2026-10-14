@@ -31,12 +31,13 @@ jobs:
       - name: Configure Pages
         if: github.event_name != 'pull_request'
         uses: actions/configure-pages@v6
+        continue-on-error: true
 
       - name: Install docs dependencies
-        run: uv sync --extra docs --python 3.12
+        run: uv pip install --system "mkdocs-material>=9.5"
 
       - name: Build docs
-        run: uv run mkdocs build --strict --site-dir site/docs
+        run: uv run --no-project --with "mkdocs-material>=9.5" mkdocs build --strict --site-dir site/docs
 
       - name: Add product website
         run: |
@@ -45,11 +46,6 @@ jobs:
           cp site.js site/site.js
           cp og.png site/og.png
           touch site/.nojekyll
-
-      - name: Configure Pages
-        if: github.event_name != 'pull_request'
-        uses: actions/configure-pages@v6
-        continue-on-error: true
 
 
       - name: Upload artifact
