@@ -7,6 +7,13 @@
     <meta name="keywords" content="agentic AI, chaos engineering, fault injection, LLM testing, resilience">
     <meta name="author" content="DeepAgentLabs">
     <title>agentic-chaos — Resilience Testing for Agentic AI</title>
+    <link rel="stylesheet" href="site.css">
+    <meta property="og:title" content="agentic-chaos — Resilience Testing for Agentic AI">
+    <meta property="og:description" content="Standalone fault-injection toolkit for LLM-powered agents. Test resilience before production.">
+    <meta property="og:image" content="https://deepagentlabs.io/agentic-chaos/og.png">
+    <meta property="og:url" content="https://deepagentlabs.io/agentic-chaos/">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://deepagentlabs.io/agentic-chaos/og.png">
 
     <style>
         * {
@@ -582,9 +589,11 @@
                 <span>agentic-chaos</span>
             </a>
             <ul class="nav-links">
+                <li><a href="https://deepagentlabs.io" target="_blank">DeepAgentLabs</a></li>
                 <li><a href="#features">Features</a></li>
                 <li><a href="#faults">Faults</a></li>
                 <li><a href="#quickstart">Quick Start</a></li>
+                <li><a href="docs/">Docs</a></li>
                 <li><a href="#roadmap">Roadmap</a></li>
             </ul>
             <div class="nav-cta">
@@ -596,6 +605,16 @@
 
     <!-- Hero -->
     <section class="hero">
+        <div style="margin-bottom: 24px; display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap;">
+            <a href="https://pypi.org/project/agentic-chaos/" target="_blank" style="text-decoration: none;">
+                <span class="badge-status" style="background: rgba(0, 131, 0, 0.1); color: var(--primary); border: 1px solid rgba(0, 131, 0, 0.25); padding: 5px 14px; border-radius: 999px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;">
+                    <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--primary);"></span>
+                    v0.4.0 on PyPI
+                </span>
+            </a>
+            <span style="font-size: 13px; color: var(--text-muted);">•</span>
+            <span style="font-size: 13px; color: var(--text-secondary); font-weight: 500;">Alpha Maturity (Experimental)</span>
+        </div>
         <h1>Chaos Testing for Agentic AI</h1>
         <p class="subtitle">
             A standalone fault-injection toolkit that deliberately breaks your LLM calls and agent workflows—<br>
@@ -603,6 +622,7 @@
         </p>
         <div class="hero-cta">
             <a href="#quickstart" class="btn-primary btn-large">Quick Start (5 min)</a>
+            <a href="https://pypi.org/project/agentic-chaos/" target="_blank" class="btn-secondary btn-large">PyPI Package</a>
             <a href="https://github.com/DeepAgentLabs/agentic-chaos" target="_blank" class="btn-secondary btn-large">View on GitHub</a>
         </div>
 
@@ -697,6 +717,35 @@
             </div>
         </div>
 
+        <h3 style="font-size: 24px; margin-top: 48px; margin-bottom: 24px;">Architecture &amp; Fault Injection Flow</h3>
+        <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 32px 24px; margin-bottom: 32px; overflow-x: auto;">
+            <div style="display: flex; align-items: center; justify-content: space-between; min-width: 720px; gap: 16px;">
+                <div style="flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 16px; text-align: center;">
+                    <div style="font-size: 24px; margin-bottom: 8px;">🤖</div>
+                    <div style="font-weight: 600; font-size: 14px;">Your Agent Code</div>
+                    <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;"><code>chaos_call(fn)</code></div>
+                </div>
+                <div style="font-size: 20px; color: var(--primary);">➔</div>
+                <div style="flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 16px; text-align: center;">
+                    <div style="font-size: 24px; margin-bottom: 8px;">🌪️</div>
+                    <div style="font-weight: 600; font-size: 14px;">Chaos Session</div>
+                    <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Active context check</div>
+                </div>
+                <div style="font-size: 20px; color: var(--primary);">➔</div>
+                <div style="flex: 1; background: rgba(235, 104, 52, 0.08); border: 1px solid rgba(235, 104, 52, 0.3); border-radius: 6px; padding: 16px; text-align: center;">
+                    <div style="font-size: 24px; margin-bottom: 8px;">⚡</div>
+                    <div style="font-weight: 600; font-size: 14px; color: var(--accent);">Fault Injection</div>
+                    <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Timeout / Storm / Degradation</div>
+                </div>
+                <div style="font-size: 20px; color: var(--primary);">➔</div>
+                <div style="flex: 1; background: rgba(0, 131, 0, 0.08); border: 1px solid rgba(0, 131, 0, 0.3); border-radius: 6px; padding: 16px; text-align: center;">
+                    <div style="font-size: 24px; margin-bottom: 8px;">📋</div>
+                    <div style="font-weight: 600; font-size: 14px; color: var(--primary);">Resilience Evidence</div>
+                    <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;"><code>ChaosReport</code> JSON</div>
+                </div>
+            </div>
+        </div>
+
         <h3 style="font-size: 24px; margin-top: 48px; margin-bottom: 24px;">Zero-Dependency Design</h3>
 
         <div class="code-example">
@@ -747,8 +796,8 @@ attach_events(session, workflow)
 
     <!-- Faults Section -->
     <section id="faults">
-        <h2>All Fault Types</h2>
-        <p class="section-subtitle">7 fault types across LLM, agent, and handoff layers. Extensible—add your own.</p>
+        <h2>All Fault &amp; Drift Types</h2>
+        <p class="section-subtitle">8 resilience &amp; drift primitives across LLM, agent, handoff, and drift layers. Extensible—add your own.</p>
 
         <div class="faults-grid">
             <!-- LLM Faults -->
@@ -881,6 +930,25 @@ attach_events(session, workflow)
                     <div class="meta-item">
                         <div class="meta-label">CLI</div>
                         <div class="meta-value">handoff_corruption</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="fault-card">
+                <div class="fault-header">
+                    <span class="fault-emoji">🧭</span>
+                    <span class="fault-name">DriftDetector</span>
+                    <span class="fault-badge badge-llm" style="background: rgba(16, 185, 129, 0.15); color: var(--success);">v0.4.0</span>
+                </div>
+                <p class="fault-description">Snapshot and compare prompts, models, outputs &amp; retrieval sets. Detects silent changes and fails CI (exit code 2).</p>
+                <div class="fault-meta">
+                    <div class="meta-item">
+                        <div class="meta-label">Signals</div>
+                        <div class="meta-value">prompt, model, output</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">CLI</div>
+                        <div class="meta-value">drift compare</div>
                     </div>
                 </div>
             </div>
@@ -1119,7 +1187,7 @@ agentic-chaos chaos run my_app.py \
                 <ul>
                     <li><a href="https://github.com/DeepAgentLabs/agentic-chaos" target="_blank">GitHub Repository</a></li>
                     <li><a href="https://pypi.org/project/agentic-chaos/" target="_blank">PyPI Package</a></li>
-                    <li><a href="https://github.com/DeepAgentLabs/agentic-chaos/blob/main/README.md" target="_blank">Documentation</a></li>
+                    <li><a href="docs/">Documentation</a></li>
                     <li><a href="https://github.com/DeepAgentLabs/agentic-chaos/blob/main/ROADMAP.md" target="_blank">Full Roadmap</a></li>
                 </ul>
             </div>
@@ -1155,5 +1223,6 @@ agentic-chaos chaos run my_app.py \
             <p>&copy; 2026 DeepAgentLabs. MIT License. agentic-chaos is open source.</p>
         </div>
     </footer>
+    <script src="site.js"></script>
 </body>
 </html>
