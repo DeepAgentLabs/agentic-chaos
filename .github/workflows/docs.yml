@@ -33,9 +33,6 @@ jobs:
         uses: actions/configure-pages@v6
         continue-on-error: true
 
-      - name: Install docs dependencies
-        run: uv pip install --system "mkdocs-material>=9.5"
-
       - name: Build docs
         run: uv run --no-project --with "mkdocs-material>=9.5" mkdocs build --strict --site-dir site/docs
 
