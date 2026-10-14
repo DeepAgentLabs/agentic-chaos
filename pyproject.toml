@@ -39,6 +39,9 @@ providers = ["openai>=1.0", "anthropic>=0.40", "google-genai>=1.0"]
 agenticlens = [
   "agenticlens>=0.7.0",
 ]
+docs = [
+  "mkdocs-material>=9.5",
+]
 dev = [
   "tomli>=2.0",
   "pytest>=8.0",

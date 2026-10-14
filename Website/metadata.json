@@ -1,0 +1,6 @@
+{
+  "name": "AgenticChaos",
+  "description": "Deterministic multi-agent failure injection, safety verification, and adaptive resilience testing for autonomous LLM systems.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
