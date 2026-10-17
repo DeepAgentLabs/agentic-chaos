@@ -49,8 +49,9 @@ impact before those issues appear in production.
 ### Current Roadmap Focus
 
 v0.5 streaming faults, provider patches, and profiles are implemented. The
-v0.5.x safety rails ship in 0.5.2. The next major step is the pytest plugin
-and assertions, alongside structured reports with provenance and
+v0.5.x safety rails ship in 0.5.2. The v0.6 pytest plugin and contracts ship
+in 0.6.0. The next major step is v0.7 fault cascades, adaptive intensity and
+response poisoning, alongside structured reports with provenance and
 synthetic resilience scenarios. Changes in this repo should move the package
 toward reproducible resilience evidence, not just ad hoc fault injection.
 
@@ -92,6 +93,9 @@ toward reproducible resilience evidence, not just ad hoc fault injection.
 | `src/agentic_chaos/agents/topology.py` | `TopologyTracker`, `AgentTopology` |
 | `src/agentic_chaos/drift/` | Prompt/model drift detection (shipped in v0.4.0) |
 | `src/agentic_chaos/integrations/` | Optional adapters (AgenticLens: `attach_events()`, `step_kwargs()`, `span_attributes()`, `mark_span()`) |
+| `src/agentic_chaos/chaos/calls.py` | Per-session call log read by contracts (v0.6) |
+| `src/agentic_chaos/contracts/` | `Contract` protocol, 7 built-in contracts, `check_contracts()`, spec parser (v0.6) |
+| `src/pytest_agentic_chaos/` | pytest plugin (`pytest11` entry point): `@pytest.mark.chaos`, `--chaos`, `chaos` fixture (v0.6) |
 | `src/agentic_chaos/cli/` | CLI entry point and subcommands |
 | `src/agentic_chaos/models/` | `ChaosReport`, `ChaosEvent`, schema extensions |
 | `tests/` | Pytest test suite |
@@ -102,6 +106,9 @@ toward reproducible resilience evidence, not just ad hoc fault injection.
 - Console script: `agentic-chaos` → `cli/`
 - Injection API: `from agentic_chaos import chaos_call, chaos_session`
 - Agent API: `from agentic_chaos.agents import wrap_tool, wrap_node`
+- Contracts API: `from agentic_chaos.contracts import check_contracts, assert_contracts`
+- pytest plugin: `pytest_agentic_chaos.plugin` via the `pytest11` entry point
+  (`pytest --chaos`). It must import nothing from `agentic_chaos` at module load
 
 ## Package Boundaries
 
@@ -110,6 +117,8 @@ toward reproducible resilience evidence, not just ad hoc fault injection.
 - AgenticLens integration is optional (`agentic_chaos.integrations.agenticlens`)
   and auto-skips if agenticlens is not installed
 - `models/` must not import from `integrations/`
+- `contracts/` reads `models/` only; it must not import `chaos/` or `agents/`
+  so contracts stay checkable against saved JSON
 - `agents/` imports from `chaos/` (base classes, registry, `chaos_call`) but
   `chaos/` must not import from `agents/`
 - All faults inherit from a common base in their respective module
