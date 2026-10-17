@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+import pydantic
 import typer
 from rich.console import Console
 
@@ -12,7 +13,20 @@ from agentic_chaos.agents.topology import get_active_tracker, reset_active_track
 from agentic_chaos.chaos.faults import FAULT_REGISTRY, BaseFault, resolve_faults
 from agentic_chaos.chaos.profiles import load_profile
 from agentic_chaos.chaos.session import chaos_session
-from agentic_chaos.cli.render import render_chaos_events, render_drift_report, render_topology
+from agentic_chaos.cli.render import (
+    render_chaos_events,
+    render_contract_report,
+    render_drift_report,
+    render_topology,
+)
+from agentic_chaos.contracts import (
+    Contract,
+    ContractReport,
+    check_contracts,
+    describe_contracts,
+    load_report,
+    parse_contract,
+)
 from agentic_chaos.drift import (
     DriftSnapshot,
     compare_snapshots,
@@ -49,7 +63,12 @@ drift_app = typer.Typer(
 )
 app.add_typer(chaos_app, name="chaos")
 app.add_typer(agent_app, name="agent")
+contracts_app = typer.Typer(
+    help="Chaos contracts: pass/fail resilience checks over a saved chaos report.",
+    no_args_is_help=True,
+)
 app.add_typer(drift_app, name="drift")
+app.add_typer(contracts_app, name="contracts")
 console = Console()
 
 
@@ -152,6 +171,47 @@ def _save_reports(
         console.print(f"Saved AIOS v0.4-draft run artifact to {save_aios}")
 
 
+_CONTRACT_HELP = (
+    "Contract to check after the run, e.g. 'max_retries:3' or 'no_unhandled_error'. "
+    "Repeatable; see `agentic-chaos contracts list`. Exits 1 unless all pass."
+)
+_BASELINE_HELP = "Baseline chaos report JSON for max_cost_impact / full_topology_traversal."
+
+
+def _parse_contracts(specs: list[str] | None) -> list[Contract]:
+    return [parse_contract(spec) for spec in specs or []]
+
+
+def _check_contracts(
+    report: ChaosReport,
+    contracts: list[Contract],
+    *,
+    baseline: Path | None,
+    save_contracts: Path | None,
+) -> ContractReport | None:
+    """Check, render and optionally save contract results; None when none requested."""
+    if not contracts:
+        return None
+    contract_report = check_contracts(report, contracts, baseline=baseline)
+    render_contract_report(console, contract_report)
+    if save_contracts is not None:
+        save_contracts.write_text(json.dumps(contract_report.as_json(), indent=2), encoding="utf-8")
+        console.print(f"Saved contract results to {save_contracts}")
+    return contract_report
+
+
+def _finish_run(
+    session: Any, crashed: BaseException | None, contract_report: ContractReport | None
+) -> None:
+    """Exit with the script's crash code, then abort, then contract failure."""
+    if crashed is not None:
+        raise typer.Exit(code=_exit_code(crashed))
+    if session.safety.abort is not None:
+        raise typer.Exit(code=1)
+    if contract_report is not None and not contract_report.passed:
+        raise typer.Exit(code=1)
+
+
 # ---------------------------------------------------------------------------
 # chaos subcommand
 # ---------------------------------------------------------------------------
@@ -202,6 +262,11 @@ def chaos_run(
         "--save-aios",
         help="Also save the run as an AI Operations Specification v0.4-draft Run artifact.",
     ),
+    contract: list[str] | None = typer.Option(None, "--contract", help=_CONTRACT_HELP),
+    baseline: Path | None = typer.Option(None, "--baseline", help=_BASELINE_HELP),
+    save_contracts: Path | None = typer.Option(
+        None, "--save-contracts", help="Save contract results as JSON to this file."
+    ),
 ) -> None:
     """Run a script with the requested faults active, then report what happened.
 
@@ -224,6 +289,9 @@ def chaos_run(
         )
         if not configured:
             raise ValueError("At least one fault is required")
+        contracts = _parse_contracts(contract)
+        if baseline is not None:
+            load_report(baseline)  # fail before running the script on a bad baseline
         breaker = CircuitBreaker(
             max_cost_usd=max_cost_usd,
             max_failure_rate=max_failure_rate,
@@ -232,7 +300,7 @@ def chaos_run(
             max_duration_seconds=max_duration_seconds,
             max_injections=max_injections,
         )
-    except (ValueError, OSError) as exc:
+    except (ValueError, OSError, pydantic.ValidationError) as exc:
         console.print(f"[red]{exc}[/red]")
         raise typer.Exit(code=1) from exc
 
@@ -251,11 +319,10 @@ def chaos_run(
 
     report = session.to_report(script.stem, end_time=ended_at, error=crashed)
     _save_reports(report, save=save, save_aios=save_aios, crashed=crashed)
-
-    if crashed is not None:
-        raise typer.Exit(code=_exit_code(crashed))
-    if session.safety.abort is not None:
-        raise typer.Exit(code=1)
+    contract_report = _check_contracts(
+        report, contracts, baseline=baseline, save_contracts=save_contracts
+    )
+    _finish_run(session, crashed, contract_report)
 
 
 @chaos_app.command("list-faults")
@@ -323,6 +390,11 @@ def agent_run(
         "--save-aios",
         help="Also save the run as an AI Operations Specification v0.4-draft Run artifact.",
     ),
+    contract: list[str] | None = typer.Option(None, "--contract", help=_CONTRACT_HELP),
+    baseline: Path | None = typer.Option(None, "--baseline", help=_BASELINE_HELP),
+    save_contracts: Path | None = typer.Option(
+        None, "--save-contracts", help="Save contract results as JSON to this file."
+    ),
 ) -> None:
     """Run an agent script with agent-level faults active, then report what happened.
 
@@ -347,6 +419,9 @@ def agent_run(
         )
         if not configured:
             raise ValueError("At least one fault is required")
+        contracts = _parse_contracts(contract)
+        if baseline is not None:
+            load_report(baseline)  # fail before running the script on a bad baseline
         breaker = CircuitBreaker(
             max_cost_usd=max_cost_usd,
             max_failure_rate=max_failure_rate,
@@ -355,7 +430,7 @@ def agent_run(
             max_duration_seconds=max_duration_seconds,
             max_injections=max_injections,
         )
-    except (ValueError, OSError) as exc:
+    except (ValueError, OSError, pydantic.ValidationError) as exc:
         console.print(f"[red]{exc}[/red]")
         raise typer.Exit(code=1) from exc
 
@@ -388,11 +463,10 @@ def agent_run(
         script.stem, end_time=ended_at, error=crashed, agent_topology=topology_data
     )
     _save_reports(report, save=save, save_aios=save_aios, crashed=crashed)
-
-    if crashed is not None:
-        raise typer.Exit(code=_exit_code(crashed))
-    if session.safety.abort is not None:
-        raise typer.Exit(code=1)
+    contract_report = _check_contracts(
+        report, contracts, baseline=baseline, save_contracts=save_contracts
+    )
+    _finish_run(session, crashed, contract_report)
 
 
 # ---------------------------------------------------------------------------
@@ -550,3 +624,42 @@ def drift_compare(
 
 if __name__ == "__main__":
     app()
+
+
+# ---------------------------------------------------------------------------
+# contracts subcommand
+# ---------------------------------------------------------------------------
+
+
+@contracts_app.command("list")
+def contracts_list() -> None:
+    """List the built-in contracts and their spec parameters."""
+    for entry in describe_contracts():
+        params = ", ".join(entry["parameters"]) or "-"
+        console.print(f"- [bold]{entry['name']}[/bold] ({entry['class']}): {entry['summary']}")
+        console.print(f"    parameters: {params}")
+
+
+@contracts_app.command("check")
+def contracts_check(
+    report: Path = typer.Argument(..., help="Chaos report JSON saved with --save."),
+    contract: list[str] = typer.Option(..., "--contract", help=_CONTRACT_HELP),
+    baseline: Path | None = typer.Option(None, "--baseline", help=_BASELINE_HELP),
+    save: Path | None = typer.Option(
+        None, "--save", help="Save contract results as JSON to this file."
+    ),
+) -> None:
+    """Check contracts against a saved chaos report; exits 1 unless all pass."""
+    try:
+        contracts = _parse_contracts(contract)
+        chaos_report = load_report(report)
+        if baseline is not None:
+            load_report(baseline)
+    except (ValueError, OSError, pydantic.ValidationError) as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1) from exc
+    contract_report = _check_contracts(
+        chaos_report, contracts, baseline=baseline, save_contracts=save
+    )
+    if contract_report is not None and not contract_report.passed:
+        raise typer.Exit(code=1)
