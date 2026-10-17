@@ -1041,3 +1041,21 @@ should tolerate unknown fields. Chaos resilience reports and per-run contracts r
 See the [contract, examples and compatibility policy](https://github.com/DeepAgentLabs/agentic-evals/blob/v0.7.2/docs/report-contract.md). Existing dependency
 ranges remain sufficient; using the new accessors directly requires
 `agentic-evals>=0.7.2`. This documentation alignment needs no sibling patch release.
+
+## AgenticLens 0.8.0 suite management
+
+AgenticLens 0.8.0 delivers its v0.6 milestone: `agenticlens.suites` and
+`agenticlens suite` build regression suites from CSV/JSON imports, production
+traces and user feedback. It masks PII before storage, detects duplicates and
+conflicting labels, adds synthetic variations and stable splits, records
+reviews, and approves suites into immutable, hash-verified versions that CI
+verifies, exports and evaluates. Suites stay plain agentic-evals `TestSuite`
+files.
+
+Chaos reports and contracts are unchanged. Lens converts only successful
+runs into cases, so a run failed by an injected fault stays diagnosis and
+attribution evidence rather than becoming a regression case; record a
+corrected expectation as feedback to keep it. The optional
+`agenticlens>=0.7.0` extra already admits 0.8.0, so no Chaos release is needed.
+
+See the [suite management guide](https://github.com/DeepAgentLabs/agenticlens/blob/v0.8.0/docs/suite-management.md).
