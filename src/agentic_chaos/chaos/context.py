@@ -1,11 +1,13 @@
 from collections.abc import Callable
 from contextvars import ContextVar
 from copy import copy, deepcopy
+from datetime import datetime, timezone
 from typing import Any
 
 from agentic_chaos.chaos.calls import CallLog
 from agentic_chaos.chaos.faults import BaseFault
 from agentic_chaos.models.chaos_event import ChaosEvent
+from agentic_chaos.models.report import ChaosReport
 from agentic_chaos.safety import CircuitBreaker, SafetyState
 
 
@@ -29,6 +31,7 @@ class ChaosSession:
         self.safety = safety if safety is not None else SafetyState(breaker)
         self.events: list[ChaosEvent] = []
         self.calls = calls if calls is not None else CallLog()
+        self.started_at = datetime.now(timezone.utc)
         self.cleanups: list[Callable[[], None]] = []
 
     def preview_fault(self, fault: BaseFault) -> BaseFault:
@@ -86,6 +89,30 @@ class ChaosSession:
             "calls_dropped": self.calls.dropped,
         }
 
+    def to_report(
+        self,
+        name: str,
+        *,
+        end_time: datetime | None = None,
+        error: BaseException | None = None,
+        agent_topology: dict[str, Any] | None = None,
+    ) -> ChaosReport:
+        """Build the native `ChaosReport` for this session.
+
+        Pass the exception that escaped the code under test as `error`; it is
+        recorded as `unhandled_error` so `NoUnhandledError` and
+        `RecoveredAfterFailure` can be checked from the saved JSON alone.
+        """
+        return ChaosReport(
+            name=name,
+            start_time=self.started_at,
+            end_time=end_time if end_time is not None else datetime.now(timezone.utc),
+            chaos_events=self.events_as_json(),
+            agent_topology=agent_topology,
+            unhandled_error=describe_error(error) if error is not None else None,
+            **self.report_fields(),
+        )
+
     def events_as_json(self) -> list[dict[str, Any]]:
         """JSON-serialized events, ready to drop into any `chaos_events` array
         -- this package's own `ChaosReport`, or (via the optional
@@ -108,6 +135,16 @@ class ChaosSession:
                 f"Fault {exc} was not configured for this chaos_session(). "
                 f"Configured faults: {known}"
             ) from exc
+
+
+def describe_error(error: BaseException) -> dict[str, Any]:
+    """JSON summary of an exception: type, message and the fault event it carries."""
+    summary: dict[str, Any] = {"type": type(error).__name__, "message": str(error)}
+    event = getattr(error, "event", None)
+    if isinstance(event, ChaosEvent):
+        summary["fault_type"] = event.fault_type
+        summary["event_id"] = event.id
+    return summary
 
 
 active_session: ContextVar[ChaosSession | None] = ContextVar("active_session", default=None)
