@@ -108,12 +108,11 @@ def _run_script_with_chaos(
     include_topology: bool = False,
     dry_run: bool = False,
     breaker: CircuitBreaker | None = None,
-) -> tuple[Any, datetime, datetime, BaseException | None]:
-    """Run a script within a chaos_session and return (session, start, end, crash).
+) -> tuple[Any, datetime, BaseException | None]:
+    """Run a script within a chaos_session and return (session, end, crash).
 
     Shared by `chaos run` and `agent run` to avoid code duplication.
     """
-    started_at = datetime.now(timezone.utc)
     crashed: BaseException | None = None
     with chaos_session(inject, breaker=breaker, dry_run=dry_run) as session:
         try:
@@ -126,7 +125,7 @@ def _run_script_with_chaos(
         except Exception as exc:
             crashed = exc
     ended_at = datetime.now(timezone.utc)
-    return session, started_at, ended_at, crashed
+    return session, ended_at, crashed
 
 
 def _exit_code(crashed: BaseException) -> int:
@@ -237,7 +236,7 @@ def chaos_run(
         console.print(f"[red]{exc}[/red]")
         raise typer.Exit(code=1) from exc
 
-    session, started_at, ended_at, crashed = _run_script_with_chaos(
+    session, ended_at, crashed = _run_script_with_chaos(
         script, configured, dry_run=dry_run, breaker=breaker
     )
 
@@ -250,13 +249,7 @@ def chaos_run(
     if session.safety.abort is not None:
         console.print({"abort_reason": session.safety.abort})
 
-    report = ChaosReport(
-        name=script.stem,
-        start_time=started_at,
-        end_time=ended_at,
-        chaos_events=session.events_as_json(),
-        **session.report_fields(),
-    )
+    report = session.to_report(script.stem, end_time=ended_at, error=crashed)
     _save_reports(report, save=save, save_aios=save_aios, crashed=crashed)
 
     if crashed is not None:
@@ -369,7 +362,7 @@ def agent_run(
     if framework not in ("generic", "langgraph", "crewai", "autogen"):
         console.print(f"[yellow]Unknown framework '{framework}', using generic.[/yellow]")
 
-    session, started_at, ended_at, crashed = _run_script_with_chaos(
+    session, ended_at, crashed = _run_script_with_chaos(
         script, configured, dry_run=dry_run, breaker=breaker
     )
 
@@ -391,13 +384,8 @@ def agent_run(
     # Reset the active tracker to prevent leaking across sequential invocations.
     reset_active_tracker()
 
-    report = ChaosReport(
-        name=script.stem,
-        start_time=started_at,
-        end_time=ended_at,
-        chaos_events=session.events_as_json(),
-        **session.report_fields(),
-        agent_topology=topology_data,
+    report = session.to_report(
+        script.stem, end_time=ended_at, error=crashed, agent_topology=topology_data
     )
     _save_reports(report, save=save, save_aios=save_aios, crashed=crashed)
 
