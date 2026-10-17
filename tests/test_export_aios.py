@@ -178,6 +178,8 @@ def test_package_fields_ride_in_the_namespaced_extension() -> None:
     assert extension["report_name"] == "demo"
     assert extension["agent_topology"] == {"nodes": []}
     assert "drift_report" not in extension
+    assert extension["calls"] == {"recorded": 0, "dropped": 0}
+    assert "unhandled_error" not in extension
 
 
 def test_open_report_without_end_time_has_no_end_event_or_duration() -> None:
@@ -315,4 +317,20 @@ def test_step_ids_never_collide_or_self_reference() -> None:
     assert artifact["steps"][3]["attributes"] == {"native_step_name": "Named"}
     contains = [rel for rel in artifact["relationships"] if rel["type"] == "contains"]
     assert all(rel["source"]["id"] != rel["target"]["id"] for rel in contains)
+    assert graph_errors(artifact) == []
+
+
+def test_call_counts_and_unhandled_error_ride_in_the_extension() -> None:
+    from agentic_chaos.chaos import chaos_call, chaos_session
+    from agentic_chaos.chaos.faults import TokenTimeoutError, TokenTimeoutFault
+
+    with chaos_session([TokenTimeoutFault(hang_seconds=0)]) as session:
+        try:
+            chaos_call(lambda: "x", step_name="llm")
+        except TokenTimeoutError as exc:
+            error = exc
+    artifact = to_aios_run(session.to_report("crashed", error=error), status="failed")
+    extension = artifact["extensions"]["io.deepagentlabs.agentic-chaos"]
+    assert extension["calls"] == {"recorded": 1, "dropped": 0}
+    assert extension["unhandled_error"]["type"] == "TokenTimeoutError"
     assert graph_errors(artifact) == []
