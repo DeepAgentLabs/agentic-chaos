@@ -14,3 +14,11 @@ probability = 1.0
 
 [profiles.streaming-demo.parameters.stream_cut]
 after_chunks = 2
+
+# Used by examples/pytest_chaos (agentic-chaos 0.6 pytest plugin).
+[profiles.ci]
+faults = ["rate_limit_storm"]
+seed = 7
+
+[profiles.ci.parameters.rate_limit_storm]
+burst_count = 2
