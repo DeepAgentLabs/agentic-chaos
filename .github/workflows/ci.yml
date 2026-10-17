@@ -137,3 +137,14 @@ jobs:
           uv venv --python 3.10 /tmp/chaos-wheel-smoke
           uv pip install --python /tmp/chaos-wheel-smoke/bin/python dist/*.whl
           /tmp/chaos-wheel-smoke/bin/python -c "import tomli, agentic_chaos; from importlib.metadata import version; assert agentic_chaos.__version__ == version('agentic-chaos'), (agentic_chaos.__version__, version('agentic-chaos')); print('Python 3.10 wheel import passed')"
+      - name: Verify the wheel ships the pytest plugin entry point
+        run: |
+          /tmp/chaos-wheel-smoke/bin/python -c "from importlib.metadata import entry_points; eps = {ep.name: ep.value for ep in entry_points(group='pytest11')}; assert eps.get('agentic_chaos') == 'pytest_agentic_chaos.plugin', eps; print('pytest11 entry point present')"
+          uv pip install --python /tmp/chaos-wheel-smoke/bin/python "pytest>=8"
+          /tmp/chaos-wheel-smoke/bin/python -m pytest --help | grep -q -- "--chaos"
+          # Run the example suite from a copy outside the repo, so the repo's
+          # pytest config (pythonpath = src) cannot mask the installed wheel.
+          mkdir -p /tmp/chaos-example/examples
+          cp -r examples/pytest_chaos examples/chaos.toml /tmp/chaos-example/examples/
+          cd /tmp/chaos-example
+          /tmp/chaos-wheel-smoke/bin/python -m pytest examples/pytest_chaos --chaos -q -p no:cacheprovider
