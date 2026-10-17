@@ -1030,3 +1030,14 @@ Recorded for the `0.6.0` release under the [Definition of Done](#definition-of-d
   `<0.6`; Sidecar 0.8.1 widens it to `<0.7`. No runtime change.
 - `agentic-evals`: coordinate with. Contracts are per-run checks, not release
   gates; scoring and gate computation stay in Evals.
+
+## Evals 0.7.2 report contract
+
+Agentic Evals 0.7.2 publishes native report (`schema_version: "1.0"`) and
+gate-decision JSON Schemas, with offline `report_schema()` and
+`gate_decision_schema()` accessors. Contract 1.x evolves additively; readers
+should tolerate unknown fields. Chaos resilience reports and per-run contracts remain separate from Evals scores and release gates; fault execution and containment work are unchanged.
+
+See the [contract, examples and compatibility policy](https://github.com/DeepAgentLabs/agentic-evals/blob/v0.7.2/docs/report-contract.md). Existing dependency
+ranges remain sufficient; using the new accessors directly requires
+`agentic-evals>=0.7.2`. This documentation alignment needs no sibling patch release.
