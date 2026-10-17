@@ -622,9 +622,6 @@ def drift_compare(
         raise typer.Exit(code=2)
 
 
-if __name__ == "__main__":
-    app()
-
 
 # ---------------------------------------------------------------------------
 # contracts subcommand
@@ -663,3 +660,7 @@ def contracts_check(
     )
     if contract_report is not None and not contract_report.passed:
         raise typer.Exit(code=1)
+
+
+if __name__ == "__main__":
+    app()

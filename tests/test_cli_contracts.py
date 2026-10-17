@@ -212,3 +212,17 @@ def test_contracts_list() -> None:
     assert result.exit_code == 0
     for name in ("completes_within", "no_retry_storm", "full_topology_traversal"):
         assert name in result.output
+
+
+def test_module_entry_point_registers_contract_commands() -> None:
+    import subprocess
+    import sys
+
+    result = subprocess.run(
+        [sys.executable, "-m", "agentic_chaos.cli.main", "contracts", "list"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "max_retries" in result.stdout
