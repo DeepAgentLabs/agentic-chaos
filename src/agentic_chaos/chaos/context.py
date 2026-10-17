@@ -3,6 +3,7 @@ from contextvars import ContextVar
 from copy import copy, deepcopy
 from typing import Any
 
+from agentic_chaos.chaos.calls import CallLog
 from agentic_chaos.chaos.faults import BaseFault
 from agentic_chaos.models.chaos_event import ChaosEvent
 from agentic_chaos.safety import CircuitBreaker, SafetyState
@@ -19,6 +20,7 @@ class ChaosSession:
         breaker: CircuitBreaker | None = None,
         dry_run: bool = False,
         safety: SafetyState | None = None,
+        calls: CallLog | None = None,
     ) -> None:
         self.faults = faults
         self.dry_run = dry_run
@@ -26,6 +28,7 @@ class ChaosSession:
         self.planned_events: list[dict[str, Any]] = []
         self.safety = safety if safety is not None else SafetyState(breaker)
         self.events: list[ChaosEvent] = []
+        self.calls = calls if calls is not None else CallLog()
         self.cleanups: list[Callable[[], None]] = []
 
     def preview_fault(self, fault: BaseFault) -> BaseFault:
@@ -79,6 +82,8 @@ class ChaosSession:
             **self.safety.snapshot(),
             "dry_run": self.dry_run,
             "planned_events": list(self.planned_events),
+            "calls": self.calls.as_json(),
+            "calls_dropped": self.calls.dropped,
         }
 
     def events_as_json(self) -> list[dict[str, Any]]:

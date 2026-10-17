@@ -109,6 +109,14 @@ def _event(
     return event
 
 
+def _mark(record: dict[str, Any] | None, event: ChaosEvent) -> ChaosEvent:
+    """Attribute a stream fault event to the stream's call record."""
+    if record is not None:
+        record["fault_type"] = event.fault_type
+        record["event_id"] = event.id
+    return event
+
+
 def chaos_stream(
     source: Iterator[Any],
     *,
@@ -128,10 +136,13 @@ def chaos_stream(
         emitted = False
         failed = False
         admitted = False
+        record: dict[str, Any] | None = None
+        error: BaseException | None = None
         try:
             if session is not None:
                 session.safety.begin()
                 admitted = True
+                record = session.calls.begin(kind="stream", step_id=step_id, step_name=step_name)
             while True:
                 if session is not None:
                     session.safety.check()
@@ -148,7 +159,7 @@ def chaos_stream(
                             session.plan(fault, step_id, step_name)
                             emitted = True
                     else:
-                        event = _event(session, fault, count, step_id, step_name)
+                        event = _mark(record, _event(session, fault, count, step_id, step_name))
                         if isinstance(fault, StreamHangFault):
                             time.sleep(fault.delay_seconds)
                             session.safety.check()
@@ -170,7 +181,7 @@ def chaos_stream(
                         if session.dry_run:
                             session.plan(fault, step_id, step_name)
                         else:
-                            _event(session, fault, count, step_id, step_name)
+                            _mark(record, _event(session, fault, count, step_id, step_name))
                         emitted = True
                     if not session.dry_run:
                         time.sleep(fault.delay_seconds)
@@ -181,19 +192,23 @@ def chaos_stream(
                 yield chunk
         except GeneratorExit:
             raise
-        except BaseException:
+        except BaseException as exc:
             failed = True
+            error = exc
             raise
         finally:
             close = getattr(source, "close", None)
             try:
                 if close is not None:
                     close()
-            except BaseException:
+            except BaseException as exc:
                 failed = True
+                error = error or exc
                 raise
             finally:
                 if session is not None and admitted:
+                    if record is not None:
+                        session.calls.finish(record, error)
                     session.safety.finish(failed)
 
     return deliver()
@@ -214,10 +229,13 @@ def chaos_astream(
         emitted = False
         failed = False
         admitted = False
+        record: dict[str, Any] | None = None
+        error: BaseException | None = None
         try:
             if session is not None:
                 session.safety.begin()
                 admitted = True
+                record = session.calls.begin(kind="stream", step_id=step_id, step_name=step_name)
             while True:
                 if session is not None:
                     session.safety.check()
@@ -234,7 +252,7 @@ def chaos_astream(
                             session.plan(fault, step_id, step_name)
                             emitted = True
                     else:
-                        event = _event(session, fault, count, step_id, step_name)
+                        event = _mark(record, _event(session, fault, count, step_id, step_name))
                         if isinstance(fault, StreamHangFault):
                             await asyncio.sleep(fault.delay_seconds)
                             session.safety.check()
@@ -256,7 +274,7 @@ def chaos_astream(
                         if session.dry_run:
                             session.plan(fault, step_id, step_name)
                         else:
-                            _event(session, fault, count, step_id, step_name)
+                            _mark(record, _event(session, fault, count, step_id, step_name))
                         emitted = True
                     if not session.dry_run:
                         await asyncio.sleep(fault.delay_seconds)
@@ -267,8 +285,9 @@ def chaos_astream(
                 yield chunk
         except GeneratorExit:
             raise
-        except BaseException:
+        except BaseException as exc:
             failed = True
+            error = exc
             raise
         finally:
             close = getattr(source, "aclose", None) or getattr(source, "close", None)
@@ -277,11 +296,14 @@ def chaos_astream(
                     result = close()
                     if hasattr(result, "__await__"):
                         await result
-            except BaseException:
+            except BaseException as exc:
                 failed = True
+                error = error or exc
                 raise
             finally:
                 if session is not None and admitted:
+                    if record is not None:
+                        session.calls.finish(record, error)
                     session.safety.finish(failed)
 
     return deliver()
