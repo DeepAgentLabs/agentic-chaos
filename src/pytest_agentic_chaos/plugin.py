@@ -10,6 +10,7 @@ agentic_chaos is imported when a chaos test actually runs.
 
 import copy
 import functools
+import hashlib
 import inspect
 import json
 import re
@@ -173,11 +174,17 @@ class ChaosSpec:
             )
         else:
             entries = self.faults
-        prepared = [
-            copy.deepcopy(entry) if isinstance(entry, BaseFault) else entry.strip()
-            for entry in entries
-            if isinstance(entry, BaseFault) or entry.strip()
-        ]
+        prepared: list[str | BaseFault] = []
+        for entry in entries:
+            if isinstance(entry, BaseFault):
+                prepared.append(copy.deepcopy(entry))
+            elif isinstance(entry, str):
+                if entry.strip():
+                    prepared.append(entry.strip())
+            else:
+                raise ValueError(
+                    f"faults entries must be fault names or BaseFault instances, got {entry!r}"
+                )
         faults = resolve_faults(prepared)
         if not faults:
             raise ValueError("faults must name at least one fault")
@@ -287,7 +294,7 @@ def pytest_runtest_call(item: pytest.Item) -> Generator[None, object, object]:
 def _bind_session(
     item: pytest.Function, fn: Callable[..., Coroutine[Any, Any, Any]]
 ) -> Callable[..., Coroutine[Any, Any, Any]]:
-    from agentic_chaos.agents.topology import get_active_tracker
+    from agentic_chaos.agents.topology import get_active_tracker, reset_active_tracker
     from agentic_chaos.chaos.context import active_session
 
     @functools.wraps(fn)
@@ -302,9 +309,16 @@ def _bind_session(
         finally:
             active_session.reset(token)
             tracker = get_active_tracker()
-            handle = item.stash.get(_HANDLE, None)
-            if handle is not None and handle.tracker is None and tracker is not before:
-                handle.tracker = tracker
+            if tracker is not None and tracker is not before:
+                handle = item.stash.get(_HANDLE, None)
+                if handle is not None and handle.tracker is None:
+                    handle.tracker = tracker
+                # Deactivate here, in the task's context: an event loop that
+                # outlives the test would otherwise keep the tracker active.
+                try:
+                    tracker.deactivate()
+                except (ValueError, RuntimeError):
+                    reset_active_tracker()
 
     return bound
 
@@ -436,7 +450,10 @@ def _take_topology(handle: ChaosHandle, before: "TopologyTracker | None") -> dic
 
 
 def _artifact_stem(nodeid: str) -> str:
-    return re.sub(r"[^A-Za-z0-9_.-]+", "_", nodeid).strip("_") or "chaos_test"
+    """Readable, filesystem-safe and unique: sanitizing alone can map two IDs together."""
+    readable = re.sub(r"[^A-Za-z0-9_.-]+", "_", nodeid).strip("_")[:120] or "chaos_test"
+    digest = hashlib.sha256(nodeid.encode("utf-8")).hexdigest()[:12]
+    return f"{readable}-{digest}"
 
 
 def _write_artifacts(

@@ -21,6 +21,12 @@ def weather_agent(question, attempts=5):
 """
 
 
+def artifact(directory, stem: str, kind: str):
+    """The one `<stem>-<digest>.<kind>.json` artifact the plugin wrote for a test."""
+    (path,) = directory.glob(f"{stem}-*.{kind}.json")
+    return path
+
+
 @pytest.fixture
 def project(pytester: pytest.Pytester) -> pytest.Pytester:
     pytester.makepyfile(agent=AGENT)
@@ -143,11 +149,11 @@ def test_profile_and_report_dir(project: pytest.Pytester) -> None:
     result = project.runpytest("--chaos", "--chaos-report-dir", "out")
     result.assert_outcomes(passed=1)
     out = project.path / "out"
-    report = json.loads((out / "test_weather.py_test_weather.chaos.json").read_text())
+    report = json.loads(artifact(out, "test_weather.py_test_weather", "chaos").read_text())
     assert len(report["chaos_events"]) == 1
     assert [call["status"] for call in report["calls"]] == ["error", "ok"]
     assert report["unhandled_error"] is None
-    contracts = json.loads((out / "test_weather.py_test_weather.contracts.json").read_text())
+    contracts = json.loads(artifact(out, "test_weather.py_test_weather", "contracts").read_text())
     assert contracts["passed"] is True
     assert contracts["nodeid"] == "test_weather.py::test_weather"
     assert [r["contract"] for r in contracts["results"]] == ["no_unhandled_error", "max_retries"]
@@ -178,7 +184,7 @@ def test_baseline_run_enables_comparative_contracts(project: pytest.Pytester) ->
     result = project.runpytest("--chaos", "--chaos-report-dir", "out", "-p", "no:randomly")
     result.assert_outcomes(passed=1, failed=1)
     result.stdout.fnmatch_lines(["*max_cost_impact: calls was 4.00x baseline, over 2x*"])
-    assert (project.path / "out" / "test_weather.py_test_weather.baseline.json").exists()
+    assert artifact(project.path / "out", "test_weather.py_test_weather", "baseline").exists()
 
 
 def test_failing_baseline_fails_with_clear_message(project: pytest.Pytester) -> None:
@@ -260,7 +266,9 @@ def test_attach_topology_and_global_contract(project: pytest.Pytester) -> None:
         "out",
     )
     result.assert_outcomes(passed=1)
-    report = json.loads((project.path / "out" / "test_graph.py_test_graph.chaos.json").read_text())
+    report = json.loads(
+        artifact(project.path / "out", "test_graph.py_test_graph", "chaos").read_text()
+    )
     assert {node["name"] for node in report["agent_topology"]["nodes"]} == {"Agent", "search"}
     assert report["cost_usd"] == 0.01
 
@@ -438,6 +446,94 @@ def test_async_tests_see_the_session_inside_their_event_loop(project: pytest.Pyt
     )
     result = project.runpytest("--chaos", "--chaos-report-dir", "out")
     result.assert_outcomes(passed=1)
-    report = json.loads((project.path / "out" / "test_async.py_test_async.chaos.json").read_text())
+    report = json.loads(
+        artifact(project.path / "out", "test_async.py_test_async", "chaos").read_text()
+    )
     assert len(report["chaos_events"]) == 3
     assert {node["name"] for node in report["agent_topology"]["nodes"]} == {"Agent", "llm"}
+
+
+def test_artifact_names_stay_unique_after_sanitizing(project: pytest.Pytester) -> None:
+    project.makepyfile(
+        test_ids="""
+        import pytest
+
+        @pytest.mark.parametrize("value", ["a/b", "a:b", "a_b"])
+        @pytest.mark.chaos(faults=["rate_limit_storm"])
+        def test_ids(value):
+            pass
+        """
+    )
+    project.runpytest("--chaos", "--chaos-report-dir", "out").assert_outcomes(passed=3)
+    names = sorted(path.name for path in (project.path / "out").glob("*.chaos.json"))
+    assert len(names) == 3
+    assert all(name.startswith("test_ids.py_test_ids_a_b-") for name in names)
+
+
+@pytest.mark.parametrize("entry", ["None", "1", "['rate_limit_storm', 2]"])
+def test_non_string_fault_entries_are_validation_errors(
+    project: pytest.Pytester, entry: str
+) -> None:
+    faults = entry if entry.startswith("[") else f"[{entry}]"
+    project.makepyfile(
+        test_bad=f"""
+        import pytest
+
+        @pytest.mark.chaos(faults={faults})
+        def test_bad():
+            pass
+        """
+    )
+    result = project.runpytest("--chaos")
+    result.assert_outcomes(failed=1)
+    result.stdout.fnmatch_lines(["*invalid @pytest.mark.chaos: faults entries must be*"])
+
+
+SHARED_CONTEXT_RUNNER = """
+import contextvars
+import inspect
+
+import pytest
+
+# A context that outlives each test, like a module- or session-scoped event
+# loop. Coroutines are driven in it directly, so whatever they leave set stays.
+SHARED = contextvars.copy_context()
+
+
+def drive(coro):
+    try:
+        while True:
+            coro.send(None)
+    except StopIteration as stop:
+        return stop.value
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_pyfunc_call(pyfuncitem):
+    if not inspect.iscoroutinefunction(pyfuncitem.obj):
+        return None
+    kwargs = {name: pyfuncitem.funcargs[name] for name in pyfuncitem._fixtureinfo.argnames}
+    SHARED.run(drive, pyfuncitem.obj(**kwargs))
+    return True
+"""
+
+
+def test_async_tracker_is_deactivated_in_a_shared_loop_context(
+    project: pytest.Pytester,
+) -> None:
+    project.makeconftest(SHARED_CONTEXT_RUNNER)
+    project.makepyfile(
+        test_async="""
+        import pytest
+        from agentic_chaos import TopologyTracker
+        from agentic_chaos.agents.topology import get_active_tracker
+
+        @pytest.mark.chaos(faults=["rate_limit_storm"])
+        async def test_creates_tracker():
+            TopologyTracker().record_edge("A", "B")
+
+        async def test_loop_context_is_clean():
+            assert get_active_tracker() is None
+        """
+    )
+    project.runpytest("--chaos", "-p", "no:randomly").assert_outcomes(passed=2)
