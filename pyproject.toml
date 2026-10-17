@@ -33,6 +33,8 @@ dependencies = [
 
 [project.optional-dependencies]
 providers = ["openai>=1.0", "anthropic>=0.40", "google-genai>=1.0"]
+# The pytest plugin (`pytest --chaos`) needs pytest 8; it is otherwise inert.
+pytest = ["pytest>=8.0"]
 # Only needed for agentic_chaos.integrations.agenticlens -- core chaos_call()/
 # chaos_session()/the CLI never require it. 0.7.0 is the first AgenticLens
 # release that diagnoses spans tagged by span_attributes()/mark_span().
@@ -52,6 +54,12 @@ dev = [
 [project.scripts]
 agentic-chaos = "agentic_chaos.cli.main:app"
 
+# The pytest plugin ships in this distribution as its own top-level module so
+# that loading it (on every pytest run, once installed) imports nothing from
+# agentic_chaos until a @pytest.mark.chaos test actually runs with --chaos.
+[project.entry-points.pytest11]
+agentic_chaos = "pytest_agentic_chaos.plugin"
+
 [project.urls]
 Homepage = "https://github.com/DeepAgentLabs/agentic-chaos"
 Repository = "https://github.com/DeepAgentLabs/agentic-chaos"
@@ -59,7 +67,7 @@ Issues = "https://github.com/DeepAgentLabs/agentic-chaos/issues"
 Changelog = "https://github.com/DeepAgentLabs/agentic-chaos/blob/main/CHANGELOG.md"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/agentic_chaos"]
+packages = ["src/agentic_chaos", "src/pytest_agentic_chaos"]
 
 [tool.uv.sources]
 # Resolve agenticlens from the sibling checkout during local development and in
@@ -76,7 +84,7 @@ select = ["E", "F", "I", "UP", "B", "SIM", "N"]
 ignore = ["B008"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["agentic_chaos"]
+known-first-party = ["agentic_chaos", "pytest_agentic_chaos"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -84,7 +92,7 @@ quote-style = "double"
 [tool.mypy]
 python_version = "3.10"
 strict = true
-packages = ["agentic_chaos"]
+packages = ["agentic_chaos", "pytest_agentic_chaos"]
 mypy_path = "src"
 
 [[tool.mypy.overrides]]

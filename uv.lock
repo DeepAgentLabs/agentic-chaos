@@ -39,6 +39,9 @@ providers = [
     { name = "google-genai" },
     { name = "openai" },
 ]
+pytest = [
+    { name = "pytest" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -50,6 +53,7 @@ requires-dist = [
     { name = "openai", marker = "extra == 'providers'", specifier = ">=1.0" },
     { name = "pydantic", specifier = ">=2.0,<3" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
+    { name = "pytest", marker = "extra == 'pytest'", specifier = ">=8.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=5.0" },
     { name = "rich", specifier = ">=13.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.6" },
@@ -58,7 +62,7 @@ requires-dist = [
     { name = "twine", marker = "extra == 'dev'", specifier = ">=5.1" },
     { name = "typer", specifier = ">=0.12" },
 ]
-provides-extras = ["providers", "agenticlens", "dev"]
+provides-extras = ["providers", "pytest", "agenticlens", "dev"]
 
 [[package]]
 name = "agentic-evals"
