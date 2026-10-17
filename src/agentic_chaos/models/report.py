@@ -33,3 +33,6 @@ class ChaosReport(BaseModel):
     cost_usd: float = 0.0
     injections: int = 0
     in_flight: int = 0
+    calls: list[dict[str, Any]] = Field(default_factory=list)
+    calls_dropped: int = 0
+    unhandled_error: dict[str, Any] | None = None

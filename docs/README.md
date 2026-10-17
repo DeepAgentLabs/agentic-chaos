@@ -121,3 +121,6 @@ Website content © 2026 DeepAgentLabs. MIT License.
 
 The [0.5.2 safety guide](safety.md) covers circuit breakers, dry-run, accounting,
 abort evidence, and compatible sibling readers.
+
+The [0.6.0 guide](v0.6.md) covers the pytest plugin (`pytest --chaos`), the seven
+chaos contracts, the call log they read, and CLI contract gating.

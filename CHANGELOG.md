@@ -4,6 +4,52 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-17
+
+### Added
+
+- pytest plugin (`pytest_agentic_chaos`, auto-registered through a `pytest11`
+  entry point): `@pytest.mark.chaos(faults=..., contracts=..., must_recover=...,
+  baseline=..., profile=..., breaker=..., dry_run=...)` runs a test inside a chaos
+  session and fails it when a contract does not pass. Markers are inert unless
+  pytest runs with `--chaos` (or `chaos = true` in the ini file).
+  `--chaos-report-dir` writes per-test native reports and contract results, and
+  `--chaos-contract` applies a contract to every chaos test. The `chaos` fixture
+  exposes the live session, cost recording and topology attachment. Async tests
+  under pytest-asyncio or anyio are supported. Install `agentic-chaos[pytest]`.
+- `agentic_chaos.contracts`: `CompletesWithin`, `NoUnhandledError`,
+  `MaxRetries`, `RecoveredAfterFailure`, `MaxCostImpact`, `NoRetryStorm` and
+  `FullTopologyTraversal`, plus `check_contracts()`, `assert_contracts()`,
+  `ContractReport`, `ContractViolationError` (an `AssertionError`) and a compact
+  spec syntax (`max_retries:3,step=search`). Results are `passed`, `failed` or
+  `inconclusive`, and inconclusive never passes.
+- `baseline=True` on the marker runs the test once as a dry run first, giving
+  `MaxCostImpact` and `FullTopologyTraversal` a baseline from the same code path.
+- A bounded per-session call log written by `chaos_call()`, `chaos_acall()` and
+  the stream wrappers. Reports gain the additive fields `calls`, `calls_dropped`
+  and `unhandled_error`; older reports still load.
+- `ChaosSession.to_report()` builds the native report and records an escaped
+  exception, including the fault event it carries.
+- CLI: `--contract`, `--baseline` and `--save-contracts` on `chaos run` and
+  `agent run`, plus `contracts check` and `contracts list`. A failing contract
+  exits 1; a script's own exit code and breaker aborts take precedence.
+- The AIOS run export carries `calls: {recorded, dropped}` and `unhandled_error`
+  in the `io.deepagentlabs.agentic-chaos` extension. No core AIOS object or
+  schema change.
+- v0.6 guide, offline contracts demo, `examples/pytest_chaos` suite, a GitHub
+  Actions example, a reproducible demo GIF, and Lens/Tower/MCP compatibility
+  tests for the new report fields. CI checks that the wheel ships the plugin.
+
+### Changed
+
+- Package version is `0.6.0`; v0.6 is complete. The native event shape and IDs
+  are unchanged. Sibling runtimes need no change. Agentic Sidecar 0.8.1 widens
+  its optional `agentic-chaos` extra, which was capped below 0.6.
+- `chaos run` / `agent run` reports now include the call log and, when the
+  script crashes, `unhandled_error`.
+- The landing page marks v0.4–v0.6 shipped and describes v0.2's helpers as
+  framework-agnostic.
+
 ## [0.5.3] - 2026-10-13
 
 ### Added

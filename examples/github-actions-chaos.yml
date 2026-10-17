@@ -1,0 +1,43 @@
+# Example GitHub Actions workflow: run chaos tests and gate a CLI chaos run on
+# contracts (agentic-chaos 0.6). Copy to .github/workflows/chaos.yml.
+name: Chaos
+
+on:
+  pull_request:
+  schedule:
+    - cron: "0 6 * * 1" # weekly, Monday 06:00 UTC
+
+jobs:
+  chaos:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # Your app plus the chaos toolkit; the pytest plugin auto-registers.
+      - run: pip install -e . "agentic-chaos[pytest]>=0.6,<0.7"
+
+      # 1. Unit tests run as usual; @pytest.mark.chaos tests now inject faults
+      #    and fail when a contract does not pass.
+      - name: Chaos tests
+        run: |
+          pytest --chaos --chaos-report-dir chaos-reports \
+            --chaos-contract "no_retry_storm:10,window_seconds=60"
+
+      # 2. Run an entry-point script under a profile and gate on contracts.
+      - name: Chaos run with contracts
+        run: |
+          agentic-chaos chaos run app.py --profile ci --profile-file chaos.toml \
+            --save chaos-reports/app.chaos.json \
+            --contract no_unhandled_error \
+            --contract max_retries:3 \
+            --contract completes_within:120 \
+            --save-contracts chaos-reports/app.contracts.json
+
+      # Native reports load in `agenticlens analyze`; contract JSON is the verdict.
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: chaos-reports
+          path: chaos-reports/

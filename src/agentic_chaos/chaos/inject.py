@@ -66,9 +66,12 @@ def chaos_call(
 
     session.safety.begin()
     failed = False
+    record = session.calls.begin(kind="call", step_id=step_id, step_name=step_name)
+    error: BaseException | None = None
     try:
         return _session_call(
             session,
+            record,
             fn,
             args,
             kwargs,
@@ -79,15 +82,18 @@ def chaos_call(
             _chaos_to_node,
             faults,
         )
-    except BaseException:
+    except BaseException as exc:
         failed = True
+        error = exc
         raise
     finally:
+        session.calls.finish(record, error)
         session.safety.finish(failed)
 
 
 def _session_call(
     session: Any,
+    record: dict[str, Any],
     fn: Callable[..., T],
     args: tuple[Any, ...],
     kwargs: dict[str, Any],
@@ -156,6 +162,8 @@ def _session_call(
             step_name=step_name,
         )
         session.events.append(outcome.event)
+        record["fault_type"] = outcome.event.fault_type
+        record["event_id"] = outcome.event.id
     if outcome.raised is not None:
         raise outcome.raised
     return outcome.result  # type: ignore[no-any-return]

@@ -318,6 +318,10 @@ def _extension(report: ChaosReport, producer_version: str | None) -> dict[str, A
             "in_flight",
         )
     }
+    # v0.6 call log: counts only -- per-call records stay in the native report.
+    extension["calls"] = {"recorded": len(report.calls), "dropped": report.calls_dropped}
+    if report.unhandled_error is not None:
+        extension["unhandled_error"] = report.unhandled_error
     if report.agent_topology is not None:
         extension["agent_topology"] = report.agent_topology
     if report.drift_report is not None:

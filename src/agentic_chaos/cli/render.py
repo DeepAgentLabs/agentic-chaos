@@ -2,6 +2,7 @@ from rich import box
 from rich.console import Console
 from rich.table import Table
 
+from agentic_chaos.contracts import ContractReport
 from agentic_chaos.drift import DriftReport
 from agentic_chaos.models.agent_topology import AgentTopology
 from agentic_chaos.models.chaos_event import ChaosEvent
@@ -108,3 +109,21 @@ def render_drift_report(console: Console, report: DriftReport) -> None:
         f"\n[{summary_style}]Drift detected: "
         f"{'yes' if report.has_drift else 'no'}[/{summary_style}]"
     )
+
+
+_STATUS_STYLES = {"passed": "green", "failed": "red", "inconclusive": "yellow"}
+
+
+def render_contract_report(console: Console, contract_report: ContractReport) -> None:
+    """Render chaos contract results as a table with a pass/fail verdict."""
+    table = Table(title="Chaos Contracts", box=box.SIMPLE_HEAVY)
+    table.add_column("Contract")
+    table.add_column("Status")
+    table.add_column("Message")
+    for result in contract_report.results:
+        style = _STATUS_STYLES.get(result.status, "white")
+        table.add_row(result.contract, f"[{style}]{result.status}[/{style}]", result.message)
+    console.print(table)
+    passed = len(contract_report.results) - len(contract_report.failures)
+    verdict = "[green]passed[/green]" if contract_report.passed else "[red]failed[/red]"
+    console.print(f"{passed}/{len(contract_report.results)} contracts passed: {verdict}")

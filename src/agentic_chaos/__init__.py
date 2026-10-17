@@ -26,6 +26,18 @@ from agentic_chaos.chaos.streaming import (
     chaos_astream,
     chaos_stream,
 )
+from agentic_chaos.contracts import (
+    CompletesWithin,
+    ContractViolationError,
+    FullTopologyTraversal,
+    MaxCostImpact,
+    MaxRetries,
+    NoRetryStorm,
+    NoUnhandledError,
+    RecoveredAfterFailure,
+    assert_contracts,
+    check_contracts,
+)
 from agentic_chaos.drift import DriftReport, DriftSnapshot, compare_snapshots
 from agentic_chaos.integrations.providers import patch_anthropic, patch_google, patch_openai
 from agentic_chaos.judges import DeepEvalJudge, HeuristicJudge, PydanticEvalsJudge, fidelity_session
@@ -42,9 +54,19 @@ for _fault in (
     FAULT_REGISTRY[_fault.name] = _fault
 
 
-__version__ = "0.5.3"
+__version__ = "0.6.0"
 
 __all__ = [
+    "CompletesWithin",
+    "ContractViolationError",
+    "FullTopologyTraversal",
+    "MaxCostImpact",
+    "MaxRetries",
+    "NoRetryStorm",
+    "NoUnhandledError",
+    "RecoveredAfterFailure",
+    "assert_contracts",
+    "check_contracts",
     "CircuitBreaker",
     "ChaosAbortedError",
     "load_profile",

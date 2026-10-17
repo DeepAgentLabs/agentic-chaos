@@ -30,7 +30,9 @@ async def chaos_acall(
         return await fn(*args, **kwargs)
     loop = asyncio.get_running_loop()
     pending: list[Future[T]] = []
-    isolated = ChaosSession(session.faults, dry_run=session.dry_run, safety=session.safety)
+    isolated = ChaosSession(
+        session.faults, dry_run=session.dry_run, safety=session.safety, calls=session.calls
+    )
     isolated._preview_faults = session._preview_faults
     cancelled = asyncio.Event()
 

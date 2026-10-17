@@ -26,17 +26,19 @@ tools that happen to compose.
 `agentic-chaos` is early-stage software. The **LLM Chaos Toolkit** (v0.1),
 **Agent Failure Injector** (v0.2), **Fidelity Judges & Handoff Chaos**
 (`v0.3.0`), **Prompt/Model Drift Detector** (`v0.4.0`), and
-**Streaming Faults, Provider Patching & Chaos Profiles** (`v0.5.0`) and
-**Safety Rails** (`0.5.2`) are available.
+**Streaming Faults, Provider Patching & Chaos Profiles** (`v0.5.0`),
+**Safety Rails** (`0.5.2`) and the **Pytest Plugin & Contracts** (`0.6.0`)
+are available.
 See [ROADMAP.md](ROADMAP.md) for the full plan.
 
 ### What's Next
 
+- **Fault cascades, adaptive intensity & response poisoning (v0.7)** —
+  chained failures, breaking-point search and adversarial output
 - **Structured experiment reports** — every chaos run emits a report with
   hypothesis, injection point provenance, observed behavior, and verdict
 - **Synthetic test scenarios** — prebuilt known-bad agent behaviors for
   consistent resilience validation
-- **Pytest integration (v0.6)** — reusable assertions and CI resilience checks
 
 ## Installation
 
@@ -160,11 +162,87 @@ agentic-chaos drift compare baseline.json --prompt-file prompt.txt --output-file
 
 # List all available fault types (v0.1 + v0.3).
 agentic-chaos chaos list-faults
+
+# Gate a run on chaos contracts (v0.6); exits 1 unless all pass.
+agentic-chaos chaos run my_app.py --inject rate_limit_storm --contract max_retries:3 --contract no_unhandled_error
+
+# Re-check contracts against saved reports, and list the built-ins.
+agentic-chaos contracts check chaos_run.json --baseline baseline.json --contract full_topology_traversal
+agentic-chaos contracts list
+
+# Run @pytest.mark.chaos tests with faults injected (v0.6).
+pytest --chaos
 ```
 
 `agentic-chaos drift compare` exits with code `2` when drift is detected, so
 it can fail a CI job while still writing a JSON report when emission rules
 allow it.
+
+## Pytest Plugin & Contracts (v0.6.0)
+
+Make chaos part of the normal test run. Mark a test, then run pytest with
+`--chaos`; without the flag the marker does nothing and the test runs as usual.
+
+```python
+import pytest
+from agentic_chaos.contracts import MaxRetries, NoRetryStorm
+
+@pytest.mark.chaos(faults=["rate_limit_storm"], must_recover=True)
+def test_agent_handles_rate_limits():
+    result = my_agent("What's the weather?")
+    assert result is not None
+
+@pytest.mark.chaos("rate_limit_storm", contracts=[MaxRetries(3), NoRetryStorm(5)])
+def test_retry_budget_is_bounded():
+    assert my_agent("What's the weather?")
+```
+
+```bash
+pip install "agentic-chaos[pytest]"
+pytest --chaos --chaos-report-dir chaos-reports
+```
+
+The plugin ships in this package and registers itself with pytest. A
+**contract** is a pass/fail check over the run's `ChaosReport`. If a contract
+fails, or cannot be evaluated (`inconclusive`), the test fails. The seven
+built-ins:
+
+| Contract | Passes when |
+|---|---|
+| `CompletesWithin(timeout_s)` | the run finished within the time budget |
+| `NoUnhandledError()` | no exception escaped the code under test |
+| `MaxRetries(n)` | no step was retried more than `n` times in a row |
+| `RecoveredAfterFailure()` | the run completed despite an injected failure (`must_recover=True`) |
+| `MaxCostImpact(factor)` | recorded cost, or call count, stayed within `factor` × baseline |
+| `NoRetryStorm(max_retries_per_window)` | retries across the **whole topology** stayed under a sliding-window limit |
+| `FullTopologyTraversal()` | every node the baseline visited also ran under chaos |
+
+`baseline=True` runs the test once as a dry run first, which gives the
+comparative contracts a baseline. The `chaos` fixture exposes the live session
+(`chaos.record_cost()`, `chaos.attach_topology()`). Async tests under
+pytest-asyncio or anyio are supported.
+
+Contracts also work without pytest, on a live session or on saved JSON:
+
+```python
+from agentic_chaos.contracts import NoUnhandledError, MaxRetries, assert_contracts
+
+assert_contracts(session.to_report("weather", error=error), [NoUnhandledError(), MaxRetries(3)])
+```
+
+```bash
+agentic-chaos chaos run app.py --inject rate_limit_storm --contract max_retries:3 --save chaos.json
+agentic-chaos contracts check chaos.json --baseline baseline.json --contract max_cost_impact:2,metric=calls
+```
+
+Reports now include a call log (`calls`, `calls_dropped`) and the escaped
+`unhandled_error`. Contracts read these from the same native JSON that
+AgenticLens, Control Tower and MCP consume. The new fields are additive. See
+the [v0.6 guide](docs/v0.6.md) for the marker and option reference, the exact
+retry and visit definitions, inconclusive rules and caveats, and the
+[GitHub Actions example](examples/github-actions-chaos.yml).
+
+![v0.6 demo](docs/assets/v0.6-demo.gif)
 
 ## Streaming, Provider Patches & Profiles (v0.5.0)
 
@@ -382,6 +460,8 @@ print(tracker.topology.as_json())  # nodes + edges
 | [`examples/chaos_agent_failure_demo.py`](examples/chaos_agent_failure_demo.py) | nothing but `agentic_chaos` | All three v0.2 agent faults: tool-call failure, memory corruption, infinite loop. Plus `wrap_tool()` and `TopologyTracker`. |
 | [`examples/chaos_handoff_and_judges_demo.py`](examples/chaos_handoff_and_judges_demo.py) | nothing but `agentic_chaos` | Edge-scoped handoff corruption plus a manual baseline capture that lets `fidelity_session()` score the recorded event safely for a pure downstream function. |
 | [`examples/drift_detection_demo.py`](examples/drift_detection_demo.py) | nothing but `agentic_chaos` | Creates a drift baseline and current snapshot, compares them, and writes a drift report JSON. |
+| [`examples/chaos_contracts_demo.py`](examples/chaos_contracts_demo.py) | nothing but `agentic_chaos` | v0.6 contracts on the Python API: a resilient agent passes, a fragile one fails, a skipped reviewer is caught against a dry-run baseline. |
+| [`examples/pytest_chaos/`](examples/pytest_chaos) | `pytest` | v0.6 pytest plugin: run with and without `--chaos`; includes a profile, a baseline comparison and a contract catching a fallback that hides an unrecovered step. |
 | [`examples/chaos_with_agenticlens_demo.py`](examples/chaos_with_agenticlens_demo.py) | `agentic-chaos[agenticlens]` | The optional integration: `attach_events()` + `step_kwargs()` merging chaos events onto a real AgenticLens `Workflow`. |
 
 Run any of them directly (`uv run python examples/...`), or the first two
@@ -597,8 +677,10 @@ See the [offline example](examples/chaos_safety_demo.py).
 
 ## Sidecar 0.8 interoperability
 
-Chaos 0.5.3 remains the fault/event producer. Sidecar checks recovery proposals
-with native Chaos event IDs; it does not implement fault injection here.
+Chaos remains the fault/event producer; 0.6.0 adds contracts without changing
+event IDs or the event shape. Sidecar checks recovery proposals with native
+Chaos event IDs; it does not implement fault injection here. Sidecar 0.8.1
+widens its optional `agentic-chaos` extra to accept 0.6.
 
 Sidecar 0.8 provides Shared/Exclusive context-only, guardrails-only or combined
 configuration, explicit host context delivery and mandatory guardrail composition.
@@ -615,3 +697,5 @@ investigation, exact-preview human approval and verified deterministic staging
 recovery. Native producer outcomes and package ownership remain unchanged.
 See [compatibility, examples and dependency matrix](docs/control-tower-0.6.md).
 This is documentation alignment; no package release or dependency bump is needed.
+Chaos 0.6.0 reports (with `calls` and `unhandled_error`) stay readable by
+Tower's native artifact reader; the sibling-integration CI job checks this.

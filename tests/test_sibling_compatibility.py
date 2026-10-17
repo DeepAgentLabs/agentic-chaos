@@ -132,3 +132,60 @@ def test_mcp_exports_abort_and_preview_metadata(monkeypatch):
         artifact = export_aios_run(safety_report(preview=preview).model_dump(mode="json"))
         assert artifact["status"] == ("completed" if preview else "cancelled")
         assert not artifact["evidence"]
+
+
+def contract_report():
+    """A v0.6 report: call log, an escaped fault and topology, as the plugin saves it."""
+    from agentic_chaos import TokenTimeoutFault, chaos_call
+    from agentic_chaos.chaos.faults import TokenTimeoutError
+
+    with chaos_session([TokenTimeoutFault(hang_seconds=0)]) as session:
+        try:
+            chaos_call(lambda: "ok", step_name="provider")
+        except TokenTimeoutError as exc:
+            error = exc
+    return session.to_report("v0.6", error=error).model_dump(mode="json")
+
+
+def test_lens_reads_v06_report_fields_as_additive():
+    pytest.importorskip("agenticlens")
+    from agenticlens.models import Workflow
+
+    data = contract_report()
+    assert data["calls"] and data["unhandled_error"]
+    workflow = Workflow.model_validate(data)
+    assert [event["fault_type"] for event in workflow.chaos_events] == ["token_timeout"]
+
+
+def test_tower_reads_v06_report(monkeypatch):
+    source = Path(__file__).resolve().parents[2] / "agenticops-control-tower" / "src"
+    if not source.exists():
+        pytest.skip("Control Tower sibling checkout unavailable")
+    monkeypatch.syspath_prepend(str(source))
+    from agenticops_control_tower.adapters.evidence import summarize_evidence
+    from agenticops_control_tower.models.evidence import EvidenceLink
+
+    link = EvidenceLink(
+        agent_id="test",
+        source="agentic-chaos",
+        source_version="0.6.0",
+        artifact_type="chaos_report",
+        artifact_ref="report.json",
+        observed_at=datetime.now(timezone.utc),
+    )
+    result = summarize_evidence(link, contract_report())
+    assert result.availability == "available"
+    assert result.details["event_count"] == 1
+
+
+def test_mcp_exports_v06_report(monkeypatch):
+    source = Path(__file__).resolve().parents[2] / "mcp-server" / "src"
+    if not source.exists():
+        pytest.skip("MCP sibling checkout unavailable")
+    monkeypatch.syspath_prepend(str(source))
+    from deep_agentic_core_mcp.adapters.agentic_chaos import export_aios_run
+
+    artifact = export_aios_run(contract_report())
+    extension = artifact["extensions"]["io.deepagentlabs.agentic-chaos"]
+    assert extension["calls"] == {"recorded": 1, "dropped": 0}
+    assert extension["unhandled_error"]["fault_type"] == "token_timeout"
