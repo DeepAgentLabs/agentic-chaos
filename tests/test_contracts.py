@@ -365,3 +365,62 @@ def test_load_report_passthrough_and_repr():
     report = synthetic()
     assert load_report(report) is report
     assert repr(MaxRetries(2, step="x")) == "MaxRetries(n=2, step='x')"
+
+
+# -- pre-v0.6 reports fail closed --------------------------------------------
+
+
+def pre_v06_report(**fields):
+    """JSON as agentic-chaos 0.5.x wrote it: no call log, no unhandled_error."""
+    data = {
+        "name": "old",
+        "start_time": T0.isoformat(),
+        "end_time": T0.isoformat(),
+        "chaos_events": [{"fault_type": "rate_limit_storm", "outcome": "errored"}],
+        **fields,
+    }
+    return load_report(data)
+
+
+@pytest.mark.parametrize(
+    "contract",
+    [
+        NoUnhandledError(),
+        RecoveredAfterFailure(),
+        RecoveredAfterFailure(require_step_success=True),
+        MaxRetries(3),
+        NoRetryStorm(3),
+        MaxCostImpact(2, metric="calls", baseline_value=1),
+        FullTopologyTraversal(expected_nodes=["llm"]),
+    ],
+    ids=repr,
+)
+def test_missing_v06_evidence_is_inconclusive(contract):
+    result = contract.check(pre_v06_report())
+    assert result.status == "inconclusive"
+    assert "before agentic-chaos 0.6" in result.message or "absent" in result.message
+
+
+def test_pre_v06_baseline_is_inconclusive_for_call_counts():
+    chaos = synthetic([call(1, "a")])
+    result = MaxCostImpact(2, metric="calls").check(chaos, baseline=pre_v06_report())
+    assert result.status == "inconclusive"
+    assert result.message.startswith("baseline:")
+
+
+def test_pre_v06_reports_still_evaluate_what_they_do_record():
+    report = pre_v06_report(unhandled_error={"type": "KeyError", "message": "x"})
+    assert NoUnhandledError().check(report).status == "failed"
+    assert MaxCostImpact(2, baseline_value=0.1).check(pre_v06_report(cost_usd=0.1)).passed
+    assert CompletesWithin(1).check(report).passed
+
+
+def test_explicit_null_unhandled_error_counts_as_evidence():
+    report = load_report({"name": "new", "start_time": T0.isoformat(), "unhandled_error": None})
+    assert NoUnhandledError().check(report).passed
+
+
+@pytest.mark.parametrize("value", ["0.2", [1]])
+def test_max_cost_impact_rejects_non_numeric_baseline(value):
+    with pytest.raises(ValueError):
+        MaxCostImpact(2, baseline_value=value)

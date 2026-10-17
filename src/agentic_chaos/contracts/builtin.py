@@ -18,6 +18,16 @@ from agentic_chaos.models.report import ChaosReport
 CostMetric = Literal["cost_usd", "calls"]
 
 _TRUNCATED = "the call log was truncated ({dropped} records dropped); retries cannot be counted"
+_PRE_V06 = "the report has no {field} field (written before agentic-chaos 0.6)"
+
+
+def _missing(report: ChaosReport, field: str) -> bool:
+    """True when `field` was never recorded, only defaulted on load.
+
+    Reports written before 0.6 have no call log or unhandled_error; an empty
+    default there is absence of evidence, not evidence of a clean run.
+    """
+    return field not in report.model_fields_set
 
 
 def _positive(name: str, value: float) -> float:
@@ -68,6 +78,8 @@ class NoUnhandledError(Contract):
     name = "no_unhandled_error"
 
     def check(self, report: ChaosReport, *, baseline: ChaosReport | None = None) -> ContractResult:
+        if _missing(report, "unhandled_error"):
+            return self.result("inconclusive", _PRE_V06.format(field="unhandled_error"))
         error = report.unhandled_error
         if error is None:
             return self.result("passed", "no exception escaped the code under test")
@@ -96,6 +108,8 @@ class MaxRetries(Contract):
         return params
 
     def check(self, report: ChaosReport, *, baseline: ChaosReport | None = None) -> ContractResult:
+        if _missing(report, "calls"):
+            return self.result("inconclusive", _PRE_V06.format(field="calls"))
         if report.calls_dropped:
             return self.result("inconclusive", _TRUNCATED.format(dropped=report.calls_dropped))
         by_step = max_retries_by_step(report)
@@ -161,7 +175,11 @@ class RecoveredAfterFailure(Contract):
                 **observed,
                 abort_reason=report.abort_reason,
             )
+        if _missing(report, "unhandled_error"):
+            return self.result("inconclusive", _PRE_V06.format(field="unhandled_error"), **observed)
         if self.require_step_success:
+            if _missing(report, "calls"):
+                return self.result("inconclusive", _PRE_V06.format(field="calls"), **observed)
             unrecovered = _unrecovered_steps(report)
             observed["unrecovered_steps"] = unrecovered
             if report.calls_dropped and unrecovered:
@@ -217,6 +235,7 @@ class MaxCostImpact(Contract):
         self.metric: CostMetric = metric
         if baseline_value is not None and (
             isinstance(baseline_value, bool)
+            or not isinstance(baseline_value, (int, float))
             or not math.isfinite(baseline_value)
             or baseline_value < 0
         ):
@@ -235,6 +254,12 @@ class MaxCostImpact(Contract):
         return report.cost_usd
 
     def check(self, report: ChaosReport, *, baseline: ChaosReport | None = None) -> ContractResult:
+        if self.metric == "calls":
+            for label, candidate in (("report", report), ("baseline", baseline)):
+                if candidate is not None and _missing(candidate, "calls"):
+                    return self.result(
+                        "inconclusive", f"{label}: " + _PRE_V06.format(field="calls")
+                    )
         if self.baseline_value is not None:
             reference: float = self.baseline_value
         elif baseline is not None:
@@ -291,6 +316,8 @@ class NoRetryStorm(Contract):
         }
 
     def check(self, report: ChaosReport, *, baseline: ChaosReport | None = None) -> ContractResult:
+        if _missing(report, "calls"):
+            return self.result("inconclusive", _PRE_V06.format(field="calls"))
         if report.calls_dropped:
             return self.result("inconclusive", _TRUNCATED.format(dropped=report.calls_dropped))
         retries = find_retries(report)
@@ -369,10 +396,10 @@ class FullTopologyTraversal(Contract):
             return self.result(
                 "passed", f"all {len(expected)} expected nodes were visited", **observed
             )
-        if report.calls_dropped:
+        if report.calls_dropped or _missing(report, "calls"):
             return self.result(
                 "inconclusive",
-                f"{', '.join(missing)} not seen, but the call log was truncated",
+                f"{', '.join(missing)} not seen, but the call log is truncated or absent",
                 **observed,
             )
         return self.result(
