@@ -1046,7 +1046,8 @@ ranges remain sufficient; using the new accessors directly requires
 
 AgenticLens 0.8.0 delivers its v0.6 milestone: `agenticlens.suites` and
 `agenticlens suite` build regression suites from CSV/JSON imports, production
-traces and user feedback. It masks PII before storage, detects duplicates and
+traces and user feedback. It masks PII by default before storage (`--no-mask`
+opts out), detects duplicates and
 conflicting labels, adds synthetic variations and stable splits, records
 reviews, and approves suites into immutable, hash-verified versions that CI
 verifies, exports and evaluates. Suites stay plain agentic-evals `TestSuite`
