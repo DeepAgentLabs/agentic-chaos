@@ -124,3 +124,6 @@ abort evidence, and compatible sibling readers.
 
 The [0.6.0 guide](v0.6.md) covers the pytest plugin (`pytest --chaos`), the seven
 chaos contracts, the call log they read, and CLI contract gating.
+
+The [Evals 0.7.2 native report contract](evals-report-contract.md) describes
+optional scoring interoperability and its separate ownership boundary.
