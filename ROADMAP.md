@@ -9,7 +9,8 @@ one correction below: the v0.2 "LangGraph adapter" is a framework-agnostic
 dependency, or test — not a LangGraph integration. At the audited commit, v0.5–v1.0 were correctly
 unimplemented; their 🚧 Planned markers match an empty search for
 corresponding code. v0.5 has since been implemented with new tests; see
-[the v0.5 guide](docs/v0.5.md).
+[the v0.5 guide](docs/v0.5.md). v0.6 followed in `0.6.0`; see
+[the v0.6 guide](docs/v0.6.md).
 
 ## Release Status
 
@@ -19,7 +20,7 @@ corresponding code. v0.5 has since been implemented with new tests; see
 - **v0.4** ✅ Complete — Prompt/Model Drift Detector (`v0.4.0`) — shipped 2026-08-15
 - **v0.5** ✅ Complete — Streaming Faults, Provider Patching & Chaos Profiles
 - **v0.5.x** ✅ Complete — Safety Rails (Circuit Breaker & Dry-Run), released as `0.5.2`
-- **v0.6** 🚧 Planned — Pytest Plugin & Assertions
+- **v0.6** ✅ Complete — Pytest Plugin & Assertions, released as `0.6.0`
 - **v0.7** 🚧 Planned — Fault Cascades, Adaptive Intensity & Response Poisoning
 - **v0.8** 🚧 Planned — Chaos Workflows, Declarative Experiments & Explosion Radius
 - **v0.9** 🚧 Planned — Resilience Probes & Resilience Score
@@ -132,6 +133,8 @@ The package contains the following modules (shipped and planned):
 | `agentic_chaos.drift` | ✅ Shipped (v0.4) | Prompt/model drift detection — snapshot, compare, detect silent changes |
 | `agentic_chaos.integrations` | ✅ Shipped (v0.1) | Optional AgenticLens adapter (`attach_events()`, `step_kwargs()`; `span_attributes()`/`mark_span()` since 0.5.3) |
 | `agentic_chaos.safety` | ✅ Shipped (0.5.2) | Circuit breaker (max-cost / max-failure-rate auto-abort) + `--dry-run` mode |
+| `agentic_chaos.contracts` | ✅ Shipped (0.6.0) | Seven pass/fail contracts over a `ChaosReport`, `check_contracts()` / `assert_contracts()`, CLI spec parser |
+| `pytest_agentic_chaos` | ✅ Shipped (0.6.0) | pytest plugin (`pytest11` entry point): `@pytest.mark.chaos`, `--chaos`, `chaos` fixture, report artifacts |
 
 ## Package Layout (current)
 
@@ -150,8 +153,12 @@ agentic-chaos/
     drift/              # Prompt/model drift detection (v0.4)
     integrations/       # Optional adapters
       agenticlens.py    # attach_events(), step_kwargs(), span_attributes(), mark_span()
+    chaos/calls.py      # per-session call log (v0.6)
+    contracts/          # Contract protocol + 7 built-ins (v0.6)
     cli/                # CLI entry point
     models/             # ChaosReport, ChaosEvent, schema extensions
+  src/pytest_agentic_chaos/
+    plugin.py           # @pytest.mark.chaos, --chaos, chaos fixture (v0.6)
 ```
 
 One repo, one PyPI package, one CLI with subcommands.
@@ -167,6 +174,12 @@ agentic-chaos chaos list-faults
 
 # Agent-level chaos (v0.2)
 agentic-chaos agent run my_graph.py --framework langgraph --inject memory_corruption,tool_failure --save chaos_run.json
+
+# Contracts (v0.6)
+agentic-chaos chaos run my_app.py --inject rate_limit_storm --contract max_retries:3 --save chaos_run.json
+agentic-chaos contracts check chaos_run.json --baseline baseline.json --contract full_topology_traversal
+agentic-chaos contracts list
+pytest --chaos
 ```
 
 ## Optional AgenticLens Integration
@@ -576,10 +589,33 @@ AgenticLens recommendation come from the same data, not two disconnected
 checks.
 
 **Deliverables:**
-- [ ] `pytest-agentic-chaos` plugin (separate small package or entry point)
-- [ ] 7 contract classes in `agentic_chaos.contracts`
-- [ ] `--chaos` pytest flag for opt-in activation
-- [ ] README section + CI example (GitHub Actions) + demo GIF
+- [x] `pytest-agentic-chaos` plugin (separate small package or entry point)
+- [x] 7 contract classes in `agentic_chaos.contracts`
+- [x] `--chaos` pytest flag for opt-in activation
+- [x] README section + CI example (GitHub Actions) + demo GIF
+
+**Shipped in 0.6.0.** The plugin is the `pytest_agentic_chaos` module in the
+`agentic-chaos` wheel, registered through a `pytest11` entry point. It imports
+nothing from `agentic_chaos` until a chaos test runs. Beyond the sketch above,
+the release adds:
+
+- marker `contracts=`, `baseline=True` (a dry-run baseline for the comparative
+  contracts), `profile=`, `breaker=` and `dry_run=`
+- a `chaos` fixture, `--chaos-report-dir` artifacts, a global
+  `--chaos-contract` option, and async-test support
+
+The contracts need evidence the events alone did not carry, so reports gain
+an additive per-session call log (`calls`, capped with `calls_dropped`) and
+the escaped `unhandled_error`. Contracts fail closed: a result that cannot be
+evaluated is `inconclusive`, and inconclusive never passes. They also run from
+the CLI (`--contract` on `chaos run`/`agent run`, `contracts check`,
+`contracts list`).
+
+The AIOS export carries only the call counts and the escaped error in the
+producer extension. Contract verdicts are native JSON, not AIOS evidence, and
+release-gate scoring stays in Agentic Evals. Lens, Tower and MCP readers are
+covered by sibling tests and need no runtime change. Sidecar's optional extra
+cap (`<0.6`) is widened in Sidecar 0.8.1. See [the v0.6 guide](docs/v0.6.md).
 
 ### v0.7 — Fault Cascades, Adaptive Intensity & Response Poisoning
 
@@ -919,8 +955,8 @@ reference implementation of it.
 | 8 | PyPI release v0.4, publish the schema spec doc | ongoing |
 | 9 | v0.5 — Streaming Faults, Provider Patching & Chaos Profiles | 3–5 weeks |
 | 10 | PyPI release v0.5 | ongoing |
-| 11 | v0.6 — Pytest Plugin & Assertions | 2–4 weeks |
-| 12 | PyPI release v0.6 | ongoing |
+| 11 | v0.6 — Pytest Plugin & Assertions ✅ | 2–4 weeks |
+| 12 | PyPI release v0.6 (`0.6.0`) ✅ | ongoing |
 | 13 | v0.7 — Fault Cascades, Adaptive Intensity & Response Poisoning | 4–6 weeks |
 | 14 | PyPI release v0.7 | ongoing |
 | 15 | v0.8 — Chaos Workflows, Declarative Experiments & Explosion Radius | 4–6 weeks |
@@ -954,8 +990,10 @@ containment validation remains planned within these existing milestones.
 
 ## Sidecar 0.8 interoperability
 
-Chaos 0.5.3 remains the fault/event producer. Sidecar checks recovery proposals
-with native Chaos event IDs; it does not implement fault injection here.
+Chaos remains the fault/event producer; 0.6.0 adds contracts without changing
+event IDs or the event shape. Sidecar checks recovery proposals with native
+Chaos event IDs; it does not implement fault injection here. Sidecar 0.8.1
+widens its optional `agentic-chaos` extra to accept 0.6.
 
 Sidecar 0.8 provides Shared/Exclusive context-only, guardrails-only or combined
 configuration, explicit host context delivery and mandatory guardrail composition.
@@ -972,3 +1010,23 @@ investigation, exact-preview human approval and verified deterministic staging
 recovery. Native producer outcomes and package ownership remain unchanged.
 See [compatibility, examples and dependency matrix](docs/control-tower-0.6.md).
 This is documentation alignment; no package release or dependency bump is needed.
+
+## v0.6 ecosystem validation
+
+Recorded for the `0.6.0` release under the [Definition of Done](#definition-of-done):
+
+- `agenticlens`: validated, no change needed. `Workflow` loads 0.6 reports;
+  `calls`/`unhandled_error` are ignored and `chaos_events` are analysed as before
+  (`tests/test_sibling_compatibility.py`).
+- `agenticops-control-tower`: validated, no change needed. The native artifact
+  reader summarizes 0.6 reports; the `agentic-chaos>=0.5,<1` extra already
+  admits 0.6.
+- `deep-agentic-core-mcp`: validated, no change needed. `chaos.export_aios_run`
+  carries the call counts and escaped error in the extension. MCP docs and
+  image pins move to 0.6.0.
+- `ai-operations-spec`: coordinate with. The reviewed Chaos mapping notes the two
+  new extension members. No core AIOS object or schema change.
+- `agentic-sidecar`: depends on a packaging update. The optional extra was capped
+  `<0.6`; Sidecar 0.8.1 widens it to `<0.7`. No runtime change.
+- `agentic-evals`: coordinate with. Contracts are per-run checks, not release
+  gates; scoring and gate computation stay in Evals.
