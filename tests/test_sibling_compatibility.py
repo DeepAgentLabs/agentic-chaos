@@ -189,3 +189,64 @@ def test_mcp_exports_v06_report(monkeypatch):
     extension = artifact["extensions"]["io.deepagentlabs.agentic-chaos"]
     assert extension["calls"] == {"recorded": 1, "dropped": 0}
     assert extension["unhandled_error"]["fault_type"] == "token_timeout"
+
+
+def advanced_report():
+    from agentic_chaos import PoisonedResponseFault, RateLimitStormFault, cascade, chaos_call
+    from agentic_chaos.chaos.faults import RateLimitStormError
+
+    with chaos_session(
+        [
+            cascade(
+                first=RateLimitStormFault(burst_count=1),
+                then=PoisonedResponseFault("policy_bypass", seed=7),
+            )
+        ]
+    ) as session:
+        with pytest.raises(RateLimitStormError):
+            chaos_call(lambda: "ok")
+        chaos_call(lambda: "ok")
+    return session.to_report("v0.7").model_dump(mode="json")
+
+
+def test_lens_reads_v07_provenance():
+    pytest.importorskip("agenticlens")
+    from agenticlens.models import Workflow
+
+    workflow = Workflow.model_validate(advanced_report())
+    assert len(workflow.chaos_events) == 2
+    assert workflow.chaos_events[1]["detail"]["strategy"] == "policy_bypass"
+
+
+def test_mcp_discovers_poisoning_and_exports_v07(monkeypatch):
+    source = Path(__file__).resolve().parents[2] / "mcp-server" / "src"
+    if not source.exists():
+        pytest.skip("MCP sibling checkout unavailable")
+    monkeypatch.syspath_prepend(str(source))
+    from deep_agentic_core_mcp.adapters.agentic_chaos import export_aios_run, list_faults
+
+    assert "poisoned_response" in {entry["name"] for entry in list_faults()["faults"]}
+    artifact = export_aios_run(advanced_report())
+    assert artifact["extensions"]["io.deepagentlabs.agentic-chaos"]["producer_version"] == "0.7.0"
+    assert len(artifact["evidence"]) == 2
+
+
+def test_tower_counts_v07_native_events(monkeypatch):
+    source = Path(__file__).resolve().parents[2] / "agenticops-control-tower" / "src"
+    if not source.exists():
+        pytest.skip("Control Tower sibling checkout unavailable")
+    monkeypatch.syspath_prepend(str(source))
+    from agenticops_control_tower.adapters.evidence import summarize_evidence
+    from agenticops_control_tower.models.evidence import EvidenceLink
+
+    link = EvidenceLink(
+        agent_id="test",
+        source="agentic-chaos",
+        source_version="0.7.0",
+        artifact_type="chaos_report",
+        artifact_ref="report.json",
+        observed_at=datetime.now(timezone.utc),
+    )
+    result = summarize_evidence(link, advanced_report())
+    assert result.availability == "available"
+    assert result.details["event_count"] == 2

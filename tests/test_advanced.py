@@ -194,3 +194,11 @@ def test_poisoning_async():
         assert len(session.events) == 1
 
     asyncio.run(run())
+
+
+def test_offline_resilience_example():
+    import runpy
+    from pathlib import Path
+
+    example = runpy.run_path(str(Path(__file__).parents[1] / "examples/advanced/resilience.py"))
+    example["main"]()
