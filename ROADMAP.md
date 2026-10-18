@@ -1060,3 +1060,9 @@ corrected expectation as feedback to keep it. The optional
 `agenticlens>=0.7.0` extra already admits 0.8.0, so no Chaos release is needed.
 
 See the [suite management guide](https://github.com/DeepAgentLabs/agenticlens/blob/v0.8.0/docs/suite-management.md).
+
+## Evals 0.8.0 CLI interoperability
+
+Evals 0.8.0 scores saved observations with `evaluate` or live targets with `live`, then computes release decisions with `gate`. Chaos contracts remain per-run resilience checks, not Evals scores. Convert observed outputs to native EvaluationSamples explicitly; this release adds no implicit Chaos adapter or runtime dependency.
+
+See [CLI usage and compatibility](docs/evals-0.8-cli.md).
