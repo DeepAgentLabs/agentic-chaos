@@ -1076,3 +1076,16 @@ and AIOS export. Sidecar 0.8.3 admits Chaos 0.7; MCP 0.3.10 updates image pins.
 Evals and AIOS require documentation alignment only. The offline synthetic
 containment example includes a bypassed negative control; cross-framework
 containment and v0.8 workflows remain planned.
+
+## Control Tower 0.7.0 fleet operations
+
+Tower 0.7.0 adds frozen environment/capability targeting, bulk desired settings,
+separate approval, durable per-target results and bounded stop/MCP-revocation
+acknowledgement through Python, HTTP and CLI. No fleet atomicity or automatic
+rollback/resume is claimed. Timed-out/requested commands need host reconciliation.
+
+Chaos retains fault injection and resilience verdicts. Tower does not pause arbitrary Chaos sessions; disabling a capability changes Tower-owned desired settings only.
+
+Existing optional dependency ranges remain sufficient. No sibling runtime or
+native evidence schema changes are required; this documentation alignment needs
+no patch release. See the [operator guide](https://github.com/DeepAgentLabs/agenticops-control-tower/blob/v0.7.0/docs/fleet-operations.md).
