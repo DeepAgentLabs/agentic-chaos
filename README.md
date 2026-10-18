@@ -730,6 +730,25 @@ corrected expectation as feedback to keep it. The optional
 
 See the [suite management guide](https://github.com/DeepAgentLabs/agenticlens/blob/v0.8.0/docs/suite-management.md).
 
+## AgenticLens 0.9.0 ModelFit
+
+AgenticLens 0.9.0 delivers its v0.7 milestone: `agenticlens.modelfit` and
+`agenticlens modelfit` recommend a model per task category from recorded
+experiment reports, under hard quality, cost, latency, safety, provider and
+deployment constraints that fail closed. Each recommendation carries a
+confidence level with reasons, an explanation, alternatives, a fallback
+(on a different provider when one is feasible), savings against a reference variant tied to the
+experiment evidence, and quality risks, plus a task-level model matrix.
+
+Chaos reports and contracts are unchanged. ModelFit reads Lens experiment
+reports only; it does not consume `chaos_events`, and a variant evaluated
+under injected faults is measured like any other configuration, so compare
+models on fault-free experiments unless resilience under faults is the
+question. The optional `agenticlens>=0.7.0` extra already admits 0.9.0, so no
+Chaos release is needed.
+
+See the [ModelFit guide](https://github.com/DeepAgentLabs/agenticlens/blob/v0.9.0/docs/modelfit.md).
+
 ## Evals 0.8.0 CLI interoperability
 
 Evals 0.8.0 scores saved observations with `evaluate` or live targets with `live`, then computes release decisions with `gate`. Chaos contracts remain per-run resilience checks, not Evals scores. Convert observed outputs to native EvaluationSamples explicitly; this release adds no implicit Chaos adapter or runtime dependency.
