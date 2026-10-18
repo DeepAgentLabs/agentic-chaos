@@ -736,8 +736,8 @@ AgenticLens 0.9.0 delivers its v0.7 milestone: `agenticlens.modelfit` and
 `agenticlens modelfit` recommend a model per task category from recorded
 experiment reports, under hard quality, cost, latency, safety, provider and
 deployment constraints that fail closed. Each recommendation carries a
-confidence level with reasons, an explanation, alternatives, a
-provider-diverse fallback, savings against a reference variant tied to the
+confidence level with reasons, an explanation, alternatives, a fallback
+(on a different provider when one is feasible), savings against a reference variant tied to the
 experiment evidence, and quality risks, plus a task-level model matrix.
 
 Chaos reports and contracts are unchanged. ModelFit reads Lens experiment
