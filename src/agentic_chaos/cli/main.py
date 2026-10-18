@@ -663,3 +663,23 @@ def contracts_check(
 
 if __name__ == "__main__":
     app()
+
+
+@app.command("estimate")
+def estimate(
+    script: Path = typer.Argument(..., help="Scenario label/path; never imported or executed."),
+    fault: str = typer.Option(..., "--fault", help="Registered fault name."),
+    retries: int = typer.Option(3, "--retries", min=0),
+    calls: int = typer.Option(1, "--calls", min=1),
+    cost_per_call_usd: float = typer.Option(..., "--cost-per-call-usd", min=0),
+) -> None:
+    """Estimate retry cost as JSON from explicit inputs, without executing the target."""
+    from agentic_chaos.chaos.estimate import estimate_failure
+
+    try:
+        result = estimate_failure(
+            fault=fault, retries=retries, calls=calls, cost_per_call_usd=cost_per_call_usd
+        )
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc)) from exc
+    typer.echo(json.dumps({"scenario": str(script), **result.as_json()}))
