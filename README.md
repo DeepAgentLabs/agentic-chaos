@@ -745,3 +745,18 @@ command models retry costs from explicit prices without executing your app.
 
 See the [v0.7 guide](docs/v0.7.md), [offline resilience example](examples/advanced/resilience.py)
 and [demo](docs/assets/v0.7-demo.gif). Reports retain native event IDs and add cascade/poisoning provenance.
+
+## Control Tower 0.7.0 fleet operations
+
+Tower 0.7.0 adds frozen environment/capability targeting, bulk desired settings,
+separate approval, durable per-target results and bounded stop/MCP-revocation
+acknowledgement through Python, HTTP and CLI. No fleet atomicity or automatic
+rollback/resume is claimed. Timed-out/requested commands need host reconciliation.
+
+Chaos retains fault injection and resilience verdicts. Tower does not pause arbitrary Chaos sessions; disabling a capability changes Tower-owned desired settings only.
+
+Existing optional dependency ranges remain sufficient. No sibling runtime or
+native evidence schema changes are required; this documentation alignment needs
+no patch release. See the [operator guide](https://github.com/DeepAgentLabs/agenticops-control-tower/blob/v0.7.0/docs/fleet-operations.md).
+
+See the [local Tower compatibility guide](docs/tower-0.7-fleet-operations.md) for the operator workflow and package boundaries.
