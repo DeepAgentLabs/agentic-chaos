@@ -4,6 +4,22 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-10-17
+
+### Added
+
+- Sequential fault cascades with native child events and cascade provenance.
+- Bounded binary search for deterministic, monotonic recovery thresholds.
+- Response poisoning with three output strategies and two synthetic instruction attacks.
+- Explicit-price retry cost estimation through `agentic-chaos estimate`.
+- Offline synthetic resilience/containment example with a bypassed negative control,
+  usage guide, demo and sibling artifact regression coverage.
+
+### Compatibility
+
+- Standalone runtime and existing event/report shapes remain compatible.
+- Sidecar 0.8.3 admits Chaos 0.7; MCP 0.3.10 updates published image pins.
+
 ## [0.6.0] - 2026-10-17
 
 ### Added

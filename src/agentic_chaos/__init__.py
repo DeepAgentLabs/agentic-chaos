@@ -62,7 +62,7 @@ for _fault in (
     FAULT_REGISTRY[_fault.name] = _fault
 
 
-__version__ = "0.6.0"
+__version__ = "0.7.0"
 
 __all__ = [
     "BreakingPointResult",
