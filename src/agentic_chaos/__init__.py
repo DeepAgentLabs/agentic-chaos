@@ -14,8 +14,15 @@ from agentic_chaos.chaos import (
     chaos_call,
     chaos_session,
 )
+from agentic_chaos.chaos.advanced import (
+    BreakingPointResult,
+    FaultCascade,
+    cascade,
+    find_breaking_point,
+)
 from agentic_chaos.chaos.async_call import chaos_acall
 from agentic_chaos.chaos.faults import FAULT_REGISTRY
+from agentic_chaos.chaos.poisoning import PoisonedResponseFault
 from agentic_chaos.chaos.profiles import load_profile
 from agentic_chaos.chaos.provider_faults import AuthErrorFault, ContextLengthFault
 from agentic_chaos.chaos.streaming import (
@@ -44,6 +51,7 @@ from agentic_chaos.judges import DeepEvalJudge, HeuristicJudge, PydanticEvalsJud
 from agentic_chaos.safety import ChaosAbortedError, CircuitBreaker
 
 for _fault in (
+    PoisonedResponseFault,
     AuthErrorFault,
     ContextLengthFault,
     SlowChunksFault,
@@ -54,9 +62,14 @@ for _fault in (
     FAULT_REGISTRY[_fault.name] = _fault
 
 
-__version__ = "0.6.0"
+__version__ = "0.7.0"
 
 __all__ = [
+    "BreakingPointResult",
+    "FaultCascade",
+    "cascade",
+    "find_breaking_point",
+    "PoisonedResponseFault",
     "CompletesWithin",
     "ContractViolationError",
     "FullTopologyTraversal",

@@ -735,3 +735,13 @@ See the [suite management guide](https://github.com/DeepAgentLabs/agenticlens/bl
 Evals 0.8.0 scores saved observations with `evaluate` or live targets with `live`, then computes release decisions with `gate`. Chaos contracts remain per-run resilience checks, not Evals scores. Convert observed outputs to native EvaluationSamples explicitly; this release adds no implicit Chaos adapter or runtime dependency.
 
 See [CLI usage and compatibility](docs/evals-0.8-cli.md).
+
+## Advanced chaos (0.7.0)
+
+Chain failures with `cascade(first=..., then=..., delay_between=...)`, discover
+a deterministic recovery threshold with `find_breaking_point()`, and inject
+synthetic bad output with `PoisonedResponseFault`. The new `agentic-chaos estimate`
+command models retry costs from explicit prices without executing your app.
+
+See the [v0.7 guide](docs/v0.7.md), [offline resilience example](examples/advanced/resilience.py)
+and [demo](docs/assets/v0.7-demo.gif). Reports retain native event IDs and add cascade/poisoning provenance.
