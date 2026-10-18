@@ -21,7 +21,7 @@ corresponding code. v0.5 has since been implemented with new tests; see
 - **v0.5** ✅ Complete — Streaming Faults, Provider Patching & Chaos Profiles
 - **v0.5.x** ✅ Complete — Safety Rails (Circuit Breaker & Dry-Run), released as `0.5.2`
 - **v0.6** ✅ Complete — Pytest Plugin & Assertions, released as `0.6.0`
-- **v0.7** 🚧 Planned — Fault Cascades, Adaptive Intensity & Response Poisoning
+- **v0.7** ✅ Complete — released as `0.7.0`; — Fault Cascades, Adaptive Intensity & Response Poisoning
 - **v0.8** 🚧 Planned — Chaos Workflows, Declarative Experiments & Explosion Radius
 - **v0.9** 🚧 Planned — Resilience Probes & Resilience Score
 - **v1.0** 🚧 Planned — ChaosHub (Shared Experiment Registry)
@@ -664,11 +664,11 @@ agentic-chaos estimate my_app.py --fault rate_limit_storm --retries 3
 ```
 
 **Deliverables:**
-- [ ] `cascade()` API + cascade scheduling engine
-- [ ] `find_breaking_point()` binary-search utility
-- [ ] `PoisonedResponseFault` with 3 strategies
-- [ ] `agentic-chaos estimate` CLI subcommand
-- [ ] README section + examples + demo GIF
+- [x] `cascade()` API + cascade scheduling engine
+- [x] `find_breaking_point()` binary-search utility
+- [x] `PoisonedResponseFault` with 3 strategies
+- [x] `agentic-chaos estimate` CLI subcommand
+- [x] README section + examples + demo GIF
 
 ### v0.8 — Chaos Workflows, Declarative Experiments & Explosion Radius
 
@@ -974,7 +974,7 @@ containment validation remains planned within these existing milestones.
 
 - [x] v0.5.x safety rails: bound time/cost/intensity; prove abort prevents further
       injections and report already-running work separately.
-- [ ] v0.7 response poisoning: include injected prompt/tool-response instructions
+- [x] v0.7 response poisoning: include injected prompt/tool-response instructions
       and policy-bypass attacks alongside ordinary provider/tool failures.
 - [ ] v0.8 workflows: optional Sidecar/MCP coordination; inject failures into gate,
       approval and evidence paths, including queued calls and revocation races.
@@ -1066,3 +1066,13 @@ See the [suite management guide](https://github.com/DeepAgentLabs/agenticlens/bl
 Evals 0.8.0 scores saved observations with `evaluate` or live targets with `live`, then computes release decisions with `gate`. Chaos contracts remain per-run resilience checks, not Evals scores. Convert observed outputs to native EvaluationSamples explicitly; this release adds no implicit Chaos adapter or runtime dependency.
 
 See [CLI usage and compatibility](docs/evals-0.8-cli.md).
+
+## v0.7 ecosystem validation
+
+0.7.0 implements cascades, adaptive integer search, five synthetic poisoning
+strategies and explicit-input cost estimates. See [semantics, examples and
+compatibility](docs/v0.7.md). Consumer regression tests cover Lens, Tower, MCP
+and AIOS export. Sidecar 0.8.3 admits Chaos 0.7; MCP 0.3.10 updates image pins.
+Evals and AIOS require documentation alignment only. The offline synthetic
+containment example includes a bypassed negative control; cross-framework
+containment and v0.8 workflows remain planned.

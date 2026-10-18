@@ -50,9 +50,9 @@ impact before those issues appear in production.
 
 v0.5 streaming faults, provider patches, and profiles are implemented. The
 v0.5.x safety rails ship in 0.5.2. The v0.6 pytest plugin and contracts ship
-in 0.6.0. The next major step is v0.7 fault cascades, adaptive intensity and
-response poisoning, alongside structured reports with provenance and
-synthetic resilience scenarios. Changes in this repo should move the package
+in 0.6.0. v0.7 fault cascades, adaptive intensity, response poisoning and explicit cost
+estimates ship in 0.7.0 with event provenance and synthetic resilience scenarios.
+The next milestone is v0.8 declarative workflows and explosion radius. Changes in this repo should move the package
 toward reproducible resilience evidence, not just ad hoc fault injection.
 
 ### Before You Build Here

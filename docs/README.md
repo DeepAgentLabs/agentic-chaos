@@ -127,3 +127,5 @@ chaos contracts, the call log they read, and CLI contract gating.
 
 The [Evals 0.7.2 native report contract](evals-report-contract.md) describes
 optional scoring interoperability and its separate ownership boundary.
+
+- [v0.7 advanced chaos and synthetic resilience example](v0.7.md)
