@@ -151,21 +151,22 @@ class Parallel:
 
     Each branch is a node or a sequence of nodes, runs in its own thread and
     context (so each has its own chaos session) and stops at its own first
-    failure. `Suspend` gates are not allowed inside a parallel block.
+    failure. `Suspend` gates are not allowed inside a parallel block. Unnamed
+    blocks are named ``parallel-1``, ``parallel-2``... in workflow order.
     """
 
     # Each branch is a node or a list of nodes; lists after workflow expansion.
     branches: list[Any]
-    name: str = "parallel"
+    name: str | None = None
     max_workers: int | None = None
 
     def __init__(
         self,
         *branches: "Node | Sequence[Node]",
-        name: str = "parallel",
+        name: str | None = None,
         max_workers: int | None = None,
     ) -> None:
-        _require_name("parallel", name)
+        _require_name("parallel", name, optional=True)
         if len(branches) < 2:
             raise ValueError("a parallel block needs at least two branches")
         if max_workers is not None and (
@@ -269,7 +270,7 @@ def _prefixed(node: Any, prefix: str) -> Any:
     """A copy of `node` (and any parallel children) with names under `prefix/`."""
     if isinstance(node, Parallel):
         renamed = copy.copy(node)
-        renamed.name = f"{prefix}/{node.name}"
+        renamed.name = f"{prefix}/{node.name}" if node.name is not None else None
         renamed.branches = [
             [_prefixed(child, prefix) for child in branch]
             if isinstance(branch, list)

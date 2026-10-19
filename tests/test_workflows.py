@@ -289,7 +289,7 @@ def test_parallel_failure_propagates_and_skips_later_nodes():
     )
     report = workflow.run(app)
     assert report.status == "failed"
-    assert report.node("parallel").status == "failed"
+    assert report.node("parallel-1").status == "failed"
     assert report.node("later").status == "skipped"
 
 
@@ -398,7 +398,7 @@ def test_template_inside_parallel_and_nested_templates():
     outer = Template("outer", lambda: [inner.use(), HealthCheck(fn=ping)])
     workflow = ChaosWorkflow("nested", [Parallel(outer.use(name="left"), outer.use(name="right"))])
     assert workflow.node_names == [
-        "parallel",
+        "parallel-1",
         "left/inner/s",
         "health-check-1",
         "right/inner/s",

@@ -124,16 +124,20 @@ class ChaosWorkflow:
 
     @staticmethod
     def _named(nodes: list[Any]) -> list[Any]:
-        counter = 0
+        counters = {"health-check": 0, "parallel": 0}
+
+        def numbered(kind: str) -> str:
+            counters[kind] += 1
+            return f"{kind}-{counters[kind]}"
 
         def name(node: Any) -> Any:
-            nonlocal counter
             if isinstance(node, Parallel):
+                if node.name is None:
+                    node.name = numbered("parallel")
                 node.branches = [[name(child) for child in branch] for branch in node.branches]
                 return node
             if isinstance(node, HealthCheck) and node.name is None:
-                counter += 1
-                return replace(node, name=f"health-check-{counter}")
+                return replace(node, name=numbered("health-check"))
             return node
 
         named = [name(node) for node in nodes]
@@ -416,6 +420,7 @@ class _Run:
         return True, "healthy", shown
 
     def parallel(self, node: Parallel) -> tuple[NodeResult, WorkflowStatus | None]:
+        assert node.name is not None  # named when the workflow was defined
         branches = [list(branch) for branch in node.branches]
         started = _now()
         clock = time.monotonic()
