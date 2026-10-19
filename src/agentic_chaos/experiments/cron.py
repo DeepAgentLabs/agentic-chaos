@@ -112,6 +112,8 @@ class CronSchedule:
             days=parsed[2],
             months=parsed[3],
             weekdays=weekdays,
+            # As in Vixie cron (DOM_STAR/DOW_STAR in entry.c), a day field that
+            # starts with "*" -- including "*/2" -- counts as unrestricted.
             day_restricted=not fields[2].startswith("*"),
             weekday_restricted=not fields[4].startswith("*"),
         )

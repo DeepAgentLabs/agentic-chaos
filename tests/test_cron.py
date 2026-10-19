@@ -96,3 +96,14 @@ def test_next_runs_count_validation_and_default_now():
     with pytest.raises(ValueError):
         schedule.next_runs(0)
     assert len(schedule.next_runs(2)) == 2
+
+
+def test_star_step_day_fields_count_as_unrestricted_like_vixie_cron():
+    # Vixie cron sets DOM_STAR for any day field starting with "*", so "*/2"
+    # combines with a weekday by AND: odd days of the month that are Fridays.
+    assert runs("0 0 */2 * fri", 3) == [
+        "2026-10-23 00:00 Fri",
+        "2026-11-13 00:00 Fri",
+        "2026-11-27 00:00 Fri",
+    ]
+    assert runs("0 0 1-31/2 * fri", 2) == ["2026-10-19 00:00 Mon", "2026-10-21 00:00 Wed"]
