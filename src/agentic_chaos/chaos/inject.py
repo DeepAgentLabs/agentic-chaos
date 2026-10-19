@@ -3,6 +3,7 @@ from inspect import signature
 from typing import Any, TypeVar
 
 from agentic_chaos.chaos.context import get_active_session
+from agentic_chaos.chaos.scope import in_scope
 from agentic_chaos.judges import score_outcome
 
 T = TypeVar("T")
@@ -42,6 +43,7 @@ def chaos_call(
     _chaos_edge_id: str | None = None,
     _chaos_from_node: str | None = None,
     _chaos_to_node: str | None = None,
+    chaos_provider: str | None = None,
     faults: list[str] | None = None,
     **kwargs: Any,
 ) -> T:
@@ -59,6 +61,10 @@ def chaos_call(
     this call site; it's only optional when exactly one fault is configured
     for the active session -- with more than one configured, omitting it
     raises, since silently picking one for you would be surprising.
+
+    `chaos_provider` labels the call with the LLM provider it reaches (the
+    provider patches set it for you) so a fault's `Scope(providers=[...])`
+    can include or exclude it. It is never passed to `fn`.
     """
     session = get_active_session()
     if session is None:
@@ -80,6 +86,7 @@ def chaos_call(
             _chaos_edge_id,
             _chaos_from_node,
             _chaos_to_node,
+            chaos_provider,
             faults,
         )
     except BaseException as exc:
@@ -102,6 +109,7 @@ def _session_call(
     _chaos_edge_id: str | None,
     _chaos_from_node: str | None,
     _chaos_to_node: str | None,
+    chaos_provider: str | None,
     faults: list[str] | None,
 ) -> T:
     candidates = session.select_faults(faults)
@@ -115,6 +123,9 @@ def _session_call(
         )
 
     fault = session.preview_fault(candidates[0]) if session.dry_run else candidates[0]
+    # Scope is checked first so out-of-scope calls never consume probability draws.
+    if not in_scope(fault, step_name=step_name, provider=chaos_provider):
+        return fn(*args, **kwargs)
     if not fault.should_trigger() or not fault.eligible(
         step_name=step_name,
         edge_id=_chaos_edge_id,
