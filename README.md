@@ -882,3 +882,13 @@ The existing optional `agenticlens>=0.7.0` extra already admits 0.10.0.
 Fault injection, native chaos events and resilience contracts remain Chaos-owned.
 Routing does not automatically inject faults or prove containment. No dependency
 change or Chaos patch release is required.
+
+## Evals 0.9.0 judge reliability and live resilience
+
+Evals 0.9.0 retries live targets within bounds and reports each case as `ok`,
+`timed_out` or `error`, apart from wrong answers. An injected Chaos latency
+fault or exception therefore shows up as a harness outcome, not as a score.
+Keep Evals' default single attempt (or read `target_attempts`) when measuring
+behavior under faults, so retries do not hide absorbed faults. Chaos events
+and contracts remain the resilience evidence. No dependency or release is
+needed. See [the compatibility note](docs/evals-0.9-judge-reliability.md).
