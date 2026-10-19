@@ -70,6 +70,7 @@ nav:
       - Evals report contract: evals-report-contract.md
       - Evals CLI: evals-0.8-cli.md
       - Evals judge reliability: evals-0.9-judge-reliability.md
+      - MCP unified workflows: mcp-0.4-unified-workflows.md
       - Lens routing: lens-0.10-routing.md
       - Sidecar: sidecar-v0.8.md
   - API reference: api-reference.md
