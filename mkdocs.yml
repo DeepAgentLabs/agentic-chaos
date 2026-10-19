@@ -61,6 +61,17 @@ nav:
   - Configuration: configuration.md
   - Safety rails: safety.md
   - v0.5 guide: v0.5.md
+  - v0.6 contracts and pytest: v0.6.md
+  - v0.7 advanced chaos: v0.7.md
+  - v0.8 workflows: v0.8.md
+  - Ecosystem compatibility:
+      - Control Tower 0.6: control-tower-0.6.md
+      - Control Tower 0.7: tower-0.7-fleet-operations.md
+      - Evals report contract: evals-report-contract.md
+      - Evals CLI: evals-0.8-cli.md
+      - Evals judge reliability: evals-0.9-judge-reliability.md
+      - Lens routing: lens-0.10-routing.md
+      - Sidecar: sidecar-v0.8.md
   - API reference: api-reference.md
   - CLI reference: cli-reference.md
   - Integrations: integrations.md

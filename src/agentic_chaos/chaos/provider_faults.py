@@ -1,10 +1,13 @@
 """Provider-independent auth and context-window error simulations."""
 
 from collections.abc import Callable
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from agentic_chaos.chaos.faults import BaseFault, ChaosFaultError, FaultOutcome
 from agentic_chaos.models.chaos_event import ChaosEvent
+
+if TYPE_CHECKING:
+    from agentic_chaos.chaos.scope import Scope
 
 
 class AuthError(ChaosFaultError):
@@ -26,9 +29,14 @@ class AuthErrorFault(BaseFault):
     name = "auth_error"
 
     def __init__(
-        self, status_code: int = 401, *, probability: float = 1.0, seed: int | None = None
+        self,
+        status_code: int = 401,
+        *,
+        probability: float = 1.0,
+        seed: int | None = None,
+        scope: "Scope | None" = None,
     ) -> None:
-        super().__init__(probability, seed)
+        super().__init__(probability, seed, scope=scope)
         if status_code not in (401, 403):
             raise ValueError("status_code must be 401 or 403")
         self.status_code = status_code

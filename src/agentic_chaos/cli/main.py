@@ -1,18 +1,37 @@
 import json
 import runpy
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+import pydantic
 import typer
 from rich.console import Console
+from rich.markup import escape
 
 import agentic_chaos.agents  # noqa: F401 -- ensures agent faults are registered
 from agentic_chaos.agents.topology import get_active_tracker, reset_active_tracker
 from agentic_chaos.chaos.faults import FAULT_REGISTRY, BaseFault, resolve_faults
 from agentic_chaos.chaos.profiles import load_profile
 from agentic_chaos.chaos.session import chaos_session
-from agentic_chaos.cli.render import render_chaos_events, render_drift_report, render_topology
+from agentic_chaos.cli.render import (
+    render_chaos_events,
+    render_contract_report,
+    render_drift_report,
+    render_fuzz_report,
+    render_topology,
+    render_validation,
+    render_workflow_report,
+)
+from agentic_chaos.contracts import (
+    Contract,
+    ContractReport,
+    check_contracts,
+    describe_contracts,
+    load_report,
+    parse_contract,
+)
 from agentic_chaos.drift import (
     DriftSnapshot,
     compare_snapshots,
@@ -49,7 +68,22 @@ drift_app = typer.Typer(
 )
 app.add_typer(chaos_app, name="chaos")
 app.add_typer(agent_app, name="agent")
+contracts_app = typer.Typer(
+    help="Chaos contracts: pass/fail resilience checks over a saved chaos report.",
+    no_args_is_help=True,
+)
 app.add_typer(drift_app, name="drift")
+app.add_typer(contracts_app, name="contracts")
+experiment_app = typer.Typer(
+    help="Declarative chaos experiments (YAML, JSON or TOML): validate, run and schedule.",
+    no_args_is_help=True,
+)
+app.add_typer(experiment_app, name="experiment")
+workflow_app = typer.Typer(
+    help="Chaos workflows: multi-stage campaigns with health-check and approval gates.",
+    no_args_is_help=True,
+)
+chaos_app.add_typer(workflow_app, name="workflow")
 console = Console()
 
 
@@ -108,12 +142,11 @@ def _run_script_with_chaos(
     include_topology: bool = False,
     dry_run: bool = False,
     breaker: CircuitBreaker | None = None,
-) -> tuple[Any, datetime, datetime, BaseException | None]:
-    """Run a script within a chaos_session and return (session, start, end, crash).
+) -> tuple[Any, datetime, BaseException | None]:
+    """Run a script within a chaos_session and return (session, end, crash).
 
     Shared by `chaos run` and `agent run` to avoid code duplication.
     """
-    started_at = datetime.now(timezone.utc)
     crashed: BaseException | None = None
     with chaos_session(inject, breaker=breaker, dry_run=dry_run) as session:
         try:
@@ -126,7 +159,7 @@ def _run_script_with_chaos(
         except Exception as exc:
             crashed = exc
     ended_at = datetime.now(timezone.utc)
-    return session, started_at, ended_at, crashed
+    return session, ended_at, crashed
 
 
 def _exit_code(crashed: BaseException) -> int:
@@ -151,6 +184,47 @@ def _save_reports(
         artifact = to_aios_run(report, status="failed" if crashed is not None else "completed")
         save_aios.write_text(json.dumps(artifact, indent=2), encoding="utf-8")
         console.print(f"Saved AIOS v0.4-draft run artifact to {save_aios}")
+
+
+_CONTRACT_HELP = (
+    "Contract to check after the run, e.g. 'max_retries:3' or 'no_unhandled_error'. "
+    "Repeatable; see `agentic-chaos contracts list`. Exits 1 unless all pass."
+)
+_BASELINE_HELP = "Baseline chaos report JSON for max_cost_impact / full_topology_traversal."
+
+
+def _parse_contracts(specs: list[str] | None) -> list[Contract]:
+    return [parse_contract(spec) for spec in specs or []]
+
+
+def _check_contracts(
+    report: ChaosReport,
+    contracts: list[Contract],
+    *,
+    baseline: Path | None,
+    save_contracts: Path | None,
+) -> ContractReport | None:
+    """Check, render and optionally save contract results; None when none requested."""
+    if not contracts:
+        return None
+    contract_report = check_contracts(report, contracts, baseline=baseline)
+    render_contract_report(console, contract_report)
+    if save_contracts is not None:
+        save_contracts.write_text(json.dumps(contract_report.as_json(), indent=2), encoding="utf-8")
+        console.print(f"Saved contract results to {save_contracts}")
+    return contract_report
+
+
+def _finish_run(
+    session: Any, crashed: BaseException | None, contract_report: ContractReport | None
+) -> None:
+    """Exit with the script's crash code, then abort, then contract failure."""
+    if crashed is not None:
+        raise typer.Exit(code=_exit_code(crashed))
+    if session.safety.abort is not None:
+        raise typer.Exit(code=1)
+    if contract_report is not None and not contract_report.passed:
+        raise typer.Exit(code=1)
 
 
 # ---------------------------------------------------------------------------
@@ -203,6 +277,11 @@ def chaos_run(
         "--save-aios",
         help="Also save the run as an AI Operations Specification v0.4-draft Run artifact.",
     ),
+    contract: list[str] | None = typer.Option(None, "--contract", help=_CONTRACT_HELP),
+    baseline: Path | None = typer.Option(None, "--baseline", help=_BASELINE_HELP),
+    save_contracts: Path | None = typer.Option(
+        None, "--save-contracts", help="Save contract results as JSON to this file."
+    ),
 ) -> None:
     """Run a script with the requested faults active, then report what happened.
 
@@ -225,6 +304,9 @@ def chaos_run(
         )
         if not configured:
             raise ValueError("At least one fault is required")
+        contracts = _parse_contracts(contract)
+        if baseline is not None:
+            load_report(baseline)  # fail before running the script on a bad baseline
         breaker = CircuitBreaker(
             max_cost_usd=max_cost_usd,
             max_failure_rate=max_failure_rate,
@@ -233,11 +315,11 @@ def chaos_run(
             max_duration_seconds=max_duration_seconds,
             max_injections=max_injections,
         )
-    except (ValueError, OSError) as exc:
+    except (ValueError, OSError, pydantic.ValidationError) as exc:
         console.print(f"[red]{exc}[/red]")
         raise typer.Exit(code=1) from exc
 
-    session, started_at, ended_at, crashed = _run_script_with_chaos(
+    session, ended_at, crashed = _run_script_with_chaos(
         script, configured, dry_run=dry_run, breaker=breaker
     )
 
@@ -250,19 +332,12 @@ def chaos_run(
     if session.safety.abort is not None:
         console.print({"abort_reason": session.safety.abort})
 
-    report = ChaosReport(
-        name=script.stem,
-        start_time=started_at,
-        end_time=ended_at,
-        chaos_events=session.events_as_json(),
-        **session.report_fields(),
-    )
+    report = session.to_report(script.stem, end_time=ended_at, error=crashed)
     _save_reports(report, save=save, save_aios=save_aios, crashed=crashed)
-
-    if crashed is not None:
-        raise typer.Exit(code=_exit_code(crashed))
-    if session.safety.abort is not None:
-        raise typer.Exit(code=1)
+    contract_report = _check_contracts(
+        report, contracts, baseline=baseline, save_contracts=save_contracts
+    )
+    _finish_run(session, crashed, contract_report)
 
 
 @chaos_app.command("list-faults")
@@ -330,6 +405,11 @@ def agent_run(
         "--save-aios",
         help="Also save the run as an AI Operations Specification v0.4-draft Run artifact.",
     ),
+    contract: list[str] | None = typer.Option(None, "--contract", help=_CONTRACT_HELP),
+    baseline: Path | None = typer.Option(None, "--baseline", help=_BASELINE_HELP),
+    save_contracts: Path | None = typer.Option(
+        None, "--save-contracts", help="Save contract results as JSON to this file."
+    ),
 ) -> None:
     """Run an agent script with agent-level faults active, then report what happened.
 
@@ -354,6 +434,9 @@ def agent_run(
         )
         if not configured:
             raise ValueError("At least one fault is required")
+        contracts = _parse_contracts(contract)
+        if baseline is not None:
+            load_report(baseline)  # fail before running the script on a bad baseline
         breaker = CircuitBreaker(
             max_cost_usd=max_cost_usd,
             max_failure_rate=max_failure_rate,
@@ -362,14 +445,14 @@ def agent_run(
             max_duration_seconds=max_duration_seconds,
             max_injections=max_injections,
         )
-    except (ValueError, OSError) as exc:
+    except (ValueError, OSError, pydantic.ValidationError) as exc:
         console.print(f"[red]{exc}[/red]")
         raise typer.Exit(code=1) from exc
 
     if framework not in ("generic", "langgraph", "crewai", "autogen"):
         console.print(f"[yellow]Unknown framework '{framework}', using generic.[/yellow]")
 
-    session, started_at, ended_at, crashed = _run_script_with_chaos(
+    session, ended_at, crashed = _run_script_with_chaos(
         script, configured, dry_run=dry_run, breaker=breaker
     )
 
@@ -391,20 +474,14 @@ def agent_run(
     # Reset the active tracker to prevent leaking across sequential invocations.
     reset_active_tracker()
 
-    report = ChaosReport(
-        name=script.stem,
-        start_time=started_at,
-        end_time=ended_at,
-        chaos_events=session.events_as_json(),
-        **session.report_fields(),
-        agent_topology=topology_data,
+    report = session.to_report(
+        script.stem, end_time=ended_at, error=crashed, agent_topology=topology_data
     )
     _save_reports(report, save=save, save_aios=save_aios, crashed=crashed)
-
-    if crashed is not None:
-        raise typer.Exit(code=_exit_code(crashed))
-    if session.safety.abort is not None:
-        raise typer.Exit(code=1)
+    contract_report = _check_contracts(
+        report, contracts, baseline=baseline, save_contracts=save_contracts
+    )
+    _finish_run(session, crashed, contract_report)
 
 
 # ---------------------------------------------------------------------------
@@ -558,6 +635,369 @@ def drift_compare(
 
     if report.has_drift:
         raise typer.Exit(code=2)
+
+
+# ---------------------------------------------------------------------------
+# contracts subcommand
+# ---------------------------------------------------------------------------
+
+
+@contracts_app.command("list")
+def contracts_list() -> None:
+    """List the built-in contracts and their spec parameters."""
+    for entry in describe_contracts():
+        params = ", ".join(entry["parameters"]) or "-"
+        console.print(f"- [bold]{entry['name']}[/bold] ({entry['class']}): {entry['summary']}")
+        console.print(f"    parameters: {params}")
+
+
+@contracts_app.command("check")
+def contracts_check(
+    report: Path = typer.Argument(..., help="Chaos report JSON saved with --save."),
+    contract: list[str] = typer.Option(..., "--contract", help=_CONTRACT_HELP),
+    baseline: Path | None = typer.Option(None, "--baseline", help=_BASELINE_HELP),
+    save: Path | None = typer.Option(
+        None, "--save", help="Save contract results as JSON to this file."
+    ),
+) -> None:
+    """Check contracts against a saved chaos report; exits 1 unless all pass."""
+    try:
+        contracts = _parse_contracts(contract)
+        chaos_report = load_report(report)
+        if baseline is not None:
+            load_report(baseline)
+    except (ValueError, OSError, pydantic.ValidationError) as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1) from exc
+    contract_report = _check_contracts(
+        chaos_report, contracts, baseline=baseline, save_contracts=save
+    )
+    if contract_report is not None and not contract_report.passed:
+        raise typer.Exit(code=1)
+
+
+@app.command("estimate")
+def estimate(
+    script: Path = typer.Argument(..., help="Scenario label/path; never imported or executed."),
+    fault: str = typer.Option(..., "--fault", help="Registered fault name."),
+    retries: int = typer.Option(3, "--retries", min=0),
+    calls: int = typer.Option(1, "--calls", min=1),
+    cost_per_call_usd: float = typer.Option(..., "--cost-per-call-usd", min=0),
+) -> None:
+    """Estimate retry cost as JSON from explicit inputs, without executing the target."""
+    from agentic_chaos.chaos.estimate import estimate_failure
+
+    try:
+        result = estimate_failure(
+            fault=fault, retries=retries, calls=calls, cost_per_call_usd=cost_per_call_usd
+        )
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc)) from exc
+    typer.echo(json.dumps({"scenario": str(script), **result.as_json()}))
+
+
+# ---------------------------------------------------------------------------
+# experiment / chaos workflow subcommands (v0.8)
+# ---------------------------------------------------------------------------
+
+# Exit code for a workflow stopped at a Suspend gate awaiting approval.
+EXIT_SUSPENDED = 3
+_AIOS_STATUS = {"passed": "completed", "suspended": "running"}
+
+
+def _validate_files(
+    files: list[Path],
+    *,
+    check_targets: bool,
+    strict: bool,
+    json_output: bool,
+    base_dir: Path | None,
+) -> None:
+    from agentic_chaos.experiments import validate_experiment
+
+    results = [
+        validate_experiment(path, base_dir=base_dir, check_targets=check_targets) for path in files
+    ]
+    if json_output:
+        typer.echo(json.dumps([result.as_json() for result in results], indent=2))
+    else:
+        for result in results:
+            render_validation(console, result)
+    failed = [r for r in results if not r.ok or (strict and r.warnings)]
+    if failed:
+        raise typer.Exit(code=1)
+
+
+def _interactive() -> bool:
+    return sys.stdin.isatty()
+
+
+def _approver(approve: list[str] | None, approve_all: bool, no_input: bool) -> Any:
+    names = set(approve or [])
+    if approve_all:
+        return True
+    if no_input or not _interactive():
+        return names
+
+    def ask(gate: Any, report: Any) -> bool | None:
+        if gate.name in names:
+            return True
+        reason = f" ({gate.reason})" if gate.reason else ""
+        return typer.confirm(f"Approve gate '{gate.name}'{reason}?", default=False)
+
+    return ask
+
+
+def _run_experiment_file(
+    file: Path,
+    *,
+    save: Path | None,
+    save_report: Path | None,
+    save_aios: Path | None,
+    dry_run: bool,
+    approve: list[str] | None,
+    approve_all: bool,
+    resume_from: str | None,
+    no_input: bool,
+    check_targets: bool,
+    base_dir: Path | None,
+) -> None:
+    from agentic_chaos.experiments import validate_experiment
+
+    result = validate_experiment(file, base_dir=base_dir, check_targets=check_targets)
+    if result.experiment is None:
+        render_validation(console, result)
+        raise typer.Exit(code=1)
+    for warning in result.warnings:
+        console.print(
+            f"[yellow]warning[/yellow] {escape(str(warning.location))}: {escape(warning.message)}"
+        )
+    try:
+        report = result.experiment.run(
+            dry_run=True if dry_run else None,
+            approve=_approver(approve, approve_all, no_input),
+            resume_from=resume_from,
+        )
+    except ValueError as exc:
+        console.print(f"[red]{escape(str(exc))}[/red]")
+        raise typer.Exit(code=1) from exc
+    render_workflow_report(console, report)
+    if save is not None:
+        report.save(save)
+        console.print(f"\nSaved workflow report to {save}")
+    merged = report.to_chaos_report() if save_report or save_aios else None
+    if save_report is not None and merged is not None:
+        save_report.write_text(merged.model_dump_json(indent=2), encoding="utf-8")
+        console.print(f"Saved merged chaos report to {save_report}")
+    if save_aios is not None and merged is not None:
+        status = _AIOS_STATUS.get(report.status, "failed")
+        save_aios.write_text(json.dumps(to_aios_run(merged, status=status), indent=2), "utf-8")
+        console.print(f"Saved AIOS v0.4-draft run artifact to {save_aios}")
+    if report.status == "suspended":
+        raise typer.Exit(code=EXIT_SUSPENDED)
+    if report.status != "passed":
+        raise typer.Exit(code=1)
+
+
+_FILES_HELP = "Experiment files (.yaml, .yml, .json or .toml)."
+_NO_TARGET_CHECK_HELP = "Skip checking that targets exist and define the named function."
+_BASE_DIR_HELP = "Resolve relative targets here instead of the experiment file's directory."
+
+
+@experiment_app.command("validate")
+def experiment_validate(
+    files: list[Path] = typer.Argument(..., help=_FILES_HELP),
+    no_target_check: bool = typer.Option(False, "--no-target-check", help=_NO_TARGET_CHECK_HELP),
+    strict: bool = typer.Option(False, "--strict", help="Treat warnings as failures."),
+    json_output: bool = typer.Option(False, "--json", help="Print results as JSON."),
+    base_dir: Path | None = typer.Option(None, "--base-dir", help=_BASE_DIR_HELP),
+) -> None:
+    """Lint experiments without running them; exits 1 when any file is invalid.
+
+    Checks schema shape, unknown fault/assertion names (with suggestions),
+    out-of-range parameters, scopes, cron schedules, templates and that each
+    target exists and defines its function. Targets are parsed, never executed,
+    so this is safe as a pre-commit hook or CI step.
+    """
+    _validate_files(
+        files,
+        check_targets=not no_target_check,
+        strict=strict,
+        json_output=json_output,
+        base_dir=base_dir,
+    )
+
+
+def _run_command(
+    file: Path = typer.Argument(..., help="Experiment or workflow file."),
+    save: Path | None = typer.Option(None, "--save", help="Save the workflow report JSON."),
+    save_report: Path | None = typer.Option(
+        None, "--save-report", help="Save every step merged into one native chaos report."
+    ),
+    save_aios: Path | None = typer.Option(
+        None, "--save-aios", help="Save the merged run as an AIOS v0.4-draft Run artifact."
+    ),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Preview faults; targets and health checks still execute."
+    ),
+    approve: list[str] | None = typer.Option(
+        None, "--approve", help="Approve this Suspend gate (repeatable)."
+    ),
+    approve_all: bool = typer.Option(False, "--approve-all", help="Approve every gate."),
+    resume_from: str | None = typer.Option(
+        None, "--resume-from", help="Skip to just after this approved Suspend gate."
+    ),
+    no_input: bool = typer.Option(
+        False, "--no-input", help="Never prompt; unapproved gates suspend the run."
+    ),
+    no_target_check: bool = typer.Option(False, "--no-target-check", help=_NO_TARGET_CHECK_HELP),
+    base_dir: Path | None = typer.Option(None, "--base-dir", help=_BASE_DIR_HELP),
+) -> None:
+    """Validate, then run an experiment or workflow and report every stage.
+
+    Exits 0 when the workflow passed, 3 when it stopped at an unapproved
+    Suspend gate (re-run with --resume-from), and 1 otherwise.
+    """
+    _run_experiment_file(
+        file,
+        save=save,
+        save_report=save_report,
+        save_aios=save_aios,
+        dry_run=dry_run,
+        approve=approve,
+        approve_all=approve_all,
+        resume_from=resume_from,
+        no_input=no_input,
+        check_targets=not no_target_check,
+        base_dir=base_dir,
+    )
+
+
+experiment_app.command("run")(_run_command)
+workflow_app.command("run")(_run_command)
+
+
+@workflow_app.command("validate")
+def workflow_validate(
+    files: list[Path] = typer.Argument(..., help=_FILES_HELP),
+    no_target_check: bool = typer.Option(False, "--no-target-check", help=_NO_TARGET_CHECK_HELP),
+    strict: bool = typer.Option(False, "--strict", help="Treat warnings as failures."),
+    json_output: bool = typer.Option(False, "--json", help="Print results as JSON."),
+    base_dir: Path | None = typer.Option(None, "--base-dir", help=_BASE_DIR_HELP),
+) -> None:
+    """Lint workflow files without running them (same as `experiment validate`)."""
+    _validate_files(
+        files,
+        check_targets=not no_target_check,
+        strict=strict,
+        json_output=json_output,
+        base_dir=base_dir,
+    )
+
+
+@experiment_app.command("schedule")
+def experiment_schedule(
+    file: Path = typer.Argument(..., help="Experiment file with a `schedule:` section."),
+    output_format: str = typer.Option(
+        "crontab", "--format", help="Snippet to print: crontab or github-actions."
+    ),
+    next_runs: int = typer.Option(5, "--next", min=1, help="How many upcoming runs to list."),
+    command: str | None = typer.Option(
+        None, "--command", help="Command the schedule runs (default: experiment run)."
+    ),
+) -> None:
+    """Show upcoming runs and print a crontab or GitHub Actions schedule snippet.
+
+    agentic-chaos embeds no scheduler: install the snippet in cron, a CI
+    scheduler or a systemd timer so the experiment runs unattended.
+    """
+    from zoneinfo import ZoneInfo
+
+    from agentic_chaos.experiments import load_experiment
+
+    if output_format not in ("crontab", "github-actions"):
+        raise typer.BadParameter("--format must be crontab or github-actions")
+    try:
+        experiment = load_experiment(file, check_targets=False)
+    except ValueError as exc:
+        console.print(f"[red]{escape(str(exc))}[/red]")
+        raise typer.Exit(code=1) from exc
+    if experiment.schedule is None:
+        console.print(f"[red]{escape(str(file))} has no schedule section[/red]")
+        raise typer.Exit(code=1)
+    cron = experiment.schedule.expression
+    zone = experiment.timezone
+    run = command or f"agentic-chaos experiment run {file} --no-input --save chaos-workflow.json"
+    typer.echo(f"# {experiment.name}: '{cron}' ({zone})")
+    for moment in experiment.schedule.next_runs(next_runs, tz=ZoneInfo(zone)):
+        typer.echo(f"#   next: {moment.isoformat()}")
+    if output_format == "crontab":
+        if zone != "UTC":
+            typer.echo(f"CRON_TZ={zone}")
+        typer.echo(f"{cron} {run}")
+        return
+    if zone != "UTC":
+        typer.echo(f"# note: GitHub Actions evaluates this cron in UTC, not {zone}")
+    typer.echo(
+        "on:\n"
+        "  schedule:\n"
+        f'    - cron: "{cron}"\n'
+        "jobs:\n"
+        "  chaos:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    steps:\n"
+        "      - uses: actions/checkout@v4\n"
+        "      - run: pip install 'agentic-chaos[yaml]'\n"
+        f"      - run: {run}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# agent fuzz (v0.8)
+# ---------------------------------------------------------------------------
+
+
+@agent_app.command("fuzz")
+def agent_fuzz(
+    script: Path = typer.Argument(..., help="Agent script to run once per trial (as __main__)."),
+    trials: int = typer.Option(20, "--n", min=1, help="Number of single-fault trials."),
+    seed: int = typer.Option(0, "--seed", help="Seed for reproducible placements."),
+    step: list[str] | None = typer.Option(None, "--step", help="Only fuzz this node (repeatable)."),
+    exclude_step: list[str] | None = typer.Option(
+        None, "--exclude-step", help="Never fuzz this node (repeatable)."
+    ),
+    fault: list[str] | None = typer.Option(
+        None, "--fault", help="Fault to place on every node type (repeatable)."
+    ),
+    save: Path | None = typer.Option(None, "--save", help="Save the fuzz report JSON."),
+) -> None:
+    """Fuzz the agent graph: place one fault per trial, weighted by node fan-out.
+
+    A fault-free baseline run discovers the topology (from a TopologyTracker
+    the script creates, else from the step names it calls). Exits 1 when any
+    reached trial failed to recover.
+    """
+    from agentic_chaos.chaos.scope import Scope
+    from agentic_chaos.workflows import fuzz_topology
+    from agentic_chaos.workflows.targets import script_target
+
+    if not script.exists():
+        console.print(f"[red]Script not found:[/red] {script}")
+        raise typer.Exit(code=1)
+    try:
+        scope = Scope(steps=step or None, exclude_steps=exclude_step or None)
+        report = fuzz_topology(
+            script_target(script), n=trials, seed=seed, scope=scope, faults=fault or None
+        )
+    except ValueError as exc:
+        console.print(f"[red]{escape(str(exc))}[/red]")
+        raise typer.Exit(code=1) from exc
+    render_fuzz_report(console, report)
+    if save is not None:
+        report.save(save)
+        console.print(f"Saved fuzz report to {save}")
+    if report.failing_nodes:
+        raise typer.Exit(code=1)
 
 
 if __name__ == "__main__":

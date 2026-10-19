@@ -10,12 +10,15 @@ else:
     import tomli as tomllib
 
 from agentic_chaos.chaos.faults import FAULT_REGISTRY, BaseFault
+from agentic_chaos.chaos.scope import Scope
 
 
 def load_profile(name: str, path: str | Path = "chaos.toml") -> list[BaseFault]:
     """Load fresh fault instances; never reuse burst/decay state between runs.
 
     profiles.NAME accepts faults, probability, seed, and parameters.NAME tables.
+    A parameters.NAME.scope table (steps, providers, exclude_steps,
+    exclude_providers) limits where that fault may fire.
     Unknown fields and invalid constructor parameters fail before executing a script.
     """
     with Path(path).open("rb") as file:
@@ -52,6 +55,11 @@ def load_profile(name: str, path: str | Path = "chaos.toml") -> list[BaseFault]:
         options: Any = parameters.get(fault_name, {})
         if not isinstance(options, dict):
             raise ValueError(f"Parameters for '{fault_name}' must be a table")
+        if "scope" in options:
+            try:
+                options = {**options, "scope": Scope.from_json(options["scope"])}
+            except ValueError as exc:
+                raise ValueError(f"Invalid scope for '{fault_name}': {exc}") from exc
         try:
             fault = FAULT_REGISTRY[fault_name](
                 **{"probability": probability, "seed": seed, **options}

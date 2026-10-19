@@ -3,6 +3,7 @@ from inspect import signature
 from typing import Any, TypeVar
 
 from agentic_chaos.chaos.context import get_active_session
+from agentic_chaos.chaos.scope import in_scope
 from agentic_chaos.judges import score_outcome
 
 T = TypeVar("T")
@@ -42,6 +43,7 @@ def chaos_call(
     _chaos_edge_id: str | None = None,
     _chaos_from_node: str | None = None,
     _chaos_to_node: str | None = None,
+    chaos_provider: str | None = None,
     faults: list[str] | None = None,
     **kwargs: Any,
 ) -> T:
@@ -59,6 +61,10 @@ def chaos_call(
     this call site; it's only optional when exactly one fault is configured
     for the active session -- with more than one configured, omitting it
     raises, since silently picking one for you would be surprising.
+
+    `chaos_provider` labels the call with the LLM provider it reaches (the
+    provider patches set it for you) so a fault's `Scope(providers=[...])`
+    can include or exclude it. It is never passed to `fn`.
     """
     session = get_active_session()
     if session is None:
@@ -66,9 +72,12 @@ def chaos_call(
 
     session.safety.begin()
     failed = False
+    record = session.calls.begin(kind="call", step_id=step_id, step_name=step_name)
+    error: BaseException | None = None
     try:
         return _session_call(
             session,
+            record,
             fn,
             args,
             kwargs,
@@ -77,17 +86,21 @@ def chaos_call(
             _chaos_edge_id,
             _chaos_from_node,
             _chaos_to_node,
+            chaos_provider,
             faults,
         )
-    except BaseException:
+    except BaseException as exc:
         failed = True
+        error = exc
         raise
     finally:
+        session.calls.finish(record, error)
         session.safety.finish(failed)
 
 
 def _session_call(
     session: Any,
+    record: dict[str, Any],
     fn: Callable[..., T],
     args: tuple[Any, ...],
     kwargs: dict[str, Any],
@@ -96,6 +109,7 @@ def _session_call(
     _chaos_edge_id: str | None,
     _chaos_from_node: str | None,
     _chaos_to_node: str | None,
+    chaos_provider: str | None,
     faults: list[str] | None,
 ) -> T:
     candidates = session.select_faults(faults)
@@ -108,6 +122,12 @@ def _session_call(
             "Pass faults=[...] to chaos_call() to pick which one applies at this call site."
         )
 
+    # Scope is checked first so out-of-scope calls never consume probability
+    # draws, fault state or a dry-run preview copy.
+    if not in_scope(
+        session.peek_fault(candidates[0]), step_name=step_name, provider=chaos_provider
+    ):
+        return fn(*args, **kwargs)
     fault = session.preview_fault(candidates[0]) if session.dry_run else candidates[0]
     if not fault.should_trigger() or not fault.eligible(
         step_name=step_name,
@@ -156,6 +176,8 @@ def _session_call(
             step_name=step_name,
         )
         session.events.append(outcome.event)
+        record["fault_type"] = outcome.event.fault_type
+        record["event_id"] = outcome.event.id
     if outcome.raised is not None:
         raise outcome.raised
     return outcome.result  # type: ignore[no-any-return]

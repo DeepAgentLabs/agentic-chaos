@@ -118,6 +118,9 @@ def test_chaos_run_saves_standalone_chaos_report(tmp_path: Path) -> None:
     assert data["chaos_events"][0]["step_name"] == "Planner"
     # No agenticlens involved -- there's no `steps` field on this package's own report.
     assert "steps" not in data
+    assert data["unhandled_error"] is None
+    assert [call["status"] for call in data["calls"]] == ["error"]
+    assert data["calls"][0]["fault_type"] == "token_timeout"
 
 
 def test_chaos_run_saves_report_even_when_script_crashes(tmp_path: Path) -> None:
@@ -133,6 +136,9 @@ def test_chaos_run_saves_report_even_when_script_crashes(tmp_path: Path) -> None
     assert out.exists()
     data = json.loads(out.read_text())
     assert len(data["chaos_events"]) == 1
+    assert data["unhandled_error"]["type"] == "TokenTimeoutError"
+    assert data["unhandled_error"]["fault_type"] == "token_timeout"
+    assert data["unhandled_error"]["event_id"] == data["chaos_events"][0]["id"]
 
 
 def test_agent_run_requires_inject_option() -> None:

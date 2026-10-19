@@ -141,9 +141,17 @@ def _patch(
         def wrap_stream(result: Any) -> Any:
             if hasattr(result, "__aiter__"):
                 return _AsyncStream(
-                    result, chaos_astream(result, faults=[fault.name], step_name=provider)
+                    result,
+                    chaos_astream(
+                        result, faults=[fault.name], step_name=provider, chaos_provider=provider
+                    ),
                 )
-            return _Stream(result, chaos_stream(result, faults=[fault.name], step_name=provider))
+            return _Stream(
+                result,
+                chaos_stream(
+                    result, faults=[fault.name], step_name=provider, chaos_provider=provider
+                ),
+            )
 
         if iscoroutinefunction(original):
 
@@ -156,7 +164,12 @@ def _patch(
                         return await chaos_acall(original, *args, faults=[], **kwargs)
                     return wrap_stream(await chaos_acall(original, *args, faults=[], **kwargs))
                 return await chaos_acall(
-                    original, *args, faults=[fault.name], step_name=provider, **kwargs
+                    original,
+                    *args,
+                    faults=[fault.name],
+                    step_name=provider,
+                    chaos_provider=provider,
+                    **kwargs,
                 )
 
             wrapper = async_wrapper
@@ -171,7 +184,12 @@ def _patch(
                         return chaos_call(original, *args, faults=[], **kwargs)
                     return wrap_stream(chaos_call(original, *args, faults=[], **kwargs))
                 return chaos_call(
-                    original, *args, faults=[fault.name], step_name=provider, **kwargs
+                    original,
+                    *args,
+                    faults=[fault.name],
+                    step_name=provider,
+                    chaos_provider=provider,
+                    **kwargs,
                 )
 
             wrapper = sync_wrapper

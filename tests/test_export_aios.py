@@ -178,6 +178,8 @@ def test_package_fields_ride_in_the_namespaced_extension() -> None:
     assert extension["report_name"] == "demo"
     assert extension["agent_topology"] == {"nodes": []}
     assert "drift_report" not in extension
+    assert extension["calls"] == {"recorded": 0, "dropped": 0}
+    assert "unhandled_error" not in extension
 
 
 def test_open_report_without_end_time_has_no_end_event_or_duration() -> None:
@@ -278,6 +280,55 @@ def test_export_validates_against_the_published_v04_schema() -> None:
         assert spec_semantics(artifact) == []
 
 
+def test_workflow_export_validates_against_the_published_v04_schema() -> None:
+    jsonschema = pytest.importorskip("jsonschema")
+    referencing = pytest.importorskip("referencing")
+    if not SPEC_SCHEMAS.exists():
+        pytest.skip("ai-operations-spec sibling checkout unavailable")
+    from agentic_chaos import RateLimitStormFault, Scope, chaos_call
+    from agentic_chaos.chaos.faults import RateLimitStormError
+    from agentic_chaos.workflows import ChaosWorkflow, Parallel, Step, Suspend
+
+    def app() -> None:
+        for _ in range(3):
+            try:
+                chaos_call(lambda: "ok", step_name="llm")
+                return
+            except RateLimitStormError:
+                continue
+
+    workflow = ChaosWorkflow(
+        "aios-workflow",
+        [
+            Parallel(Step("a", faults=[RateLimitStormFault(burst_count=1)]), Step("b", faults=[])),
+            Suspend("gate"),
+            Step("c", faults=[RateLimitStormFault(burst_count=2)]),
+        ],
+        scope=Scope(steps=["llm"]),
+    )
+    documents = {
+        path.name: json.loads(path.read_text(encoding="utf-8"))
+        for path in SPEC_SCHEMAS.glob("*.schema.json")
+    }
+    registry = referencing.Registry().with_resources(
+        (doc["$id"], referencing.Resource.from_contents(doc)) for doc in documents.values()
+    )
+    validator = jsonschema.Draft202012Validator(
+        documents["run.schema.json"], registry=registry, format_checker=jsonschema.FormatChecker()
+    )
+    spec_semantics = _spec_semantic_checker()
+    for report, status in (
+        (workflow.run(app, approve=True), "completed"),
+        (workflow.run(app), "running"),
+    ):
+        artifact = to_aios_run(report.to_chaos_report(), status=status)
+        assert [error.message for error in validator.iter_errors(artifact)] == []
+        assert spec_semantics(artifact) == []
+        assert graph_errors(artifact) == []
+        workflow_extension = artifact["extensions"]["io.deepagentlabs.agentic-chaos"]["workflow"]
+        assert workflow_extension["name"] == "aios-workflow"
+
+
 def _spec_semantic_checker():
     """The spec repository's own semantic-conformance checker (tests/test_v04_schema.py)."""
     spec_tests = SPEC_ROOT / "tests" / "test_v04_schema.py"
@@ -315,4 +366,20 @@ def test_step_ids_never_collide_or_self_reference() -> None:
     assert artifact["steps"][3]["attributes"] == {"native_step_name": "Named"}
     contains = [rel for rel in artifact["relationships"] if rel["type"] == "contains"]
     assert all(rel["source"]["id"] != rel["target"]["id"] for rel in contains)
+    assert graph_errors(artifact) == []
+
+
+def test_call_counts_and_unhandled_error_ride_in_the_extension() -> None:
+    from agentic_chaos.chaos import chaos_call, chaos_session
+    from agentic_chaos.chaos.faults import TokenTimeoutError, TokenTimeoutFault
+
+    with chaos_session([TokenTimeoutFault(hang_seconds=0)]) as session:
+        try:
+            chaos_call(lambda: "x", step_name="llm")
+        except TokenTimeoutError as exc:
+            error = exc
+    artifact = to_aios_run(session.to_report("crashed", error=error), status="failed")
+    extension = artifact["extensions"]["io.deepagentlabs.agentic-chaos"]
+    assert extension["calls"] == {"recorded": 1, "dropped": 0}
+    assert extension["unhandled_error"]["type"] == "TokenTimeoutError"
     assert graph_errors(artifact) == []

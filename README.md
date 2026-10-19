@@ -26,17 +26,21 @@ tools that happen to compose.
 `agentic-chaos` is early-stage software. The **LLM Chaos Toolkit** (v0.1),
 **Agent Failure Injector** (v0.2), **Fidelity Judges & Handoff Chaos**
 (`v0.3.0`), **Prompt/Model Drift Detector** (`v0.4.0`), and
-**Streaming Faults, Provider Patching & Chaos Profiles** (`v0.5.0`) and
-**Safety Rails** (`0.5.2`) are available.
+**Streaming Faults, Provider Patching & Chaos Profiles** (`v0.5.0`),
+**Safety Rails** (`0.5.2`), the **Pytest Plugin & Contracts** (`0.6.0`),
+**Fault Cascades, Adaptive Intensity & Response Poisoning** (`0.7.0`) and
+**Chaos Workflows, Declarative Experiments & Explosion Radius** (`0.8.0`)
+are available.
 See [ROADMAP.md](ROADMAP.md) for the full plan.
 
 ### What's Next
 
+- **Resilience probes & resilience score (v0.9)** — steady-state probes before,
+  during and after chaos, and a 0–100 score usable as a CI gate
+- **ChaosHub (v1.0)** — bundled and community experiment recipes in the v0.8
+  experiment format, plus a fault plugin interface
 - **Structured experiment reports** — every chaos run emits a report with
   hypothesis, injection point provenance, observed behavior, and verdict
-- **Synthetic test scenarios** — prebuilt known-bad agent behaviors for
-  consistent resilience validation
-- **Pytest integration (v0.6)** — reusable assertions and CI resilience checks
 
 ## Installation
 
@@ -53,7 +57,9 @@ uv sync --extra dev --frozen
 ```
 
 That's it — no other package required. (If you want the optional AgenticLens
-integration too, see [below](#optional-agenticlens-integration).)
+integration too, see [below](#optional-agenticlens-integration).) YAML
+experiment files (v0.8) need `pip install 'agentic-chaos[yaml]'`; JSON and
+TOML experiments work with the core install.
 
 `--frozen` matters here: `pyproject.toml` points the (currently unpublished)
 `agenticlens` extra at a sibling checkout via `[tool.uv.sources]`, and `uv
@@ -160,11 +166,167 @@ agentic-chaos drift compare baseline.json --prompt-file prompt.txt --output-file
 
 # List all available fault types (v0.1 + v0.3).
 agentic-chaos chaos list-faults
+
+# Gate a run on chaos contracts (v0.6); exits 1 unless all pass.
+agentic-chaos chaos run my_app.py --inject rate_limit_storm --contract max_retries:3 --contract no_unhandled_error
+
+# Re-check contracts against saved reports, and list the built-ins.
+agentic-chaos contracts check chaos_run.json --baseline baseline.json --contract full_topology_traversal
+agentic-chaos contracts list
+
+# Run @pytest.mark.chaos tests with faults injected (v0.6).
+pytest --chaos
+
+# Lint declarative experiments without running them (v0.8); exits 1 when invalid.
+agentic-chaos experiment validate experiments/*.yaml
+
+# Run a multi-stage chaos workflow; exits 3 at an unapproved Suspend gate.
+agentic-chaos chaos workflow run experiments/resilience-suite.yaml --approve approve-escalation --save workflow.json
+agentic-chaos experiment run experiments/resilience-suite.yaml --resume-from approve-escalation
+
+# Preview a schedule and print a crontab / GitHub Actions snippet (v0.8).
+agentic-chaos experiment schedule experiments/resilience-suite.yaml --format github-actions
+
+# Fuzz the agent graph, weighting placement by node fan-out (v0.8).
+agentic-chaos agent fuzz my_graph.py --n 20 --seed 0 --exclude-step safety_check
 ```
 
 `agentic-chaos drift compare` exits with code `2` when drift is detected, so
 it can fail a CI job while still writing a JSON report when emission rules
 allow it.
+
+## Chaos Workflows, Experiments & Explosion Radius (v0.8.0)
+
+**Explosion radius.** Every built-in fault (and `cascade()`) accepts
+`scope=Scope(steps=..., providers=..., exclude_steps=..., exclude_providers=...)`.
+Scope is checked before probability sampling, exclusions always win, and an
+include list never matches an unlabelled call. Provider patches label their
+calls automatically; direct calls can pass `chaos_provider="openai"`.
+
+```python
+from agentic_chaos import RateLimitStormFault, Scope
+
+RateLimitStormFault(burst_count=3, scope=Scope(steps=["retriever", "planner"],
+                                               providers=["openai"],
+                                               exclude_steps=["safety_check"]))
+```
+
+**Chaos workflows** run multi-stage campaigns:
+
+- `Step`: a fault stage with its own contracts, breaker and scope
+- `HealthCheck`: a steady-state gate between stages
+- `Parallel`: concurrent branches, each with its own session
+- `Suspend`: a human approval gate, resumable with `resume_from`
+- `Template`: reusable, parameterized stages
+
+```python
+from agentic_chaos.workflows import ChaosWorkflow, HealthCheck, Parallel, Step, Suspend
+
+workflow = ChaosWorkflow("resilience-suite", steps=[
+    Step("warm-up", faults=[RateLimitStormFault(burst_count=2)]),
+    HealthCheck(fn=my_agent, query="Are you working?"),
+    Parallel(Step("tools", faults=["tool_failure"]), Step("memory", faults=["memory_corruption"])),
+    Suspend("approve-escalation"),
+    Step("escalate", faults=[RateLimitStormFault(burst_count=5)]),
+], scope=Scope(exclude_steps=["safety_check"]))
+report = workflow.run(my_app, approve={"approve-escalation"})
+print(report.status, len(report.chaos_events))
+merged = report.to_chaos_report()   # one native report for contracts and AIOS export
+```
+
+**Declarative experiments** let SREs and QA write the same campaigns in YAML,
+JSON or TOML: faults, assertions (contracts), safety limits, scopes,
+templates, gates and a cron `schedule`.
+
+- `agentic-chaos experiment validate` lints files without executing targets
+  and reports every issue with its location and a did-you-mean suggestion.
+- `experiment run` / `chaos workflow run` executes them.
+- `experiment schedule` previews runs and prints crontab or GitHub Actions
+  snippets.
+
+**Topology fuzzer.** `fuzz_topology(target, n=20, scope=...)` walks the
+recorded `AgentTopology`. Each trial places one node-scoped fault, weighted
+by fan-out, and the report lists the nodes that failed to recover.
+
+See the [v0.8 guide](docs/v0.8.md), the
+[workflow demo](examples/chaos_workflow_demo.py), the
+[experiment files](examples/workflows), a
+[scheduled GitHub Actions example](examples/github-actions-chaos-workflow.yml)
+and the [demo GIF](docs/assets/v0.8-demo.gif).
+
+Compatibility:
+
+- Native event shapes and IDs are unchanged. Workflow provenance
+  (`detail.workflow`) and the `ChaosReport.workflow` summary are additive.
+- Lens, Tower, MCP and AIOS readers are covered by sibling tests.
+- Agentic Sidecar 0.8.5 widens its optional extra to admit 0.8, and MCP
+  0.3.13 pins hosted images to 0.8.0.
+
+## Pytest Plugin & Contracts (v0.6.0)
+
+Make chaos part of the normal test run. Mark a test, then run pytest with
+`--chaos`; without the flag the marker does nothing and the test runs as usual.
+
+```python
+import pytest
+from agentic_chaos.contracts import MaxRetries, NoRetryStorm
+
+@pytest.mark.chaos(faults=["rate_limit_storm"], must_recover=True)
+def test_agent_handles_rate_limits():
+    result = my_agent("What's the weather?")
+    assert result is not None
+
+@pytest.mark.chaos("rate_limit_storm", contracts=[MaxRetries(3), NoRetryStorm(5)])
+def test_retry_budget_is_bounded():
+    assert my_agent("What's the weather?")
+```
+
+```bash
+pip install "agentic-chaos[pytest]"
+pytest --chaos --chaos-report-dir chaos-reports
+```
+
+The plugin ships in this package and registers itself with pytest. A
+**contract** is a pass/fail check over the run's `ChaosReport`. If a contract
+fails, or cannot be evaluated (`inconclusive`), the test fails. The seven
+built-ins:
+
+| Contract | Passes when |
+|---|---|
+| `CompletesWithin(timeout_s)` | the run finished within the time budget |
+| `NoUnhandledError()` | no exception escaped the code under test |
+| `MaxRetries(n)` | no step was retried more than `n` times in a row |
+| `RecoveredAfterFailure()` | the run completed despite an injected failure (`must_recover=True`) |
+| `MaxCostImpact(factor)` | recorded cost, or call count, stayed within `factor` × baseline |
+| `NoRetryStorm(max_retries_per_window)` | retries across the **whole topology** stayed under a sliding-window limit |
+| `FullTopologyTraversal()` | every node the baseline visited also ran under chaos |
+
+`baseline=True` runs the test once as a dry run first, which gives the
+comparative contracts a baseline. The `chaos` fixture exposes the live session
+(`chaos.record_cost()`, `chaos.attach_topology()`). Async tests under
+pytest-asyncio or anyio are supported.
+
+Contracts also work without pytest, on a live session or on saved JSON:
+
+```python
+from agentic_chaos.contracts import NoUnhandledError, MaxRetries, assert_contracts
+
+assert_contracts(session.to_report("weather", error=error), [NoUnhandledError(), MaxRetries(3)])
+```
+
+```bash
+agentic-chaos chaos run app.py --inject rate_limit_storm --contract max_retries:3 --save chaos.json
+agentic-chaos contracts check chaos.json --baseline baseline.json --contract max_cost_impact:2,metric=calls
+```
+
+Reports now include a call log (`calls`, `calls_dropped`) and the escaped
+`unhandled_error`. Contracts read these from the same native JSON that
+AgenticLens, Control Tower and MCP consume. The new fields are additive. See
+the [v0.6 guide](docs/v0.6.md) for the marker and option reference, the exact
+retry and visit definitions, inconclusive rules and caveats, and the
+[GitHub Actions example](examples/github-actions-chaos.yml).
+
+![v0.6 demo](docs/assets/v0.6-demo.gif)
 
 ## Streaming, Provider Patches & Profiles (v0.5.0)
 
@@ -382,6 +544,10 @@ print(tracker.topology.as_json())  # nodes + edges
 | [`examples/chaos_agent_failure_demo.py`](examples/chaos_agent_failure_demo.py) | nothing but `agentic_chaos` | All three v0.2 agent faults: tool-call failure, memory corruption, infinite loop. Plus `wrap_tool()` and `TopologyTracker`. |
 | [`examples/chaos_handoff_and_judges_demo.py`](examples/chaos_handoff_and_judges_demo.py) | nothing but `agentic_chaos` | Edge-scoped handoff corruption plus a manual baseline capture that lets `fidelity_session()` score the recorded event safely for a pure downstream function. |
 | [`examples/drift_detection_demo.py`](examples/drift_detection_demo.py) | nothing but `agentic_chaos` | Creates a drift baseline and current snapshot, compares them, and writes a drift report JSON. |
+| [`examples/chaos_contracts_demo.py`](examples/chaos_contracts_demo.py) | nothing but `agentic_chaos` | v0.6 contracts on the Python API: a resilient agent passes, a fragile one fails, a skipped reviewer is caught against a dry-run baseline. |
+| [`examples/pytest_chaos/`](examples/pytest_chaos) | `pytest` | v0.6 pytest plugin: run with and without `--chaos`; includes a profile, a baseline comparison and a contract catching a fallback that hides an unrecovered step. |
+| [`examples/chaos_workflow_demo.py`](examples/chaos_workflow_demo.py) | nothing but `agentic_chaos` | v0.8 Python API: a templated, gated, parallel chaos workflow scoped away from a safety check; resume after a suspend; experiment lint; topology fuzzing that finds the unprotected planner node. |
+| [`examples/workflows/`](examples/workflows) | `agentic-chaos[yaml]` | v0.8 declarative experiments: a scheduled single-stage `rate-limit-recovery.yaml` and a multi-stage `resilience-suite.yaml`, both targeting an offline support agent. |
 | [`examples/chaos_with_agenticlens_demo.py`](examples/chaos_with_agenticlens_demo.py) | `agentic-chaos[agenticlens]` | The optional integration: `attach_events()` + `step_kwargs()` merging chaos events onto a real AgenticLens `Workflow`. |
 
 Run any of them directly (`uv run python examples/...`), or the first two
@@ -559,8 +725,9 @@ explicit deployment/evidence link. They do not change producer behavior or
 convert a failed run, failed gate, blocked action or injected fault into fleet
 health. This link is a Tower-local contract, not a normative AIOS schema.
 See [Control Tower's evidence contract](https://github.com/DeepAgentLabs/agenticops-control-tower/blob/main/docs/ecosystem-alignment.md).
-Remote collection and operator posture views remain planned; these local
-readers do not establish end-to-end integration or stable AIOS conformance.
+Tower 0.5 introduced pushed evidence posture; 0.6.0 adds cited investigation
+and approved deterministic staging recovery. Pull collection and production runtime adapters
+remain planned; native interoperability does not establish stable AIOS conformance.
 
 ## Operational safety roadmap
 
@@ -593,3 +760,138 @@ failure accounting, report fields, AIOS mapping, and sibling compatibility.
 See the [offline example](examples/chaos_safety_demo.py).
 
 ![Safety rails demo](docs/assets/safety-demo.gif)
+
+## Sidecar 0.8 interoperability
+
+Chaos remains the fault/event producer; 0.6.0 adds contracts without changing
+event IDs or the event shape. Sidecar checks recovery proposals with native
+Chaos event IDs; it does not implement fault injection here. Sidecar 0.8.1
+widens its optional `agentic-chaos` extra to accept 0.6.
+
+Sidecar 0.8 provides Shared/Exclusive context-only, guardrails-only or combined
+configuration, explicit host context delivery and mandatory guardrail composition.
+Exclusive rules cannot weaken shared restrictions. Cross-framework privacy,
+revocation and delegated authority remain v0.9 validation; stable schemas remain
+v1.0. Native correlated Lens readback requires Lens 0.7.1. All sibling packages
+stay optional; no dependency floor is increased without a runtime requirement.
+See the [Sidecar integration contract](https://github.com/DeepAgentLabs/agentic-sidecar/blob/main/docs/integrations.md).
+
+## Control Tower 0.6.0 integration
+
+Tower Phase 6 and 6A ship together in 0.6.0 with MCP 0.3.6: evidence-cited
+investigation, exact-preview human approval and verified deterministic staging
+recovery. Native producer outcomes and package ownership remain unchanged.
+See [compatibility, examples and dependency matrix](docs/control-tower-0.6.md).
+This is documentation alignment; no package release or dependency bump is needed.
+Chaos 0.6.0 reports (with `calls` and `unhandled_error`) stay readable by
+Tower's native artifact reader; the sibling-integration CI job checks this.
+
+## Evals 0.7.2 report contract
+
+Agentic Evals 0.7.2 publishes native report (`schema_version: "1.0"`) and
+gate-decision JSON Schemas, with offline `report_schema()` and
+`gate_decision_schema()` accessors. Contract 1.x evolves additively; readers
+should tolerate unknown fields. Chaos resilience reports and per-run contracts remain separate from Evals scores and release gates; fault execution and containment work are unchanged.
+
+See the [contract, examples and compatibility policy](https://github.com/DeepAgentLabs/agentic-evals/blob/v0.7.2/docs/report-contract.md). Existing dependency
+ranges remain sufficient; using the new accessors directly requires
+`agentic-evals>=0.7.2`. This documentation alignment needs no sibling patch release.
+
+## AgenticLens 0.8.0 suite management
+
+AgenticLens 0.8.0 delivers its v0.6 milestone: `agenticlens.suites` and
+`agenticlens suite` build regression suites from CSV/JSON imports, production
+traces and user feedback. It masks PII by default before storage (`--no-mask`
+opts out), detects duplicates and
+conflicting labels, adds synthetic variations and stable splits, records
+reviews, and approves suites into immutable, hash-verified versions that CI
+verifies, exports and evaluates. Suites stay plain agentic-evals `TestSuite`
+files.
+
+Chaos reports and contracts are unchanged. Lens converts only successful
+runs into cases, so a run failed by an injected fault stays diagnosis and
+attribution evidence rather than becoming a regression case; record a
+corrected expectation as feedback to keep it. The optional
+`agenticlens>=0.7.0` extra already admits 0.8.0, so no Chaos release is needed.
+
+See the [suite management guide](https://github.com/DeepAgentLabs/agenticlens/blob/v0.8.0/docs/suite-management.md).
+
+## AgenticLens 0.9.0 ModelFit
+
+AgenticLens 0.9.0 delivers its v0.7 milestone: `agenticlens.modelfit` and
+`agenticlens modelfit` recommend a model per task category from recorded
+experiment reports, under hard quality, cost, latency, safety, provider and
+deployment constraints that fail closed. Each recommendation carries a
+confidence level with reasons, an explanation, alternatives, a fallback
+(on a different provider when one is feasible), savings against a reference variant tied to the
+experiment evidence, and quality risks, plus a task-level model matrix.
+
+Chaos reports and contracts are unchanged. ModelFit reads Lens experiment
+reports only; it does not consume `chaos_events`, and a variant evaluated
+under injected faults is measured like any other configuration, so compare
+models on fault-free experiments unless resilience under faults is the
+question. The optional `agenticlens>=0.7.0` extra already admits 0.9.0, so no
+Chaos release is needed.
+
+See the [ModelFit guide](https://github.com/DeepAgentLabs/agenticlens/blob/v0.9.0/docs/modelfit.md).
+
+## Evals 0.8.0 CLI interoperability
+
+Evals 0.8.0 scores saved observations with `evaluate` or live targets with `live`, then computes release decisions with `gate`. Chaos contracts remain per-run resilience checks, not Evals scores. Convert observed outputs to native EvaluationSamples explicitly; this release adds no implicit Chaos adapter or runtime dependency.
+
+See [CLI usage and compatibility](docs/evals-0.8-cli.md).
+
+## Advanced chaos (0.7.0)
+
+Chain failures with `cascade(first=..., then=..., delay_between=...)`, discover
+a deterministic recovery threshold with `find_breaking_point()`, and inject
+synthetic bad output with `PoisonedResponseFault`. The new `agentic-chaos estimate`
+command models retry costs from explicit prices without executing your app.
+
+See the [v0.7 guide](docs/v0.7.md), [offline resilience example](examples/advanced/resilience.py)
+and [demo](docs/assets/v0.7-demo.gif). Reports retain native event IDs and add cascade/poisoning provenance.
+
+## Control Tower 0.7.0 fleet operations
+
+Tower 0.7.0 adds frozen environment/capability targeting, bulk desired settings,
+separate approval, durable per-target results and bounded stop/MCP-revocation
+acknowledgement through Python, HTTP and CLI. No fleet atomicity or automatic
+rollback/resume is claimed. Timed-out/requested commands need host reconciliation.
+
+Chaos retains fault injection and resilience verdicts. Tower does not pause arbitrary Chaos sessions; disabling a capability changes Tower-owned desired settings only.
+
+Existing optional dependency ranges remain sufficient. No sibling runtime or
+native evidence schema changes are required; this documentation alignment needs
+no patch release. See the [operator guide](https://github.com/DeepAgentLabs/agenticops-control-tower/blob/v0.7.0/docs/fleet-operations.md).
+
+See the [local Tower compatibility guide](docs/tower-0.7-fleet-operations.md) for the operator workflow and package boundaries.
+
+## AgenticLens 0.10.0 routing compatibility
+
+See the [local integration boundary guide](docs/lens-0.10-routing.md).
+
+AgenticLens 0.10.0 implements roadmap v0.8: evidence-based runtime model
+selection, fail-closed routing constraints, bounded provider failover,
+confidence/escalation handoffs, shadow/canary modes and a local routing journal.
+The default is advisory; execution uses explicit caller-owned callbacks.
+MCP 0.3.12 exposes read-only `lens.routing_decide` and pins hosted Lens 0.10.0.
+See the [routing guide](https://github.com/DeepAgentLabs/agenticlens/blob/v0.10.0/docs/routing.md)
+and [offline example](https://github.com/DeepAgentLabs/agenticlens/blob/v0.10.0/examples/routing_demo.py).
+
+The existing optional `agenticlens>=0.7.0` extra already admits 0.10.0.
+Fault injection, native chaos events and resilience contracts remain Chaos-owned.
+Routing does not automatically inject faults or prove containment. No dependency
+change or Chaos patch release is required.
+
+## Evals 0.9.0 judge reliability and live resilience
+
+Evals 0.9.0 retries live targets within bounds and reports each case's final
+outcome as `ok`, `timed_out` (every attempt timed out) or `error`, apart from
+wrong answers. An injected Chaos latency fault or exception that outlasts the
+retries is a harness outcome, not a score. One absorbed by a later attempt
+leaves the case `ok`, visible only in `target_attempts` and
+`summary.live.retried_cases`.
+Keep Evals' default single attempt (or read `target_attempts`) when measuring
+behavior under faults, so retries do not hide absorbed faults. Chaos events
+and contracts remain the resilience evidence. No dependency or release is
+needed. See [the compatibility note](docs/evals-0.9-judge-reliability.md).

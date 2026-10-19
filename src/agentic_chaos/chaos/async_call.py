@@ -17,6 +17,7 @@ async def chaos_acall(
     faults: list[str] | None = None,
     step_id: str | None = None,
     step_name: str | None = None,
+    chaos_provider: str | None = None,
     **kwargs: Any,
 ) -> T:
     """Async call injection, with legacy blocking faults isolated in a worker.
@@ -30,7 +31,9 @@ async def chaos_acall(
         return await fn(*args, **kwargs)
     loop = asyncio.get_running_loop()
     pending: list[Future[T]] = []
-    isolated = ChaosSession(session.faults, dry_run=session.dry_run, safety=session.safety)
+    isolated = ChaosSession(
+        session.faults, dry_run=session.dry_run, safety=session.safety, calls=session.calls
+    )
     isolated._preview_faults = session._preview_faults
     cancelled = asyncio.Event()
 
@@ -54,7 +57,13 @@ async def chaos_acall(
         token = active_session.set(isolated)
         try:
             return chaos_call(
-                invoke, *args, faults=faults, step_id=step_id, step_name=step_name, **kwargs
+                invoke,
+                *args,
+                faults=faults,
+                step_id=step_id,
+                step_name=step_name,
+                chaos_provider=chaos_provider,
+                **kwargs,
             )
         finally:
             active_session.reset(token)
