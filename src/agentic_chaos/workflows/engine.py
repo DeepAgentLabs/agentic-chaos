@@ -31,6 +31,7 @@ from agentic_chaos.workflows.report import (
     NodeStatus,
     WorkflowReport,
     WorkflowStatus,
+    contract_line,
 )
 
 _OUTPUT_LIMIT = 500
@@ -351,12 +352,12 @@ class _Run:
         elif crashed is not None:
             status, message = "failed", f"target raised {type(crashed).__name__}: {crashed}"
         elif contract_report is not None and not contract_report.passed:
-            status, message = "failed", contract_report.summary()
+            status, message = "failed", contract_line(contract_report)
         else:
             status = "passed"
             message = f"{len(report.chaos_events)} fault event(s) over {step.repeat} run(s)"
             if contract_report is not None:
-                message += f"; {contract_report.summary()}"
+                message += f"; {contract_line(contract_report)}"
         return NodeResult(
             name=step.name,
             kind="step",

@@ -26,6 +26,7 @@ from agentic_chaos.contracts.base import Contract, check_contracts
 from agentic_chaos.models.agent_topology import AgentNode, AgentTopology
 from agentic_chaos.models.report import ChaosReport
 from agentic_chaos.safety import CircuitBreaker
+from agentic_chaos.workflows.report import contract_line
 
 FaultFactory = str | Callable[[], BaseFault]
 FaultPool = Sequence[FaultFactory] | Mapping[str, Sequence[FaultFactory]]
@@ -297,7 +298,7 @@ def _trial(
     elif recovered is not None and not recovered(output):
         passed, message = False, "recovered() rejected the output"
     elif contract_report is not None and not contract_report.passed:
-        passed, message = False, contract_report.summary()
+        passed, message = False, contract_line(contract_report)
     else:
         passed, message = True, "recovered"
     reached = bool(report.chaos_events)

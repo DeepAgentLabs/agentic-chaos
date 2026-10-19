@@ -8,6 +8,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
+from agentic_chaos.contracts.base import ContractReport
 from agentic_chaos.models.report import ChaosReport
 
 NodeKind = Literal["step", "health_check", "parallel", "suspend"]
@@ -175,6 +176,16 @@ class WorkflowReport(BaseModel):
     @classmethod
     def load(cls, path: str | Path) -> "WorkflowReport":
         return cls.model_validate(json.loads(Path(path).read_text(encoding="utf-8")))
+
+
+def contract_line(report: ContractReport) -> str:
+    """One-line contract outcome: the count, plus the first failure when there is one."""
+    passed = len(report.results) - len(report.failures)
+    line = f"{passed}/{len(report.results)} contracts passed"
+    if report.failures:
+        first = report.failures[0]
+        line += f"; {first.contract} {first.status}: {first.message}"
+    return line
 
 
 def merge_topologies(topologies: list[dict[str, Any]]) -> dict[str, Any] | None:
