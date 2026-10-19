@@ -104,7 +104,7 @@ def read_document(path: str | Path) -> Any:
 
 
 def validate_experiment(
-    source: str | Path | dict[str, Any],
+    source: str | Path | dict[str, Any] | Any,
     *,
     base_dir: str | Path | None = None,
     check_targets: bool = True,
@@ -114,7 +114,7 @@ def validate_experiment(
     Relative target paths resolve against `base_dir`, which defaults to the
     experiment file's directory (or the working directory for a document).
     """
-    if isinstance(source, dict):
+    if not isinstance(source, (str, Path)):
         label, data = "<document>", source
         directory = Path(base_dir) if base_dir is not None else Path.cwd()
     else:
