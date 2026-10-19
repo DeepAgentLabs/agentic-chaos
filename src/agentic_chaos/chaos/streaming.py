@@ -4,11 +4,15 @@ import asyncio
 import math
 import time
 from collections.abc import AsyncIterator, Callable, Iterator
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from agentic_chaos.chaos.context import ChaosSession, get_active_session
 from agentic_chaos.chaos.faults import BaseFault, ChaosFaultError, FaultOutcome
+from agentic_chaos.chaos.scope import in_scope
 from agentic_chaos.models.chaos_event import ChaosEvent
+
+if TYPE_CHECKING:
+    from agentic_chaos.chaos.scope import Scope
 
 
 class StreamHangError(ChaosFaultError):
@@ -25,8 +29,9 @@ class StreamFault(BaseFault):
         delay_seconds: float = 1.0,
         probability: float = 1.0,
         seed: int | None = None,
+        scope: "Scope | None" = None,
     ) -> None:
-        super().__init__(probability, seed)
+        super().__init__(probability, seed, scope=scope)
         if isinstance(after_chunks, bool) or not isinstance(after_chunks, int) or after_chunks < 0:
             raise ValueError("after_chunks must be a non-negative integer")
         if not math.isfinite(delay_seconds) or delay_seconds < 0:
@@ -44,9 +49,14 @@ class StreamCutFault(StreamFault):
     name = "stream_cut"
 
     def __init__(
-        self, after_chunks: int = 1, *, probability: float = 1.0, seed: int | None = None
+        self,
+        after_chunks: int = 1,
+        *,
+        probability: float = 1.0,
+        seed: int | None = None,
+        scope: "Scope | None" = None,
     ) -> None:
-        super().__init__(after_chunks=after_chunks, probability=probability, seed=seed)
+        super().__init__(after_chunks=after_chunks, probability=probability, seed=seed, scope=scope)
 
 
 class StreamHangFault(StreamFault):
@@ -67,7 +77,9 @@ class SlowChunksFault(StreamFault):
     name = "slow_chunks"
 
 
-def _select(names: list[str] | None) -> tuple[ChaosSession | None, StreamFault | None]:
+def _select(
+    names: list[str] | None, step_name: str | None, provider: str | None
+) -> tuple[ChaosSession | None, StreamFault | None]:
     session = get_active_session()
     if session is None:
         return None, None
@@ -80,6 +92,8 @@ def _select(names: list[str] | None) -> tuple[ChaosSession | None, StreamFault |
     fault = session.preview_fault(candidates[0]) if session.dry_run else candidates[0]
     if not isinstance(fault, StreamFault):
         raise TypeError("chaos_stream() requires a streaming fault")
+    if not in_scope(fault, step_name=step_name, provider=provider):
+        return session, None
     return session, fault if fault.should_trigger() else None
 
 
@@ -123,13 +137,14 @@ def chaos_stream(
     faults: list[str] | None = None,
     step_id: str | None = None,
     step_name: str | None = None,
+    chaos_provider: str | None = None,
 ) -> Iterator[Any]:
     """Wrap a synchronous iterator. Consume and close it inside the active session.
 
     The returned generator owns source and closes it on exhaustion, fault, or close().
     Probability is sampled once per stream, not once per chunk.
     """
-    session, fault = _select(faults)
+    session, fault = _select(faults, step_name, chaos_provider)
 
     def deliver() -> Iterator[Any]:
         count = 0
@@ -220,9 +235,10 @@ def chaos_astream(
     faults: list[str] | None = None,
     step_id: str | None = None,
     step_name: str | None = None,
+    chaos_provider: str | None = None,
 ) -> AsyncIterator[Any]:
     """Async equivalent of chaos_stream(); delays are cancellable asyncio sleeps."""
-    session, fault = _select(faults)
+    session, fault = _select(faults, step_name, chaos_provider)
 
     async def deliver() -> AsyncIterator[Any]:
         count = 0

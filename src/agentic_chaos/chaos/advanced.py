@@ -10,6 +10,7 @@ from typing import Any
 
 from agentic_chaos.chaos.context import get_active_session
 from agentic_chaos.chaos.faults import BaseFault, FaultOutcome, RateLimitStormFault
+from agentic_chaos.chaos.scope import Scope
 from agentic_chaos.chaos.session import chaos_session
 
 
@@ -22,8 +23,15 @@ class FaultCascade(BaseFault):
 
     name = "cascade"
 
-    def __init__(self, first: BaseFault, then: BaseFault, delay_between: float = 0) -> None:
-        super().__init__()
+    def __init__(
+        self,
+        first: BaseFault,
+        then: BaseFault,
+        delay_between: float = 0,
+        *,
+        scope: Scope | None = None,
+    ) -> None:
+        super().__init__(scope=scope)
         if not math.isfinite(delay_between) or delay_between < 0:
             raise ValueError("delay_between must be finite and non-negative")
         if first is then or isinstance(first, FaultCascade) or isinstance(then, FaultCascade):
@@ -44,6 +52,14 @@ class FaultCascade(BaseFault):
 
     def eligible(self, **kwargs: Any) -> bool:
         return self.index < len(self.stages) and self.stages[self.index].eligible(**kwargs)
+
+    def in_scope(self, *, step_name: str | None = None, provider: str | None = None) -> bool:
+        """The cascade's own scope and the pending stage's scope must both allow the call."""
+        if not super().in_scope(step_name=step_name, provider=provider):
+            return False
+        return self.index >= len(self.stages) or self.stages[self.index].in_scope(
+            step_name=step_name, provider=provider
+        )
 
     def should_trigger(self) -> bool:
         return self.index < len(self.stages) and self.stages[self.index].should_trigger()
@@ -90,9 +106,15 @@ class FaultCascade(BaseFault):
         return outcome
 
 
-def cascade(*, first: BaseFault, then: BaseFault, delay_between: float = 0) -> FaultCascade:
+def cascade(
+    *,
+    first: BaseFault,
+    then: BaseFault,
+    delay_between: float = 0,
+    scope: Scope | None = None,
+) -> FaultCascade:
     """Build a two-stage cascade for ``chaos_session([cascade(...)])``."""
-    return FaultCascade(first, then, delay_between)
+    return FaultCascade(first, then, delay_between, scope=scope)
 
 
 @dataclass(frozen=True)

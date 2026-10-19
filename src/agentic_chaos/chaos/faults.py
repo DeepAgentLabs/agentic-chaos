@@ -5,9 +5,12 @@ import time
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from agentic_chaos.models.chaos_event import ChaosEvent
+
+if TYPE_CHECKING:
+    from agentic_chaos.chaos.scope import Scope
 
 
 class ChaosFaultError(Exception):
@@ -59,12 +62,24 @@ class BaseFault(ABC):
     """
 
     name: str
+    scope: "Scope | None" = None
 
-    def __init__(self, probability: float = 1.0, seed: int | None = None) -> None:
+    def __init__(
+        self,
+        probability: float = 1.0,
+        seed: int | None = None,
+        *,
+        scope: "Scope | None" = None,
+    ) -> None:
         if not 0.0 <= probability <= 1.0:
             raise ValueError("probability must be between 0.0 and 1.0")
         self.probability = probability
         self._trigger_rng = random.Random(seed)
+        self.scope = scope
+
+    def in_scope(self, *, step_name: str | None = None, provider: str | None = None) -> bool:
+        """Explosion-radius check, applied before probability selection (v0.8)."""
+        return self.scope is None or self.scope.allows(step_name=step_name, provider=provider)
 
     def should_trigger(self) -> bool:
         return self.probability == 1.0 or (
@@ -129,8 +144,9 @@ class TokenTimeoutFault(BaseFault):
         *,
         probability: float = 1.0,
         seed: int | None = None,
+        scope: "Scope | None" = None,
     ) -> None:
-        super().__init__(probability, seed)
+        super().__init__(probability, seed, scope=scope)
         if mode not in ("raise", "delay"):
             raise ValueError("mode must be 'raise' or 'delay'")
         self.hang_seconds = hang_seconds
@@ -192,8 +208,9 @@ class RateLimitStormFault(BaseFault):
         *,
         probability: float = 1.0,
         seed: int | None = None,
+        scope: "Scope | None" = None,
     ) -> None:
-        super().__init__(probability, seed)
+        super().__init__(probability, seed, scope=scope)
         self.burst_count = burst_count
         self.retry_after = retry_after
         self._fired = 0
@@ -345,8 +362,10 @@ class SilentDegradationFault(BaseFault):
         degrade_fn: Callable[[Any], Any] | None = None,
         seed: int | None = None,
         probability: float = 1.0,
+        *,
+        scope: "Scope | None" = None,
     ) -> None:
-        super().__init__(probability, seed)
+        super().__init__(probability, seed, scope=scope)
         self._rng = random.Random(seed)
         self.degrade_fn = degrade_fn or (lambda result: _default_degrade(result, self._rng))
 

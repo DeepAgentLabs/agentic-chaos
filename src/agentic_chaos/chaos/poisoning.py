@@ -1,7 +1,7 @@
 """Synthetic adversarial response payloads; never dispatches embedded instructions."""
 
 from collections.abc import Callable
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from agentic_chaos.chaos.faults import (
     BaseFault,
@@ -10,6 +10,9 @@ from agentic_chaos.chaos.faults import (
     snapshot_baseline,
 )
 from agentic_chaos.models.chaos_event import ChaosEvent
+
+if TYPE_CHECKING:
+    from agentic_chaos.chaos.scope import Scope
 
 PAYLOADS = {
     "confident_wrong": "The answer is definitely 5. Confidence: 100%.",
@@ -36,8 +39,9 @@ class PoisonedResponseFault(BaseFault):
         payload: str | None = None,
         probability: float = 1.0,
         seed: int | None = None,
+        scope: "Scope | None" = None,
     ) -> None:
-        super().__init__(probability, seed)
+        super().__init__(probability, seed, scope=scope)
         if strategy not in PAYLOADS:
             raise ValueError(f"Unknown poisoning strategy: {strategy}")
         self.strategy = strategy
