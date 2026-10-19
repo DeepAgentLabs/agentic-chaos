@@ -8,6 +8,8 @@ A target spec is one of:
 - ``package.module:handle`` -- a function in an importable module
 
 Relative file paths resolve against ``base_dir`` (an experiment's directory).
+A file target's directory is added to ``sys.path`` before it runs, so it can
+import modules next to it the way ``python app.py`` can.
 """
 
 import ast
@@ -52,10 +54,18 @@ def _path(location: str, base_dir: Path | None) -> Path:
     return path
 
 
+def _importable_from(directory: Path) -> None:
+    """Let a target file import modules that sit next to it, as `python app.py` would."""
+    entry = str(directory.resolve())
+    if entry not in sys.path:
+        sys.path.insert(0, entry)
+
+
 def script_target(script: Path) -> Callable[[], None]:
     """A no-argument callable that runs `script` as ``__main__``."""
 
     def run() -> None:
+        _importable_from(script.parent)
         try:
             runpy.run_path(str(script), run_name="__main__")
         except SystemExit as exc:
@@ -75,6 +85,7 @@ def resolve_target(spec: str, base_dir: Path | None = None) -> Callable[..., Any
             raise ValueError(f"target file not found: {path}")
         if attr is None:
             return script_target(path)
+        _importable_from(path.parent)
         # One module per file, so a step and a health check share its state.
         module_name = f"_agentic_chaos_target_{abs(hash(str(path.resolve())))}"
         module = sys.modules.get(module_name)

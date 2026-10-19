@@ -67,3 +67,16 @@ def test_check_target_parses_without_importing(tmp_path):
 
 def test_windows_style_paths_are_scripts():
     assert "not found" in check_target("C:\\apps\\missing.py")
+
+
+def test_file_targets_can_import_sibling_modules(tmp_path):
+    project = tmp_path / "project"
+    project.mkdir()
+    (project / "helpers_sibling_mod.py").write_text("def answer():\n    return 42\n")
+    (project / "agent.py").write_text(
+        "from helpers_sibling_mod import answer\n"
+        "def handle():\n    return answer()\n"
+        "if __name__ == '__main__':\n    assert answer() == 42\n"
+    )
+    assert resolve_target("agent.py:handle", project)() == 42
+    resolve_target("agent.py", project)()
