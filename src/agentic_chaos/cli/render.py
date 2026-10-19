@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING
 
 from rich import box
 from rich.console import Console
+from rich.markup import escape
 from rich.table import Table
 
 from agentic_chaos.contracts import ContractReport
@@ -161,11 +162,11 @@ def render_workflow_report(console: Console, report: "WorkflowReport") -> None:
         style = _NODE_STYLES.get(node.status, "white")
         events = len(node.report.get("chaos_events", [])) if node.report else None
         table.add_row(
-            "  " * depth + node.name,
+            escape("  " * depth + node.name),
             node.kind,
             f"[{style}]{node.status}[/{style}]",
             str(events) if events is not None else "",
-            node.message,
+            escape(node.message),
         )
         for index, branch in enumerate(node.branches, 1):
             for child in branch:
@@ -176,22 +177,23 @@ def render_workflow_report(console: Console, report: "WorkflowReport") -> None:
     console.print(table)
     style = _NODE_STYLES.get(report.status, "white")
     console.print(
-        f"\nWorkflow [bold]{report.name}[/bold]: [{style}]{report.status}[/{style}] "
+        f"\nWorkflow [bold]{escape(report.name)}[/bold]: [{style}]{report.status}[/{style}] "
         f"({len(report.chaos_events)} chaos event(s))"
     )
     if report.message:
-        console.print(report.message)
+        console.print(escape(report.message))
 
 
 def render_validation(console: Console, result: "ValidationResult") -> None:
     """Render one experiment's validation outcome, one issue per line."""
     if result.ok:
-        console.print(f"[green]OK[/green] {result.source}")
+        console.print(f"[green]OK[/green] {escape(result.source)}")
     else:
-        console.print(f"[red]INVALID[/red] {result.source}")
+        console.print(f"[red]INVALID[/red] {escape(result.source)}")
     for issue in result.issues:
         style = "yellow" if issue.severity == "warning" else "red"
-        console.print(f"  [{style}]{issue.severity}[/{style}] {issue.location}: {issue.message}")
+        detail = escape(f"{issue.location}: {issue.message}")
+        console.print(f"  [{style}]{issue.severity}[/{style}] {detail}")
 
 
 def render_fuzz_report(console: Console, report: "FuzzReport") -> None:
@@ -206,7 +208,7 @@ def render_fuzz_report(console: Console, report: "FuzzReport") -> None:
     for node in report.nodes:
         failures = f"[red]{node.failures}[/red]" if node.failures else "0"
         table.add_row(
-            node.node,
+            escape(node.node),
             node.node_type,
             f"{node.weight:g}",
             str(node.trials),
@@ -215,6 +217,6 @@ def render_fuzz_report(console: Console, report: "FuzzReport") -> None:
         )
     console.print(table)
     if report.failing_nodes:
-        console.print(f"[red]Failing nodes:[/red] {', '.join(report.failing_nodes)}")
+        console.print(f"[red]Failing nodes:[/red] {escape(', '.join(report.failing_nodes))}")
     else:
         console.print("[green]Every reached trial recovered.[/green]")

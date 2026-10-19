@@ -275,3 +275,19 @@ def test_agent_fuzz_command(project):
     nothing = runner.invoke(app, ["agent", "fuzz", str(graph), "--step", "unknown"])
     assert nothing.exit_code == 1
     assert "no topology node is eligible" in nothing.output
+
+
+def test_messages_are_not_parsed_as_markup(project, monkeypatch):
+    import builtins
+
+    real_import = builtins.__import__
+
+    def no_yaml(name, *args, **kwargs):
+        if name == "yaml":
+            raise ImportError("no yaml")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", no_yaml)
+    result = runner.invoke(app, ["experiment", "validate", str(project / "suite.yaml")])
+    assert result.exit_code == 1
+    assert "agentic-chaos[yaml]" in result.output

@@ -8,6 +8,7 @@ from typing import Any
 import pydantic
 import typer
 from rich.console import Console
+from rich.markup import escape
 
 import agentic_chaos.agents  # noqa: F401 -- ensures agent faults are registered
 from agentic_chaos.agents.topology import get_active_tracker, reset_active_tracker
@@ -768,7 +769,9 @@ def _run_experiment_file(
         render_validation(console, result)
         raise typer.Exit(code=1)
     for warning in result.warnings:
-        console.print(f"[yellow]warning[/yellow] {warning.location}: {warning.message}")
+        console.print(
+            f"[yellow]warning[/yellow] {escape(str(warning.location))}: {escape(warning.message)}"
+        )
     try:
         report = result.experiment.run(
             dry_run=True if dry_run else None,
@@ -776,7 +779,7 @@ def _run_experiment_file(
             resume_from=resume_from,
         )
     except ValueError as exc:
-        console.print(f"[red]{exc}[/red]")
+        console.print(f"[red]{escape(str(exc))}[/red]")
         raise typer.Exit(code=1) from exc
     render_workflow_report(console, report)
     if save is not None:
@@ -917,10 +920,10 @@ def experiment_schedule(
     try:
         experiment = load_experiment(file, check_targets=False)
     except ValueError as exc:
-        console.print(f"[red]{exc}[/red]")
+        console.print(f"[red]{escape(str(exc))}[/red]")
         raise typer.Exit(code=1) from exc
     if experiment.schedule is None:
-        console.print(f"[red]{file} has no schedule section[/red]")
+        console.print(f"[red]{escape(str(file))} has no schedule section[/red]")
         raise typer.Exit(code=1)
     cron = experiment.schedule.expression
     zone = experiment.timezone
@@ -987,7 +990,7 @@ def agent_fuzz(
             script_target(script), n=trials, seed=seed, scope=scope, faults=fault or None
         )
     except ValueError as exc:
-        console.print(f"[red]{exc}[/red]")
+        console.print(f"[red]{escape(str(exc))}[/red]")
         raise typer.Exit(code=1) from exc
     render_fuzz_report(console, report)
     if save is not None:
