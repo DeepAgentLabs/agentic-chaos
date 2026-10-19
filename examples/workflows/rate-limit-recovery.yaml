@@ -1,0 +1,23 @@
+# A single-stage experiment: one fault set, contracts, a schedule.
+#   agentic-chaos experiment validate examples/workflows/rate-limit-recovery.yaml
+#   agentic-chaos experiment run examples/workflows/rate-limit-recovery.yaml
+name: rate-limit-recovery
+description: The support agent retries a 429 storm on its model calls and still answers.
+target: support_agent.py:handle # relative to this file
+faults:
+  - type: rate_limit_storm
+    burst_count: 3
+    retry_after: 0
+    scope:
+      steps: [llm]
+      providers: [openai]
+assertions:
+  - completes_within: 30
+  - max_retries: { n: 5, step: llm }
+  - recovered_after_failure: true
+  - no_unhandled_error
+safety:
+  max_injections: 20
+schedule:
+  cron: "0 2 * * *" # nightly
+  timezone: UTC

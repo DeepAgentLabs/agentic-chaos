@@ -148,3 +148,15 @@ jobs:
           cp -r examples/pytest_chaos examples/chaos.toml /tmp/chaos-example/examples/
           cd /tmp/chaos-example
           /tmp/chaos-wheel-smoke/bin/python -m pytest examples/pytest_chaos --chaos -q -p no:cacheprovider
+      - name: Verify declarative experiments from the installed wheel
+        run: |
+          mkdir -p /tmp/chaos-experiments
+          cp -r examples/workflows /tmp/chaos-experiments/
+          cd /tmp/chaos-experiments
+          # Without the yaml extra, YAML files explain how to enable them.
+          if /tmp/chaos-wheel-smoke/bin/agentic-chaos experiment validate workflows/rate-limit-recovery.yaml > out.txt; then exit 1; fi
+          grep -q "agentic-chaos\[yaml\]" out.txt
+          uv pip install --python /tmp/chaos-wheel-smoke/bin/python "pyyaml>=6"
+          /tmp/chaos-wheel-smoke/bin/agentic-chaos experiment validate --strict workflows/*.yaml
+          /tmp/chaos-wheel-smoke/bin/agentic-chaos experiment run workflows/rate-limit-recovery.yaml --no-input
+          /tmp/chaos-wheel-smoke/bin/agentic-chaos chaos workflow run workflows/resilience-suite.yaml --no-input --approve approve-escalation

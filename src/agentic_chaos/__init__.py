@@ -25,6 +25,7 @@ from agentic_chaos.chaos.faults import FAULT_REGISTRY
 from agentic_chaos.chaos.poisoning import PoisonedResponseFault
 from agentic_chaos.chaos.profiles import load_profile
 from agentic_chaos.chaos.provider_faults import AuthErrorFault, ContextLengthFault
+from agentic_chaos.chaos.scope import Scope
 from agentic_chaos.chaos.streaming import (
     SlowChunksFault,
     SlowTTFTFault,
@@ -46,9 +47,20 @@ from agentic_chaos.contracts import (
     check_contracts,
 )
 from agentic_chaos.drift import DriftReport, DriftSnapshot, compare_snapshots
+from agentic_chaos.experiments import load_experiment, validate_experiment
 from agentic_chaos.integrations.providers import patch_anthropic, patch_google, patch_openai
 from agentic_chaos.judges import DeepEvalJudge, HeuristicJudge, PydanticEvalsJudge, fidelity_session
 from agentic_chaos.safety import ChaosAbortedError, CircuitBreaker
+from agentic_chaos.workflows import (
+    ChaosWorkflow,
+    HealthCheck,
+    Parallel,
+    Step,
+    Suspend,
+    Template,
+    WorkflowReport,
+    fuzz_topology,
+)
 
 for _fault in (
     PoisonedResponseFault,
@@ -62,14 +74,25 @@ for _fault in (
     FAULT_REGISTRY[_fault.name] = _fault
 
 
-__version__ = "0.7.0"
+__version__ = "0.8.0"
 
 __all__ = [
+    "ChaosWorkflow",
+    "HealthCheck",
+    "Parallel",
+    "Step",
+    "Suspend",
+    "Template",
+    "WorkflowReport",
+    "fuzz_topology",
+    "load_experiment",
+    "validate_experiment",
     "BreakingPointResult",
     "FaultCascade",
     "cascade",
     "find_breaking_point",
     "PoisonedResponseFault",
+    "Scope",
     "CompletesWithin",
     "ContractViolationError",
     "FullTopologyTraversal",

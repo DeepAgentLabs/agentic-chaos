@@ -227,7 +227,10 @@ def test_mcp_discovers_poisoning_and_exports_v07(monkeypatch):
 
     assert "poisoned_response" in {entry["name"] for entry in list_faults()["faults"]}
     artifact = export_aios_run(advanced_report())
-    assert artifact["extensions"]["io.deepagentlabs.agentic-chaos"]["producer_version"] == "0.7.0"
+    from agentic_chaos import __version__
+
+    extension = artifact["extensions"]["io.deepagentlabs.agentic-chaos"]
+    assert extension["producer_version"] == __version__
     assert len(artifact["evidence"]) == 2
 
 
@@ -250,3 +253,81 @@ def test_tower_counts_v07_native_events(monkeypatch):
     result = summarize_evidence(link, advanced_report())
     assert result.availability == "available"
     assert result.details["event_count"] == 2
+
+
+def workflow_report():
+    """A v0.8 workflow: two scoped stages and a gate, as `experiment run` saves it."""
+    from agentic_chaos import RateLimitStormFault, Scope, chaos_call
+    from agentic_chaos.chaos.faults import RateLimitStormError
+    from agentic_chaos.workflows import ChaosWorkflow, HealthCheck, Step
+
+    def app():
+        chaos_call(lambda: "ok", step_name="safety_check")
+        for _ in range(4):
+            try:
+                return chaos_call(lambda: "ok", step_name="llm")
+            except RateLimitStormError:
+                continue
+        return None
+
+    workflow = ChaosWorkflow(
+        "v0.8",
+        [
+            Step("warm-up", faults=[RateLimitStormFault(burst_count=1)]),
+            HealthCheck(fn=lambda: "ok"),
+            Step("escalate", faults=[RateLimitStormFault(burst_count=2)]),
+        ],
+        scope=Scope(exclude_steps=["safety_check"]),
+    )
+    return workflow.run(app)
+
+
+def test_lens_reads_v08_workflow_and_merged_reports():
+    pytest.importorskip("agenticlens")
+    from agenticlens.models import Workflow
+
+    report = workflow_report()
+    for data in (report.model_dump(mode="json"), report.to_chaos_report().model_dump(mode="json")):
+        workflow = Workflow.model_validate(data)
+        assert len(workflow.chaos_events) == 3
+        assert {e["detail"]["workflow"]["step"] for e in workflow.chaos_events} == {
+            "warm-up",
+            "escalate",
+        }
+
+
+def test_tower_counts_v08_merged_events(monkeypatch):
+    source = Path(__file__).resolve().parents[2] / "agenticops-control-tower" / "src"
+    if not source.exists():
+        pytest.skip("Control Tower sibling checkout unavailable")
+    monkeypatch.syspath_prepend(str(source))
+    from agenticops_control_tower.adapters.evidence import summarize_evidence
+    from agenticops_control_tower.models.evidence import EvidenceLink
+
+    link = EvidenceLink(
+        agent_id="test",
+        source="agentic-chaos",
+        source_version="0.8.0",
+        artifact_type="chaos_report",
+        artifact_ref="report.json",
+        observed_at=datetime.now(timezone.utc),
+    )
+    merged = workflow_report().to_chaos_report().model_dump(mode="json")
+    result = summarize_evidence(link, merged)
+    assert result.availability == "available"
+    assert result.details["event_count"] == 3
+
+
+def test_mcp_exports_v08_workflow_summary(monkeypatch):
+    source = Path(__file__).resolve().parents[2] / "mcp-server" / "src"
+    if not source.exists():
+        pytest.skip("MCP sibling checkout unavailable")
+    monkeypatch.syspath_prepend(str(source))
+    from deep_agentic_core_mcp.adapters.agentic_chaos import export_aios_run, list_faults
+
+    assert "rate_limit_storm" in {entry["name"] for entry in list_faults()["faults"]}
+    artifact = export_aios_run(workflow_report().to_chaos_report().model_dump(mode="json"))
+    extension = artifact["extensions"]["io.deepagentlabs.agentic-chaos"]
+    assert extension["workflow"]["name"] == "v0.8"
+    assert [node["status"] for node in extension["workflow"]["nodes"]] == ["passed"] * 3
+    assert len(artifact["evidence"]) == 3

@@ -27,18 +27,20 @@ tools that happen to compose.
 **Agent Failure Injector** (v0.2), **Fidelity Judges & Handoff Chaos**
 (`v0.3.0`), **Prompt/Model Drift Detector** (`v0.4.0`), and
 **Streaming Faults, Provider Patching & Chaos Profiles** (`v0.5.0`),
-**Safety Rails** (`0.5.2`) and the **Pytest Plugin & Contracts** (`0.6.0`)
+**Safety Rails** (`0.5.2`), the **Pytest Plugin & Contracts** (`0.6.0`),
+**Fault Cascades, Adaptive Intensity & Response Poisoning** (`0.7.0`) and
+**Chaos Workflows, Declarative Experiments & Explosion Radius** (`0.8.0`)
 are available.
 See [ROADMAP.md](ROADMAP.md) for the full plan.
 
 ### What's Next
 
-- **Fault cascades, adaptive intensity & response poisoning (v0.7)** —
-  chained failures, breaking-point search and adversarial output
+- **Resilience probes & resilience score (v0.9)** — steady-state probes before,
+  during and after chaos, and a 0–100 score usable as a CI gate
+- **ChaosHub (v1.0)** — bundled and community experiment recipes in the v0.8
+  experiment format, plus a fault plugin interface
 - **Structured experiment reports** — every chaos run emits a report with
   hypothesis, injection point provenance, observed behavior, and verdict
-- **Synthetic test scenarios** — prebuilt known-bad agent behaviors for
-  consistent resilience validation
 
 ## Installation
 
@@ -55,7 +57,9 @@ uv sync --extra dev --frozen
 ```
 
 That's it — no other package required. (If you want the optional AgenticLens
-integration too, see [below](#optional-agenticlens-integration).)
+integration too, see [below](#optional-agenticlens-integration).) YAML
+experiment files (v0.8) need `pip install 'agentic-chaos[yaml]'`; JSON and
+TOML experiments work with the core install.
 
 `--frozen` matters here: `pyproject.toml` points the (currently unpublished)
 `agenticlens` extra at a sibling checkout via `[tool.uv.sources]`, and `uv
@@ -172,11 +176,91 @@ agentic-chaos contracts list
 
 # Run @pytest.mark.chaos tests with faults injected (v0.6).
 pytest --chaos
+
+# Lint declarative experiments without running them (v0.8); exits 1 when invalid.
+agentic-chaos experiment validate experiments/*.yaml
+
+# Run a multi-stage chaos workflow; exits 3 at an unapproved Suspend gate.
+agentic-chaos chaos workflow run experiments/resilience-suite.yaml --approve approve-escalation --save workflow.json
+agentic-chaos experiment run experiments/resilience-suite.yaml --resume-from approve-escalation
+
+# Preview a schedule and print a crontab / GitHub Actions snippet (v0.8).
+agentic-chaos experiment schedule experiments/resilience-suite.yaml --format github-actions
+
+# Fuzz the agent graph, weighting placement by node fan-out (v0.8).
+agentic-chaos agent fuzz my_graph.py --n 20 --seed 0 --exclude-step safety_check
 ```
 
 `agentic-chaos drift compare` exits with code `2` when drift is detected, so
 it can fail a CI job while still writing a JSON report when emission rules
 allow it.
+
+## Chaos Workflows, Experiments & Explosion Radius (v0.8.0)
+
+**Explosion radius.** Every built-in fault (and `cascade()`) accepts
+`scope=Scope(steps=..., providers=..., exclude_steps=..., exclude_providers=...)`.
+Scope is checked before probability sampling, exclusions always win, and an
+include list never matches an unlabelled call. Provider patches label their
+calls automatically; direct calls can pass `chaos_provider="openai"`.
+
+```python
+from agentic_chaos import RateLimitStormFault, Scope
+
+RateLimitStormFault(burst_count=3, scope=Scope(steps=["retriever", "planner"],
+                                               providers=["openai"],
+                                               exclude_steps=["safety_check"]))
+```
+
+**Chaos workflows** run multi-stage campaigns:
+
+- `Step`: a fault stage with its own contracts, breaker and scope
+- `HealthCheck`: a steady-state gate between stages
+- `Parallel`: concurrent branches, each with its own session
+- `Suspend`: a human approval gate, resumable with `resume_from`
+- `Template`: reusable, parameterized stages
+
+```python
+from agentic_chaos.workflows import ChaosWorkflow, HealthCheck, Parallel, Step, Suspend
+
+workflow = ChaosWorkflow("resilience-suite", steps=[
+    Step("warm-up", faults=[RateLimitStormFault(burst_count=2)]),
+    HealthCheck(fn=my_agent, query="Are you working?"),
+    Parallel(Step("tools", faults=["tool_failure"]), Step("memory", faults=["memory_corruption"])),
+    Suspend("approve-escalation"),
+    Step("escalate", faults=[RateLimitStormFault(burst_count=5)]),
+], scope=Scope(exclude_steps=["safety_check"]))
+report = workflow.run(my_app, approve={"approve-escalation"})
+print(report.status, len(report.chaos_events))
+merged = report.to_chaos_report()   # one native report for contracts and AIOS export
+```
+
+**Declarative experiments** let SREs and QA write the same campaigns in YAML,
+JSON or TOML: faults, assertions (contracts), safety limits, scopes,
+templates, gates and a cron `schedule`.
+
+- `agentic-chaos experiment validate` lints files without executing targets
+  and reports every issue with its location and a did-you-mean suggestion.
+- `experiment run` / `chaos workflow run` executes them.
+- `experiment schedule` previews runs and prints crontab or GitHub Actions
+  snippets.
+
+**Topology fuzzer.** `fuzz_topology(target, n=20, scope=...)` walks the
+recorded `AgentTopology`. Each trial places one node-scoped fault, weighted
+by fan-out, and the report lists the nodes that failed to recover.
+
+See the [v0.8 guide](docs/v0.8.md), the
+[workflow demo](examples/chaos_workflow_demo.py), the
+[experiment files](examples/workflows), a
+[scheduled GitHub Actions example](examples/github-actions-chaos-workflow.yml)
+and the [demo GIF](docs/assets/v0.8-demo.gif).
+
+Compatibility:
+
+- Native event shapes and IDs are unchanged. Workflow provenance
+  (`detail.workflow`) and the `ChaosReport.workflow` summary are additive.
+- Lens, Tower, MCP and AIOS readers are covered by sibling tests.
+- Agentic Sidecar 0.8.5 widens its optional extra to admit 0.8, and MCP
+  0.3.13 pins hosted images to 0.8.0.
 
 ## Pytest Plugin & Contracts (v0.6.0)
 
@@ -462,6 +546,8 @@ print(tracker.topology.as_json())  # nodes + edges
 | [`examples/drift_detection_demo.py`](examples/drift_detection_demo.py) | nothing but `agentic_chaos` | Creates a drift baseline and current snapshot, compares them, and writes a drift report JSON. |
 | [`examples/chaos_contracts_demo.py`](examples/chaos_contracts_demo.py) | nothing but `agentic_chaos` | v0.6 contracts on the Python API: a resilient agent passes, a fragile one fails, a skipped reviewer is caught against a dry-run baseline. |
 | [`examples/pytest_chaos/`](examples/pytest_chaos) | `pytest` | v0.6 pytest plugin: run with and without `--chaos`; includes a profile, a baseline comparison and a contract catching a fallback that hides an unrecovered step. |
+| [`examples/chaos_workflow_demo.py`](examples/chaos_workflow_demo.py) | nothing but `agentic_chaos` | v0.8 Python API: a templated, gated, parallel chaos workflow scoped away from a safety check; resume after a suspend; experiment lint; topology fuzzing that finds the unprotected planner node. |
+| [`examples/workflows/`](examples/workflows) | `agentic-chaos[yaml]` | v0.8 declarative experiments: a scheduled single-stage `rate-limit-recovery.yaml` and a multi-stage `resilience-suite.yaml`, both targeting an offline support agent. |
 | [`examples/chaos_with_agenticlens_demo.py`](examples/chaos_with_agenticlens_demo.py) | `agentic-chaos[agenticlens]` | The optional integration: `attach_events()` + `step_kwargs()` merging chaos events onto a real AgenticLens `Workflow`. |
 
 Run any of them directly (`uv run python examples/...`), or the first two

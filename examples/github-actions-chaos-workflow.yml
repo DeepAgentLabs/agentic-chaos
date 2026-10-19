@@ -1,0 +1,45 @@
+# Nightly declarative chaos: lint every experiment on each push, run the suite
+# on a schedule, and keep the reports as artifacts. Copy to
+# .github/workflows/chaos-workflow.yml in your project and adjust paths.
+name: chaos-workflow
+
+on:
+  push:
+    paths: ["experiments/**", "src/**"]
+  schedule:
+    - cron: "30 3 * * 1-5" # weekdays 03:30 UTC
+  workflow_dispatch:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install 'agentic-chaos[yaml]>=0.8'
+      # Parses targets but never executes them; exits 1 on any invalid file.
+      - run: agentic-chaos experiment validate --strict experiments/*.yaml
+
+  run:
+    if: github.event_name != 'push'
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -e . 'agentic-chaos[yaml]>=0.8'
+      # Unattended runs never prompt: approve the gates this job may pass,
+      # leave the others to suspend the run (exit code 3).
+      - run: >
+          agentic-chaos chaos workflow run experiments/resilience-suite.yaml
+          --no-input --approve approve-escalation
+          --save chaos-workflow.json --save-aios chaos-run.aios.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: chaos-workflow
+          path: |
+            chaos-workflow.json
+            chaos-run.aios.json

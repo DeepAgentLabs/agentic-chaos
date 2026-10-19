@@ -326,6 +326,8 @@ def _extension(report: ChaosReport, producer_version: str | None) -> dict[str, A
         extension["agent_topology"] = report.agent_topology
     if report.drift_report is not None:
         extension["drift_report"] = report.drift_report
+    if report.workflow is not None:
+        extension["workflow"] = report.workflow
     return extension
 
 

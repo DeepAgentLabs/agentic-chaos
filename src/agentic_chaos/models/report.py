@@ -36,3 +36,6 @@ class ChaosReport(BaseModel):
     calls: list[dict[str, Any]] = Field(default_factory=list)
     calls_dropped: int = 0
     unhandled_error: dict[str, Any] | None = None
+    # v0.8: set when the report merges the steps of a chaos workflow; per-step
+    # provenance is also recorded in each event's ``detail.workflow``.
+    workflow: dict[str, Any] | None = None

@@ -4,6 +4,76 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-18
+
+### Added
+
+- `Scope` explosion-radius control (`steps`, `providers`, `exclude_steps`,
+  `exclude_providers`) on every built-in fault and on `cascade()`. Scope is
+  checked before probability sampling, so out-of-scope calls consume no random
+  draws, burst counts or preview state and never appear in dry-run plans.
+  Exclusions win and include lists fail closed for unlabelled calls.
+  `chaos_call`, `chaos_acall` and the stream wrappers accept a
+  `chaos_provider` label, set automatically by the provider patches.
+  `chaos.toml` profiles accept per-fault `scope` tables.
+- `agentic_chaos.workflows`: `ChaosWorkflow` with `Step`, `HealthCheck`,
+  `Parallel`, `Suspend` and reusable, parameterized `Template` nodes.
+  - Steps run in fresh sessions with fresh fault copies, their own contracts,
+    breaker and scope.
+  - Health checks gate stages with no session active.
+  - Parallel branches run in isolated contexts.
+  - Suspend gates take approvers and resume with `resume_from`.
+  - Workflow-level scopes and breakers apply to every step.
+- `WorkflowReport` (`kind: chaos_workflow`, `schema_version: "1.0"`) records
+  each node's result and every step's native report. Top-level `chaos_events`
+  carry `detail.workflow` provenance. `to_chaos_report()` merges all steps for
+  contracts and AIOS export.
+- `fuzz_topology()` places one node-scoped fault per trial, weighted by fan-out
+  (coordinators are hit more often than leaf tools), with type-aware default
+  pools. The topology comes from a fault-free baseline run or is passed in.
+  Results are reproducible by seed and report unreached trials separately.
+- `agentic_chaos.experiments`: declarative YAML, JSON and TOML experiments.
+  - A single-stage form (`faults`, `assertions`, `repeat`) and a `workflow`
+    form with templates and `${param}` substitution.
+  - Fields for `safety`, `scope`, `dry_run` and `schedule`.
+  - `validate_experiment()` reports every issue with its location and a
+    did-you-mean suggestion: unknown fields, faults, parameters and contracts;
+    out-of-range values; scopes; cron fields and time zones; recursive
+    templates; duplicate node names.
+  - Validation never executes targets: files are parsed with `ast`, and
+    modules are located with `find_spec`.
+- A five-field cron parser with names, steps, macros, Vixie day-of-month/
+  day-of-week semantics and `next_runs()` previews.
+- CLI:
+  - `experiment validate` (`--strict`, `--json`, `--no-target-check`,
+    `--base-dir`)
+  - `experiment run` / `chaos workflow run` (`--save`, `--save-report`,
+    `--save-aios`, `--dry-run`, `--approve`, `--approve-all`, `--resume-from`,
+    `--no-input`). Exit code 3 means a run is waiting at a gate.
+  - `chaos workflow validate`
+  - `experiment schedule` (crontab or GitHub Actions snippets)
+  - `agent fuzz`
+- Optional `yaml` extra (`pyyaml>=6.0`).
+- Supporting material:
+  - the v0.8 guide
+  - an offline support agent with single-stage and multi-stage experiment
+    files
+  - a Python workflow/lint/fuzz demo
+  - a scheduled GitHub Actions example
+  - a reproducible demo GIF
+  - Lens/Tower/MCP/AIOS-schema compatibility tests
+  - a CI smoke test of experiments from the installed wheel
+
+### Changed
+
+- Package version is `0.8.0`; v0.8 is complete.
+- `ChaosReport` gains the optional `workflow` summary, which the AIOS export
+  carries in the producer extension. Native event shapes and IDs are
+  unchanged, and older reports still load.
+- Sibling runtimes need no change. Agentic Sidecar 0.8.5 widens its optional
+  `agentic-chaos` extra to admit 0.8, and MCP 0.3.13 pins hosted images to
+  0.8.0.
+
 ## [0.7.0] - 2026-10-17
 
 ### Added

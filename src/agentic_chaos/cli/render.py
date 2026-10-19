@@ -1,11 +1,18 @@
+from typing import TYPE_CHECKING
+
 from rich import box
 from rich.console import Console
+from rich.markup import escape
 from rich.table import Table
 
 from agentic_chaos.contracts import ContractReport
 from agentic_chaos.drift import DriftReport
 from agentic_chaos.models.agent_topology import AgentTopology
 from agentic_chaos.models.chaos_event import ChaosEvent
+
+if TYPE_CHECKING:
+    from agentic_chaos.experiments import ValidationResult
+    from agentic_chaos.workflows import FuzzReport, NodeResult, WorkflowReport
 
 _OUTCOME_STYLES = {
     "errored": "red",
@@ -127,3 +134,89 @@ def render_contract_report(console: Console, contract_report: ContractReport) ->
     passed = len(contract_report.results) - len(contract_report.failures)
     verdict = "[green]passed[/green]" if contract_report.passed else "[red]failed[/red]"
     console.print(f"{passed}/{len(contract_report.results)} contracts passed: {verdict}")
+
+
+_NODE_STYLES = {
+    "passed": "green",
+    "approved": "green",
+    "resumed": "green",
+    "failed": "red",
+    "aborted": "red",
+    "rejected": "red",
+    "suspended": "yellow",
+    "would_suspend": "yellow",
+    "skipped": "dim",
+}
+
+
+def render_workflow_report(console: Console, report: "WorkflowReport") -> None:
+    """Render a chaos workflow's node results, indenting parallel branches."""
+    table = Table(title=f"Chaos Workflow — {report.name}", box=box.SIMPLE_HEAVY)
+    table.add_column("Node")
+    table.add_column("Kind")
+    table.add_column("Status")
+    table.add_column("Events", justify="right")
+    table.add_column("Detail")
+
+    def add(node: "NodeResult", depth: int) -> None:
+        style = _NODE_STYLES.get(node.status, "white")
+        events = len(node.report.get("chaos_events", [])) if node.report else None
+        table.add_row(
+            escape("  " * depth + node.name),
+            node.kind,
+            f"[{style}]{node.status}[/{style}]",
+            str(events) if events is not None else "",
+            escape(node.message),
+        )
+        for index, branch in enumerate(node.branches, 1):
+            for child in branch:
+                add(child.model_copy(update={"name": f"[{index}] {child.name}"}), depth + 1)
+
+    for node in report.nodes:
+        add(node, 0)
+    console.print(table)
+    style = _NODE_STYLES.get(report.status, "white")
+    console.print(
+        f"\nWorkflow [bold]{escape(report.name)}[/bold]: [{style}]{report.status}[/{style}] "
+        f"({len(report.chaos_events)} chaos event(s))"
+    )
+    if report.message:
+        console.print(escape(report.message))
+
+
+def render_validation(console: Console, result: "ValidationResult") -> None:
+    """Render one experiment's validation outcome, one issue per line."""
+    if result.ok:
+        console.print(f"[green]OK[/green] {escape(result.source)}")
+    else:
+        console.print(f"[red]INVALID[/red] {escape(result.source)}")
+    for issue in result.issues:
+        style = "yellow" if issue.severity == "warning" else "red"
+        detail = escape(f"{issue.location}: {issue.message}")
+        console.print(f"  [{style}]{issue.severity}[/{style}] {detail}")
+
+
+def render_fuzz_report(console: Console, report: "FuzzReport") -> None:
+    """Render per-node fuzzing outcomes, heaviest (highest fan-out) nodes first."""
+    table = Table(title=f"Topology Fuzz — {report.n} trials (seed {report.seed})")
+    table.add_column("Node")
+    table.add_column("Type")
+    table.add_column("Weight", justify="right")
+    table.add_column("Trials", justify="right")
+    table.add_column("Failures", justify="right")
+    table.add_column("Not reached", justify="right")
+    for node in report.nodes:
+        failures = f"[red]{node.failures}[/red]" if node.failures else "0"
+        table.add_row(
+            escape(node.node),
+            node.node_type,
+            f"{node.weight:g}",
+            str(node.trials),
+            failures,
+            str(node.not_reached),
+        )
+    console.print(table)
+    if report.failing_nodes:
+        console.print(f"[red]Failing nodes:[/red] {escape(', '.join(report.failing_nodes))}")
+    else:
+        console.print("[green]Every reached trial recovered.[/green]")

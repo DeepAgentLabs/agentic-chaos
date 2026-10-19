@@ -9,7 +9,7 @@ and `resolve_faults()` can find them by name.
 import random
 import time
 from collections.abc import Callable
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from agentic_chaos.chaos.faults import (
     FAULT_REGISTRY,
@@ -21,6 +21,9 @@ from agentic_chaos.chaos.faults import (
     snapshot_baseline,
 )
 from agentic_chaos.models.chaos_event import ChaosEvent
+
+if TYPE_CHECKING:
+    from agentic_chaos.chaos.scope import Scope
 
 # ---------------------------------------------------------------------------
 # Error classes
@@ -110,8 +113,10 @@ class ToolCallFailureFault(BaseFault):
         tool_name: str | None = None,
         probability: float = 1.0,
         seed: int | None = None,
+        *,
+        scope: "Scope | None" = None,
     ) -> None:
-        super().__init__(probability, seed)
+        super().__init__(probability, seed, scope=scope)
         if mode not in ("error", "timeout", "empty"):
             raise ValueError("mode must be 'error', 'timeout', or 'empty'")
         self.mode = mode
@@ -285,8 +290,10 @@ class MemoryCorruptionFault(BaseFault):
         seed: int | None = None,
         rate: float = 0.25,
         probability: float = 1.0,
+        *,
+        scope: "Scope | None" = None,
     ) -> None:
-        super().__init__(probability, seed)
+        super().__init__(probability, seed, scope=scope)
         if mode not in self._CORRUPTORS:
             raise ValueError(f"mode must be one of {sorted(self._CORRUPTORS)}")
         if mode == "decay" and not 0.0 < rate <= 1.0:
@@ -365,8 +372,9 @@ class HandoffCorruptionFault(BaseFault):
         delay_seconds: float = 1.0,
         seed: int | None = None,
         probability: float = 1.0,
+        scope: "Scope | None" = None,
     ) -> None:
-        super().__init__(probability, seed)
+        super().__init__(probability, seed, scope=scope)
         if mode not in ("corrupt", "drop", "delay"):
             raise ValueError("mode must be 'corrupt', 'drop', or 'delay'")
         self.from_node = from_node
@@ -490,8 +498,10 @@ class InfiniteLoopFault(BaseFault):
         continue_value: Any = "I need to continue processing this request.",
         probability: float = 1.0,
         seed: int | None = None,
+        *,
+        scope: "Scope | None" = None,
     ) -> None:
-        super().__init__(probability, seed)
+        super().__init__(probability, seed, scope=scope)
         self.force_turns = force_turns
         self.continue_value = continue_value
         self._fired = 0

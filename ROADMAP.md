@@ -10,7 +10,8 @@ dependency, or test — not a LangGraph integration. At the audited commit, v0.5
 unimplemented; their 🚧 Planned markers match an empty search for
 corresponding code. v0.5 has since been implemented with new tests; see
 [the v0.5 guide](docs/v0.5.md). v0.6 followed in `0.6.0`; see
-[the v0.6 guide](docs/v0.6.md).
+[the v0.6 guide](docs/v0.6.md). v0.7 followed in `0.7.0` ([guide](docs/v0.7.md))
+and v0.8 in `0.8.0` ([guide](docs/v0.8.md)).
 
 ## Release Status
 
@@ -22,7 +23,7 @@ corresponding code. v0.5 has since been implemented with new tests; see
 - **v0.5.x** ✅ Complete — Safety Rails (Circuit Breaker & Dry-Run), released as `0.5.2`
 - **v0.6** ✅ Complete — Pytest Plugin & Assertions, released as `0.6.0`
 - **v0.7** ✅ Complete — released as `0.7.0`; — Fault Cascades, Adaptive Intensity & Response Poisoning
-- **v0.8** 🚧 Planned — Chaos Workflows, Declarative Experiments & Explosion Radius
+- **v0.8** ✅ Complete — released as `0.8.0`; — Chaos Workflows, Declarative Experiments & Explosion Radius
 - **v0.9** 🚧 Planned — Resilience Probes & Resilience Score
 - **v1.0** 🚧 Planned — ChaosHub (Shared Experiment Registry)
 
@@ -135,6 +136,9 @@ The package contains the following modules (shipped and planned):
 | `agentic_chaos.safety` | ✅ Shipped (0.5.2) | Circuit breaker (max-cost / max-failure-rate auto-abort) + `--dry-run` mode |
 | `agentic_chaos.contracts` | ✅ Shipped (0.6.0) | Seven pass/fail contracts over a `ChaosReport`, `check_contracts()` / `assert_contracts()`, CLI spec parser |
 | `pytest_agentic_chaos` | ✅ Shipped (0.6.0) | pytest plugin (`pytest11` entry point): `@pytest.mark.chaos`, `--chaos`, `chaos` fixture, report artifacts |
+| `agentic_chaos.chaos.scope` | ✅ Shipped (0.8.0) | `Scope` explosion-radius control (steps, providers, excludes) on every fault |
+| `agentic_chaos.workflows` | ✅ Shipped (0.8.0) | `ChaosWorkflow`, `Step`, `HealthCheck`, `Parallel`, `Suspend`, `Template`, `WorkflowReport`, `fuzz_topology()` |
+| `agentic_chaos.experiments` | ✅ Shipped (0.8.0) | YAML/JSON/TOML experiment loader, located validation (lint), cron schedules |
 
 ## Package Layout (current)
 
@@ -155,6 +159,9 @@ agentic-chaos/
       agenticlens.py    # attach_events(), step_kwargs(), span_attributes(), mark_span()
     chaos/calls.py      # per-session call log (v0.6)
     contracts/          # Contract protocol + 7 built-ins (v0.6)
+    chaos/scope.py      # Scope explosion-radius control (v0.8)
+    workflows/          # ChaosWorkflow nodes, engine, report, targets, fuzzer (v0.8)
+    experiments/        # experiment schema/compiler, loader, cron (v0.8)
     cli/                # CLI entry point
     models/             # ChaosReport, ChaosEvent, schema extensions
   src/pytest_agentic_chaos/
@@ -180,6 +187,13 @@ agentic-chaos chaos run my_app.py --inject rate_limit_storm --contract max_retri
 agentic-chaos contracts check chaos_run.json --baseline baseline.json --contract full_topology_traversal
 agentic-chaos contracts list
 pytest --chaos
+
+# Workflows, experiments and fuzzing (v0.8)
+agentic-chaos experiment validate experiments/*.yaml
+agentic-chaos chaos workflow run chaos_workflow.yaml --save report.json
+agentic-chaos experiment run experiments/rate-limit-recovery.yaml --approve approve-escalation
+agentic-chaos experiment schedule experiments/rate-limit-recovery.yaml --format github-actions
+agentic-chaos agent fuzz my_graph.py --n 20 --exclude-step safety_check
 ```
 
 ## Optional AgenticLens Integration
@@ -780,15 +794,37 @@ rather than replacing it — one searches a single parameter, the other
 explores across the whole graph.
 
 **Deliverables:**
-- [ ] `agentic_chaos.workflows` module (`ChaosWorkflow`, `Step`, `HealthCheck`)
-- [ ] `Parallel`, `Suspend`, and reusable `Template` step types
-- [ ] `agentic-chaos chaos workflow run` CLI subcommand
-- [ ] YAML experiment loader + schema validation
-- [ ] `agentic-chaos experiment validate` CLI command (lint, CI-friendly exit code)
-- [ ] `Scope` class for fault targeting (steps, providers, excludes)
-- [ ] `fuzz_topology()` graph-weighted fuzzer
-- [ ] Cron-based scheduling support for continuous chaos testing
-- [ ] README section + workflow example + demo GIF
+- [x] `agentic_chaos.workflows` module (`ChaosWorkflow`, `Step`, `HealthCheck`)
+- [x] `Parallel`, `Suspend`, and reusable `Template` step types
+- [x] `agentic-chaos chaos workflow run` CLI subcommand
+- [x] YAML experiment loader + schema validation
+- [x] `agentic-chaos experiment validate` CLI command (lint, CI-friendly exit code)
+- [x] `Scope` class for fault targeting (steps, providers, excludes)
+- [x] `fuzz_topology()` graph-weighted fuzzer
+- [x] Cron-based scheduling support for continuous chaos testing
+- [x] README section + workflow example + demo GIF
+
+**Shipped in 0.8.0.** Beyond the sketch above, the release adds:
+
+- `exclude_providers` on `Scope`, a `chaos_provider` call label set by the
+  provider patches, and per-fault scope tables in `chaos.toml` profiles
+- step-level and workflow-level scopes, which intersect with each fault's own
+- `resume_from` for suspended runs, approvers (a callable, gate names or
+  `True`/`False`), and a non-interactive `--no-input` mode
+- a merged native report (`WorkflowReport.to_chaos_report()`) for contracts
+  and AIOS export
+- JSON and TOML experiments alongside YAML, which needs the optional `yaml`
+  extra
+- `experiment schedule`, which previews runs and prints crontab or GitHub
+  Actions snippets
+- `agent fuzz`, the fuzzer from the CLI
+
+Faults are copied fresh for every step execution. Validation never executes
+target code. Scope is checked before probability sampling, so out-of-scope
+calls don't consume random draws or fault state. Health checks run with no
+session active. Exit code `3` means a run is waiting at a `Suspend` gate.
+agentic-chaos embeds no scheduler: schedules are validated, previewed and
+emitted as snippets. See [the v0.8 guide](docs/v0.8.md).
 
 ### v0.9 — Resilience Probes & Resilience Score
 
@@ -957,10 +993,10 @@ reference implementation of it.
 | 10 | PyPI release v0.5 | ongoing |
 | 11 | v0.6 — Pytest Plugin & Assertions ✅ | 2–4 weeks |
 | 12 | PyPI release v0.6 (`0.6.0`) ✅ | ongoing |
-| 13 | v0.7 — Fault Cascades, Adaptive Intensity & Response Poisoning | 4–6 weeks |
-| 14 | PyPI release v0.7 | ongoing |
-| 15 | v0.8 — Chaos Workflows, Declarative Experiments & Explosion Radius | 4–6 weeks |
-| 16 | PyPI release v0.8 | ongoing |
+| 13 | v0.7 — Fault Cascades, Adaptive Intensity & Response Poisoning ✅ | 4–6 weeks |
+| 14 | PyPI release v0.7 (`0.7.0`) ✅ | ongoing |
+| 15 | v0.8 — Chaos Workflows, Declarative Experiments & Explosion Radius ✅ | 4–6 weeks |
+| 16 | PyPI release v0.8 (`0.8.0`) ✅ | ongoing |
 | 17 | v0.9 — Resilience Probes & Resilience Score | 3–5 weeks |
 | 18 | PyPI release v0.9 | ongoing |
 | 19 | v1.0 — ChaosHub (Shared Experiment Registry) | 3–5 weeks |
@@ -978,6 +1014,8 @@ containment validation remains planned within these existing milestones.
       and policy-bypass attacks alongside ordinary provider/tool failures.
 - [ ] v0.8 workflows: optional Sidecar/MCP coordination; inject failures into gate,
       approval and evidence paths, including queued calls and revocation races.
+      *(0.8.0 ships the workflow, gate and scope primitives; cross-framework
+      Sidecar/MCP gate-path injection remains open.)*
 - [ ] v0.9 probes: measure forbidden dispatches, calls after acknowledged stop or
       revocation, authority violations and acknowledgement latency. Keep containment
       separate from recovery, task success and output quality.
@@ -1127,3 +1165,30 @@ The existing optional `agenticlens>=0.7.0` extra already admits 0.10.0.
 Fault injection, native chaos events and resilience contracts remain Chaos-owned.
 Routing does not automatically inject faults or prove containment. No dependency
 change or Chaos patch release is required.
+
+## v0.8 ecosystem validation
+
+Recorded for the `0.8.0` release under the [Definition of Done](#definition-of-done).
+See [the v0.8 guide](docs/v0.8.md).
+
+- `agenticlens`: validated, no change needed. Workflow reports and merged
+  reports load as `Workflow` JSON, with `detail.workflow` provenance on each
+  event (`tests/test_sibling_compatibility.py`). The optional
+  `agenticlens>=0.7.0` extra is unchanged.
+- `agenticops-control-tower`: validated, no change needed. The native artifact
+  reader counts merged workflow events, and the `agentic-chaos>=0.5,<1` extra
+  already admits 0.8.
+- `deep-agentic-core-mcp`: validated. `chaos.export_aios_run` carries the
+  workflow summary in the producer extension, and faults are discovered
+  through the existing registry. Workflows and experiments stay Python/CLI
+  orchestration; no new MCP tool or hosted script execution. MCP 0.3.13 moves
+  the hosted image pins to 0.8.0.
+- `ai-operations-spec`: coordinate with. Merged exports validate against the
+  v0.4 Run schema and semantic checker (`tests/test_export_aios.py`). The
+  workflow summary is a producer-local extension member, not a normative
+  Workflow object. No core schema change.
+- `agentic-sidecar`: depends on a packaging update. The optional extra was
+  capped `<0.8`; Sidecar 0.8.5 widens it to `<0.9`. No runtime change.
+- `agentic-evals`: coordinate with. Workflow statuses and step contracts are
+  per-run resilience checks; scoring and release-gate computation stay in
+  Evals. No adapter or dependency is added.
