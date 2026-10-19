@@ -189,3 +189,18 @@ def test_fuzz_errors():
         fuzz_topology(lambda: chaos_call(lambda: 1, step_name="x"), faults=[lambda: object()])
     with pytest.raises(RuntimeError, match="active chaos_session"), chaos_session([]):
         fuzz_topology(lambda: None, topology=AgentTopology())
+
+
+def test_provider_scopes_keep_nodes_eligible_and_limit_injection():
+    def app():
+        chaos_call(lambda: "a", step_name="retrieve", chaos_provider="anthropic")
+        return chaos_call(lambda: "b", step_name="generate", chaos_provider="openai")
+
+    report = fuzz_topology(
+        app, n=6, seed=0, faults=["tool_failure"], scope=Scope(providers=["openai"])
+    )
+    retrieve = [t for t in report.trials if t.node == "retrieve"]
+    generate = [t for t in report.trials if t.node == "generate"]
+    assert retrieve and generate
+    assert all(not t.reached for t in retrieve)  # anthropic calls are out of scope
+    assert all(t.reached for t in generate)

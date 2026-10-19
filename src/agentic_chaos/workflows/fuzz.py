@@ -146,6 +146,10 @@ def _baseline(target: Callable[[], Any]) -> tuple[AgentTopology, set[str]]:
     return AgentTopology(nodes=nodes), called
 
 
+def _step_allowed(scope: Scope, name: str) -> bool:
+    return name not in scope.exclude_steps and (scope.steps is None or name in scope.steps)
+
+
 def _factories(pool: FaultPool | None, node_type: str) -> list[FaultFactory]:
     if pool is None:
         return list(DEFAULT_FAULTS.get(node_type, DEFAULT_FAULTS["*"]))
@@ -208,11 +212,13 @@ def fuzz_topology(
         graph = _topology(topology)
     weights = topology_weights(graph)
     types = {node.name: node.type for node in graph.nodes}
+    # Placement uses the step parts of the scope; provider limits still apply
+    # when the node-scoped fault decides whether a call is in scope.
     candidates = [
         name
         for name in weights
         if (called is None or name in called)
-        and (scope is None or scope.allows(step_name=name))
+        and (scope is None or _step_allowed(scope, name))
         and _factories(faults, types[name])
     ]
     if not candidates:
