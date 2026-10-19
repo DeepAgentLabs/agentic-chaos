@@ -1110,3 +1110,20 @@ native evidence schema changes are required; this documentation alignment needs
 no patch release. See the [operator guide](https://github.com/DeepAgentLabs/agenticops-control-tower/blob/v0.7.0/docs/fleet-operations.md).
 
 See the [local Tower compatibility guide](docs/tower-0.7-fleet-operations.md) for the operator workflow and package boundaries.
+
+## AgenticLens 0.10.0 routing compatibility
+
+See the [local integration boundary guide](docs/lens-0.10-routing.md).
+
+AgenticLens 0.10.0 implements roadmap v0.8: evidence-based runtime model
+selection, fail-closed routing constraints, bounded provider failover,
+confidence/escalation handoffs, shadow/canary modes and a local routing journal.
+The default is advisory; execution uses explicit caller-owned callbacks.
+MCP 0.3.12 exposes read-only `lens.routing_decide` and pins hosted Lens 0.10.0.
+See the [routing guide](https://github.com/DeepAgentLabs/agenticlens/blob/v0.10.0/docs/routing.md)
+and [offline example](https://github.com/DeepAgentLabs/agenticlens/blob/v0.10.0/examples/routing_demo.py).
+
+The existing optional `agenticlens>=0.7.0` extra already admits 0.10.0.
+Fault injection, native chaos events and resilience contracts remain Chaos-owned.
+Routing does not automatically inject faults or prove containment. No dependency
+change or Chaos patch release is required.
