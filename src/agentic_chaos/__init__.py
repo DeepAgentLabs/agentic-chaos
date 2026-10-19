@@ -47,9 +47,20 @@ from agentic_chaos.contracts import (
     check_contracts,
 )
 from agentic_chaos.drift import DriftReport, DriftSnapshot, compare_snapshots
+from agentic_chaos.experiments import load_experiment, validate_experiment
 from agentic_chaos.integrations.providers import patch_anthropic, patch_google, patch_openai
 from agentic_chaos.judges import DeepEvalJudge, HeuristicJudge, PydanticEvalsJudge, fidelity_session
 from agentic_chaos.safety import ChaosAbortedError, CircuitBreaker
+from agentic_chaos.workflows import (
+    ChaosWorkflow,
+    HealthCheck,
+    Parallel,
+    Step,
+    Suspend,
+    Template,
+    WorkflowReport,
+    fuzz_topology,
+)
 
 for _fault in (
     PoisonedResponseFault,
@@ -66,6 +77,16 @@ for _fault in (
 __version__ = "0.7.0"
 
 __all__ = [
+    "ChaosWorkflow",
+    "HealthCheck",
+    "Parallel",
+    "Step",
+    "Suspend",
+    "Template",
+    "WorkflowReport",
+    "fuzz_topology",
+    "load_experiment",
+    "validate_experiment",
     "BreakingPointResult",
     "FaultCascade",
     "cascade",
