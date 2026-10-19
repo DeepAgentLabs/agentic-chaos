@@ -34,6 +34,16 @@ class ChaosSession:
         self.started_at = datetime.now(timezone.utc)
         self.cleanups: list[Callable[[], None]] = []
 
+    def peek_fault(self, fault: BaseFault) -> BaseFault:
+        """The fault whose state decides this call, without creating a preview copy.
+
+        In dry-run mode that is the existing preview copy, if any (a fresh copy
+        would equal the configured fault anyway).
+        """
+        if self.dry_run:
+            return self._preview_faults.get(id(fault), fault)
+        return fault
+
     def preview_fault(self, fault: BaseFault) -> BaseFault:
         """Keep selection RNG and stateful eligibility separate from real faults."""
         key = id(fault)

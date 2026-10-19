@@ -122,10 +122,13 @@ def _session_call(
             "Pass faults=[...] to chaos_call() to pick which one applies at this call site."
         )
 
-    fault = session.preview_fault(candidates[0]) if session.dry_run else candidates[0]
-    # Scope is checked first so out-of-scope calls never consume probability draws.
-    if not in_scope(fault, step_name=step_name, provider=chaos_provider):
+    # Scope is checked first so out-of-scope calls never consume probability
+    # draws, fault state or a dry-run preview copy.
+    if not in_scope(
+        session.peek_fault(candidates[0]), step_name=step_name, provider=chaos_provider
+    ):
         return fn(*args, **kwargs)
+    fault = session.preview_fault(candidates[0]) if session.dry_run else candidates[0]
     if not fault.should_trigger() or not fault.eligible(
         step_name=step_name,
         edge_id=_chaos_edge_id,

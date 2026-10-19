@@ -89,11 +89,12 @@ def _select(
         raise ValueError("Select one fault with faults=[...] for each stream")
     if not candidates:
         return session, None
-    fault = session.preview_fault(candidates[0]) if session.dry_run else candidates[0]
-    if not isinstance(fault, StreamFault):
+    if not isinstance(candidates[0], StreamFault):
         raise TypeError("chaos_stream() requires a streaming fault")
-    if not in_scope(fault, step_name=step_name, provider=provider):
+    if not in_scope(session.peek_fault(candidates[0]), step_name=step_name, provider=provider):
         return session, None
+    fault = session.preview_fault(candidates[0]) if session.dry_run else candidates[0]
+    assert isinstance(fault, StreamFault)
     return session, fault if fault.should_trigger() else None
 
 
