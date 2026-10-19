@@ -234,3 +234,35 @@ def test_profiles_accept_scope_tables(tmp_path):
     )
     with pytest.raises(ValueError, match="Invalid scope"):
         load_profile("bad", path)
+
+
+def test_out_of_scope_dry_run_calls_create_no_preview_copy():
+    fault = RateLimitStormFault(burst_count=1, scope=Scope(steps=["llm"]))
+    stream = StreamCutFault(scope=Scope(steps=["llm"]))
+    with chaos_session([fault], dry_run=True) as session:
+        chaos_call(lambda: "ok", step_name="guard")
+        assert session._preview_faults == {}
+        chaos_call(lambda: "ok", step_name="llm")
+        assert len(session._preview_faults) == 1
+        # The preview, not the real fault, now decides: its burst is used up.
+        chaos_call(lambda: "ok", step_name="llm")
+    assert len(session.planned_events) == 1
+    assert fault._fired == 0
+    with chaos_session([stream], dry_run=True) as session:
+        assert list(chaos_stream(iter("ab"), step_name="guard")) == ["a", "b"]
+        assert session._preview_faults == {}
+
+
+def test_dry_run_cascade_scope_follows_the_preview_stage():
+    fault = cascade(
+        first=RateLimitStormFault(burst_count=1, scope=Scope(steps=["a"])),
+        then=TokenTimeoutFault(hang_seconds=0, scope=Scope(steps=["b"])),
+    )
+    with chaos_session([fault], dry_run=True) as session:
+        for step in ("b", "a", "a", "b"):
+            chaos_call(lambda: "ok", step_name=step)
+    assert [(p["step_name"], p["fault_type"]) for p in session.planned_events] == [
+        ("a", "cascade"),
+        ("b", "cascade"),
+    ]
+    assert fault.index == 0  # the real cascade never advanced
