@@ -129,3 +129,4 @@ The [Evals 0.7.2 native report contract](evals-report-contract.md) describes
 optional scoring interoperability and its separate ownership boundary.
 
 - [v0.7 advanced chaos and synthetic resilience example](v0.7.md)
+- [v0.8 chaos workflows, declarative experiments, explosion radius and topology fuzzing](v0.8.md)
