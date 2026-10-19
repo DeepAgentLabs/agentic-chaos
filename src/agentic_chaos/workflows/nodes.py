@@ -252,17 +252,21 @@ Node = Step | HealthCheck | Suspend | Parallel | TemplateUse
 NODE_TYPES = (Step, HealthCheck, Suspend, Parallel, TemplateUse)
 
 
-def _contains_suspend(node: Any) -> bool:
+def _contains_suspend(node: Any, depth: int = 0) -> bool:
+    if depth > 32:
+        raise ValueError("templates are nested too deeply (recursive template?)")
     if isinstance(node, Suspend):
         return True
     if isinstance(node, Parallel):
         return any(
-            _contains_suspend(child)
+            _contains_suspend(child, depth + 1)
             for branch in node.branches
             for child in (branch if isinstance(branch, list) else [branch])
         )
     if isinstance(node, TemplateUse):
-        return any(_contains_suspend(child) for child in node.template.expand(**node.params))
+        return any(
+            _contains_suspend(child, depth + 1) for child in node.template.expand(**node.params)
+        )
     return False
 
 

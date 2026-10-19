@@ -514,3 +514,9 @@ def test_step_durations_are_recorded():
     report = ChaosWorkflow("t", [Step("s", faults=[])]).run(slow)
     assert report.nodes[0].duration_s >= 0.01
     assert report.end_time >= report.start_time
+
+
+def test_recursive_template_inside_parallel_is_a_clean_error():
+    loop = Template("loop", lambda: [loop.use()])
+    with pytest.raises(ValueError, match="nested too deeply"):
+        Parallel(loop.use(), Step("b", faults=[]))
