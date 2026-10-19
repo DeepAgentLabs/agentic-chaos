@@ -16,6 +16,13 @@ report = workflow.run(my_app)
 
 from agentic_chaos.chaos.scope import Scope
 from agentic_chaos.workflows.engine import ChaosWorkflow
+from agentic_chaos.workflows.fuzz import (
+    DEFAULT_FAULTS,
+    FuzzReport,
+    FuzzTrial,
+    fuzz_topology,
+    topology_weights,
+)
 from agentic_chaos.workflows.nodes import (
     HealthCheck,
     Node,
@@ -29,7 +36,10 @@ from agentic_chaos.workflows.report import NodeResult, WorkflowReport
 from agentic_chaos.workflows.targets import ScriptExitError, check_target, resolve_target
 
 __all__ = [
+    "DEFAULT_FAULTS",
     "ChaosWorkflow",
+    "FuzzReport",
+    "FuzzTrial",
     "HealthCheck",
     "Node",
     "NodeResult",
@@ -42,5 +52,7 @@ __all__ = [
     "TemplateUse",
     "WorkflowReport",
     "check_target",
+    "fuzz_topology",
     "resolve_target",
+    "topology_weights",
 ]
