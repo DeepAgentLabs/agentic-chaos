@@ -197,7 +197,7 @@ allow it.
 
 ## Chaos Workflows, Experiments & Explosion Radius (v0.8.0)
 
-**Explosion radius.** Every fault (and `cascade()`) accepts
+**Explosion radius.** Every built-in fault (and `cascade()`) accepts
 `scope=Scope(steps=..., providers=..., exclude_steps=..., exclude_providers=...)`.
 Scope is checked before probability sampling, exclusions always win, and an
 include list never matches an unlabelled call. Provider patches label their
