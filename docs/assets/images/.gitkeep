@@ -1,0 +1,7 @@
+# Images
+
+Place documentation images here. Reference them in markdown as:
+
+```markdown
+![Alt text](assets/images/your-image.png)
+```
