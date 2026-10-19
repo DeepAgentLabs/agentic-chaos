@@ -1205,3 +1205,11 @@ Keep Evals' default single attempt (or read `target_attempts`) when measuring
 behavior under faults, so retries do not hide absorbed faults. Chaos events
 and contracts remain the resilience evidence. No dependency or release is
 needed. See [the compatibility note](docs/evals-0.9-judge-reliability.md).
+
+## MCP 0.4.0 unified release checks
+
+MCP 0.4.0 gates releases on `chaos.run_experiment` reports (crash or timeout blocks;
+events alone do not). No Chaos runtime change or release; hosted chaos execution
+remains disabled.
+See [the compatibility guide](docs/mcp-0.4-unified-workflows.md)
+and the [MCP guide](https://github.com/DeepAgentLabs/mcp-server/blob/v0.4.0/docs/unified-workflows.md).
