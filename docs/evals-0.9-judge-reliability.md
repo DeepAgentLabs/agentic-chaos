@@ -9,10 +9,14 @@ on each case of a live run, plus judge cost, retries and agreement.
 When Evals calls a target that Chaos is injecting faults into, Evals records
 what it observed:
 
-- an injected latency fault that exceeds the case timeout is a `timed_out`
-  case, and an injected exception is an `error` case. Both are kept apart from
-  wrong answers in `summary.live`, JUnit (`<error>`) and the gate
-  (`max_timed_out_cases`, `max_target_error_cases`);
+- `target_status` is the case's final outcome after retries. If every attempt
+  exceeds the timeout (for example under an injected latency fault), the case
+  is `timed_out`. If attempts are exhausted with any other failure, including a
+  mix of injected exceptions and timeouts, it is `error`. Both are kept apart
+  from wrong answers in `summary.live`, JUnit (`<error>`) and the gate
+  (`max_timed_out_cases`, `max_target_error_cases`). If a later attempt answers,
+  the case is `ok`, and only `target_attempts` and
+  `summary.live.retried_cases` record the absorbed fault;
 - Evals retries (`RetryPolicy`) can absorb transient injected faults. When the
   point of the run is to measure behavior under faults, keep the default single
   attempt, or read `target_attempts` and `summary.live.retried_cases`, so an

@@ -1195,9 +1195,12 @@ See [the v0.8 guide](docs/v0.8.md).
 
 ## Evals 0.9.0 judge reliability and live resilience
 
-Evals 0.9.0 retries live targets within bounds and reports each case as `ok`,
-`timed_out` or `error`, apart from wrong answers. An injected Chaos latency
-fault or exception therefore shows up as a harness outcome, not as a score.
+Evals 0.9.0 retries live targets within bounds and reports each case's final
+outcome as `ok`, `timed_out` (every attempt timed out) or `error`, apart from
+wrong answers. An injected Chaos latency fault or exception that outlasts the
+retries is a harness outcome, not a score. One absorbed by a later attempt
+leaves the case `ok`, visible only in `target_attempts` and
+`summary.live.retried_cases`.
 Keep Evals' default single attempt (or read `target_attempts`) when measuring
 behavior under faults, so retries do not hide absorbed faults. Chaos events
 and contracts remain the resilience evidence. No dependency or release is
