@@ -1,0 +1,65 @@
+# A multi-stage campaign: health gates, a reusable template, parallel
+# branches, an approval gate and a cascade, with the safety check kept out of
+# every fault's explosion radius.
+#   agentic-chaos chaos workflow validate examples/workflows/resilience-suite.yaml
+#   agentic-chaos chaos workflow run examples/workflows/resilience-suite.yaml --approve approve-escalation
+name: support-resilience-suite
+description: Escalating chaos campaign for the offline support agent.
+target: support_agent.py:handle
+scope:
+  exclude_steps: [safety_check] # never inject into the guard
+safety:
+  max_injections: 100
+  max_duration_seconds: 60
+
+templates:
+  storm:
+    params: { burst: 2 }
+    steps:
+      - step:
+          name: rate-limits
+          faults:
+            - type: rate_limit_storm
+              burst_count: "${burst}"
+              retry_after: 0
+              scope: { steps: [llm] }
+          assertions:
+            - recovered_after_failure: true
+            - max_retries: { n: "${burst}", step: llm }
+      - health_check:
+          name: answers
+          expect_contains: "Answer:"
+
+workflow:
+  - health_check:
+      name: steady-state
+      target: support_agent.py:ping
+      query: Are you working?
+      expect_contains: pong
+  - use: { template: storm, name: warm-up }
+  - parallel:
+      name: dependencies
+      branches:
+        - step:
+            name: retriever-outage
+            faults: [{ type: tool_failure, tool_name: retriever }]
+            assertions: [no_unhandled_error]
+        - step:
+            name: degraded-model
+            faults: [{ type: silent_degradation, seed: 7, scope: { steps: [llm] } }]
+            assertions: [no_unhandled_error]
+  - suspend:
+      name: approve-escalation
+      reason: the next stages run a five-burst storm and a timeout cascade
+  - use: { template: storm, name: escalate, with: { burst: 5 } }
+  - step:
+      name: cascade
+      faults:
+        - type: cascade
+          first: { type: rate_limit_storm, burst_count: 2, retry_after: 0 }
+          then: { type: token_timeout, hang_seconds: 0.05 }
+          scope: { steps: [llm] }
+      assertions: [recovered_after_failure, { completes_within: 30 }]
+
+schedule:
+  cron: "30 3 * * 1-5" # weekdays 03:30
