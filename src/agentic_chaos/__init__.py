@@ -25,6 +25,7 @@ from agentic_chaos.chaos.faults import FAULT_REGISTRY
 from agentic_chaos.chaos.poisoning import PoisonedResponseFault
 from agentic_chaos.chaos.profiles import load_profile
 from agentic_chaos.chaos.provider_faults import AuthErrorFault, ContextLengthFault
+from agentic_chaos.chaos.scope import Scope
 from agentic_chaos.chaos.streaming import (
     SlowChunksFault,
     SlowTTFTFault,
@@ -70,6 +71,7 @@ __all__ = [
     "cascade",
     "find_breaking_point",
     "PoisonedResponseFault",
+    "Scope",
     "CompletesWithin",
     "ContractViolationError",
     "FullTopologyTraversal",
