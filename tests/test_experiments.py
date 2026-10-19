@@ -476,3 +476,196 @@ def test_lazy_target_resolves_once(app):
 def test_python_fault_instances_are_untouched_by_documents():
     fault = RateLimitStormFault()
     assert fault.scope is None
+
+
+BASE = {"name": "edge", "target": "json:dumps"}
+
+
+@pytest.mark.parametrize(
+    "patch,location,fragment",
+    [
+        ({"faults": "rate_limit_storm"}, "faults", "must be a list of faults"),
+        ({"faults": [{"burst_count": 1}]}, "faults[0].type", "is required"),
+        ({"faults": [{"type": "rate_limit_storm", "seed": "x"}]}, "faults[0].seed", "integer"),
+        (
+            {"faults": [{"type": "token_timeout", "hang_seconds": "1"}]},
+            "faults[0].hang_seconds",
+            "finite number",
+        ),
+        ({"faults": [{"type": "tool_failure", "mode": 3}]}, "faults[0].mode", "must be a string"),
+        (
+            {"faults": [{"type": "cascade", "first": "rate_limit_storm"}]},
+            "faults[0].then",
+            "fault name or a mapping",
+        ),
+        (
+            {
+                "faults": [
+                    {
+                        "type": "cascade",
+                        "first": "token_timeout",
+                        "then": "auth_error",
+                        "delay_between": -1,
+                    }
+                ]
+            },
+            "faults[0].delay_between",
+            "out of range",
+        ),
+        (
+            {
+                "faults": [
+                    {
+                        "type": "cascade",
+                        "first": {"type": "rate_limit_storm", "burst_count": 0},
+                        "then": "auth_error",
+                    }
+                ]
+            },
+            "faults[0]",
+            "positive burst_count",
+        ),
+        (
+            {
+                "faults": [
+                    {"type": "cascade", "first": "auth_error", "then": "auth_error", "extra": 1}
+                ]
+            },
+            "faults[0].extra",
+            "unknown field",
+        ),
+        ({"faults": ["rate_limit_storm"], "assertions": "x"}, "assertions", "must be a list"),
+        (
+            {"faults": ["rate_limit_storm"], "assertions": [{"a": 1, "b": 2}]},
+            "assertions[0]",
+            "one-key mapping",
+        ),
+        ({"faults": ["rate_limit_storm"], "safety": 5}, "safety", "mapping"),
+        ({"faults": ["rate_limit_storm"], "scope": ["a"]}, "scope", "mapping"),
+        ({"faults": ["rate_limit_storm"], "schedule": 5}, "schedule", "cron string"),
+        (
+            {"faults": ["rate_limit_storm"], "schedule": {"cron": "@daily", "timezone": 1}},
+            "schedule.timezone",
+            "IANA",
+        ),
+        (
+            {"faults": ["rate_limit_storm"], "schedule": {"cron": "@daily", "x": 1}},
+            "schedule.x",
+            "unknown field",
+        ),
+        ({"faults": ["rate_limit_storm"], "description": 3}, "description", "string"),
+        ({"faults": ["rate_limit_storm"], "repeat": 0}, "repeat", ">= 1"),
+        ({"faults": ["rate_limit_storm"], "dry_run": "yes"}, "dry_run", "true or false"),
+        ({"faults": ["rate_limit_storm"], "templates": []}, "templates", "mapping of template"),
+        ({"workflow": {}}, "workflow", "non-empty list"),
+        ({"workflow": [{"step": []}]}, "workflow[0].step", "must be a mapping"),
+        (
+            {"workflow": [{"step": {"name": "a", "safety": {"max_cost_usd": -1}}}]},
+            "workflow[0].step.safety",
+            "finite and positive",
+        ),
+        (
+            {"workflow": [{"parallel": {"branches": [{"step": {"name": "a"}}, [{"step": {}}]]}}]},
+            "workflow[0].parallel.branches[1][0].step.name",
+            "non-empty",
+        ),
+        (
+            {
+                "workflow": [
+                    {
+                        "parallel": {
+                            "max_workers": 0,
+                            "branches": [{"step": {"name": "a"}}, {"step": {"name": "b"}}],
+                        }
+                    }
+                ]
+            },
+            "workflow[0].parallel.max_workers",
+            ">= 1",
+        ),
+        (
+            {
+                "workflow": [
+                    {
+                        "parallel": {
+                            "branches": [{"step": {"name": "a"}}, {"suspend": {"name": "g"}}]
+                        }
+                    }
+                ]
+            },
+            "workflow[0].parallel",
+            "Suspend gates",
+        ),
+        (
+            {
+                "workflow": [{"use": {"template": "t", "with": 3}}],
+                "templates": {"t": {"steps": [{"step": {"name": "a"}}]}},
+            },
+            "workflow[0].use.with",
+            "mapping of template parameters",
+        ),
+        ({"workflow": [{"use": {}}]}, "workflow[0].use.template", "non-empty"),
+        (
+            {"workflow": [{"step": {"name": "a"}}], "templates": {"t": {"params": 3, "steps": []}}},
+            "templates.t.params",
+            "mapping of parameter defaults",
+        ),
+        (
+            {"workflow": [{"step": {"name": "a"}}], "templates": {"t": {"steps": []}}},
+            "templates.t.steps",
+            "non-empty list",
+        ),
+        (
+            {"workflow": [{"step": {"name": "a"}}], "templates": {"t": 3}},
+            "templates.t",
+            "must be a mapping",
+        ),
+        (
+            {"workflow": [{"health_check": {"expect_contains": 5}}]},
+            "workflow[0].health_check.expect_contains",
+            "string",
+        ),
+        (
+            {"workflow": [{"health_check": {"expect_success": False, "expect_contains": "x"}}]},
+            "workflow[0].health_check",
+            "expect_success=True",
+        ),
+        (
+            {"workflow": [{"health_check": {"retry_delay_seconds": -1}}]},
+            "workflow[0].health_check.retry_delay_seconds",
+            ">= 0",
+        ),
+        (
+            {"workflow": [{"step": {"name": "a", "target": "x.py:1bad"}}]},
+            "workflow[0].step.target",
+            "identifier",
+        ),
+    ],
+)
+def test_validation_edge_cases(patch, location, fragment):
+    found = messages(validate_experiment({**BASE, **patch}))
+    assert location in found, found
+    assert fragment in found[location], found
+
+
+def test_suspend_without_body_and_named_parallel():
+    document = {
+        **BASE,
+        "workflow": [
+            {"suspend": None},
+            {"suspend": {"name": "ok"}},
+            {
+                "parallel": {
+                    "name": "fan",
+                    "max_workers": 2,
+                    "branches": [{"step": {"name": "a"}}, {"step": {"name": "b"}}],
+                }
+            },
+        ],
+    }
+    found = messages(validate_experiment(document))
+    assert found == {"workflow[0].suspend.name": "must be a non-empty string"}
+    document["workflow"] = document["workflow"][1:]
+    workflow = load_experiment(document).workflow
+    assert workflow.nodes[1].name == "fan"
+    assert workflow.nodes[1].max_workers == 2
