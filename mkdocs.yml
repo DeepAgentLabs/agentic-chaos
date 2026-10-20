@@ -69,6 +69,7 @@ nav:
       - AIOS v0.6 examples and extensions: aios-v0.6.md
       - Control Tower 0.6: control-tower-0.6.md
       - Control Tower 0.7: tower-0.7-fleet-operations.md
+      - Control Tower 0.8 Live Operations: tower-0.8-live-operations.md
       - Evals report contract: evals-report-contract.md
       - Evals CLI: evals-0.8-cli.md
       - Evals judge reliability: evals-0.9-judge-reliability.md
