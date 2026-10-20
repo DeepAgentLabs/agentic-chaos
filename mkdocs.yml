@@ -66,6 +66,7 @@ nav:
   - v0.7 advanced chaos: v0.7.md
   - v0.8 workflows: v0.8.md
   - Ecosystem compatibility:
+      - AIOS v0.6 examples and extensions: aios-v0.6.md
       - Control Tower 0.6: control-tower-0.6.md
       - Control Tower 0.7: tower-0.7-fleet-operations.md
       - Evals report contract: evals-report-contract.md
