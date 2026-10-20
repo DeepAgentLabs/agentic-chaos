@@ -6,6 +6,9 @@ redacted evidence summaries. Private scope goals/values use explicit host delive
 
 Chaos owns fault injection. Its 0.8 rate-limit fault is exercised at the Sidecar gate; native fault IDs remain attached to the measurement. Stop/revocation and dispatch counts are Sidecar-owned; a Chaos report alone does not prove containment.
 
+Reader-safe summaries are not native or hash-verifiable evidence; retain an
+authorized original journal when a consumer requires producer integrity.
+
 The core package remains standalone. No new mandatory sibling dependency or
 shared schema is introduced. Constraint-only guardians retain expiry WARN;
 authority-bearing tasks BLOCK on expiry/revocation. Stop revokes descendants;
