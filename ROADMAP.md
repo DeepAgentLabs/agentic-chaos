@@ -1213,3 +1213,9 @@ events alone do not). No Chaos runtime change or release; hosted chaos execution
 remains disabled.
 See [the compatibility guide](docs/mcp-0.4-unified-workflows.md)
 and the [MCP guide](https://github.com/DeepAgentLabs/mcp-server/blob/v0.4.0/docs/unified-workflows.md).
+
+## Sidecar 0.9.0 interoperability
+
+Task-authority/delegation and reader-safe summaries are available in Sidecar.
+See [compatibility and ownership boundaries](docs/sidecar-0.9.md). Existing
+native decisions/correlation stay compatible; no new normative schema is claimed.
