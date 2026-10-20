@@ -102,3 +102,8 @@ Drift Detector (v0.4.0) are available. APIs may change between minor versions. S
 ## License
 
 MIT. See the [LICENSE](https://github.com/DeepAgentLabs/agentic-chaos/blob/main/LICENSE).
+
+## AIOS v0.6 compatibility
+
+See [canonical examples and extension guidance](aios-v0.6.md) for draft
+artifact validation and unchanged dependency boundaries.
