@@ -1219,3 +1219,9 @@ and the [MCP guide](https://github.com/DeepAgentLabs/mcp-server/blob/v0.4.0/docs
 Task-authority/delegation and reader-safe summaries are available in Sidecar.
 See [compatibility and ownership boundaries](docs/sidecar-0.9.md). Existing
 native decisions/correlation stay compatible; no new normative schema is claimed.
+
+## AIOS v0.6 examples and extension guidance
+
+See [AIOS v0.6 compatibility](docs/aios-v0.6.md) for canonical examples,
+namespace rules and native contract boundaries. AIOS artifacts remain
+`0.4-draft`; no runtime dependency bump or package release is required.
