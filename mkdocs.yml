@@ -54,6 +54,7 @@ plugins:
   - search
 
 nav:
+  - Sidecar 0.9 authority and privacy: sidecar-0.9.md
   - Home: index.md
   - Getting started: getting-started.md
   - Architecture: architecture.md
