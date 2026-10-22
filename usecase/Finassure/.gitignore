@@ -1,0 +1,14 @@
+# FinAssure Git Ignore
+.env
+__pycache__/
+*.py[cod]
+*$py.class
+*.sqlite
+*.sqlite3
+artifacts/
+runs/
+dist/
+node_modules/
+.pytest_cache/
+.coverage
+htmlcov/

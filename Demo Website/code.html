@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+
+<html class="scroll-smooth" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>DeepAgentLabs — AgenticOps for production AI agents and workflows</title>
+<!-- Tailwind CSS CDN with plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration -->
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              lime: '#bef264',
+              neon: '#a3e635',
+              darkneon: '#84cc16',
+              bgLight: '#fcfcfc',
+              cardLight: '#f4f4f5',
+              borderDark: '#27272a',
+              terminalBg: '#09090b',
+              surfaceDark: '#121214',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+            mono: ['JetBrains Mono', 'Fira Code', 'Menlo', 'Monaco', 'Courier New', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+<!-- Custom CSS for specific technical aesthetics -->
+<style data-purpose="technical-styling">
+    @import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+    body {
+      background-color: #f7f7f8;
+      color: #0f172a;
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+    }
+
+    .font-mono-tech {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Subdued grid background pattern */
+    .bg-grid-pattern {
+      background-size: 32px 32px;
+      background-image: 
+        linear-gradient(to right, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
+    }
+
+    .bg-grid-dark {
+      background-size: 24px 24px;
+      background-image: 
+        linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    }
+
+    /* Smooth transition utilities */
+    .transition-interactive {
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #a8a8a8;
+    }
+  </style>
+</head>
+<body class="antialiased selection:bg-[#bef264] selection:text-black">
+<!-- BEGIN: NavigationHeader -->
+<header class="sticky top-0 z-50 bg-[#f7f7f8]/90 backdrop-blur-md border-b border-zinc-200">
+<div class="max-w-[1440px] mx-auto px-6 h-16 flex items-center justify-between">
+<!-- Logo Container -->
+<a class="flex items-center gap-2.5 group" href="#">
+<div class="w-7 h-7 bg-black text-brand-neon flex items-center justify-center font-bold text-base rounded shadow-sm group-hover:scale-105 transition-transform">
+<span class="font-mono-tech">&gt;_</span>
+</div>
+<span class="text-xl font-bold tracking-tight text-zinc-900">DeepAgentLabs</span>
+</a>
+<!-- Desktop Navigation Menu -->
+<nav class="hidden lg:flex items-center gap-7 text-[13.5px] font-medium text-zinc-600">
+<a class="hover:text-zinc-950 transition-colors" href="#platform">Platform</a>
+<div class="relative group cursor-pointer flex items-center gap-1 hover:text-zinc-950 transition-colors">
+<span>Products</span>
+<svg class="w-3.5 h-3.5 text-zinc-400 group-hover:text-zinc-900 transition-transform" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+<a class="hover:text-zinc-950 transition-colors" href="#docs">Docs</a>
+<a class="hover:text-zinc-950 transition-colors" href="#use-cases">Use cases</a>
+<a class="hover:text-zinc-950 transition-colors" href="#architecture">Architecture</a>
+<a class="hover:text-zinc-950 transition-colors" href="#faq">FAQ</a>
+<a class="hover:text-zinc-950 transition-colors" href="#specification">Specification</a>
+<a class="hover:text-zinc-950 transition-colors" href="#roadmap">Roadmap</a>
+<a class="hover:text-zinc-950 transition-colors flex items-center gap-1.5" href="#remote-mcp">
+          Remote MCP
+          <span class="px-1.5 py-0.5 text-[10px] bg-brand-neon/40 text-zinc-800 rounded font-mono-tech font-bold uppercase">New</span>
+</a>
+</nav>
+<!-- Right Action Button -->
+<div class="flex items-center gap-3">
+<a class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-md border border-zinc-300 text-xs font-semibold text-zinc-800 bg-white hover:bg-zinc-50 hover:border-zinc-400 transition-all shadow-xs" href="https://github.com" rel="noreferrer" target="_blank">
+<span>GitHub</span>
+<span class="text-zinc-400 text-sm">↗</span>
+</a>
+</div>
+</div>
+</header>
+<!-- END: NavigationHeader -->
+<!-- BEGIN: HeroSection -->
+<section class="relative pt-12 pb-16 bg-[#f7f7f8] border-b border-zinc-200 overflow-hidden">
+<div class="max-w-[1440px] mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+<!-- Hero Left Column: Headline and CTAs -->
+<div class="lg:col-span-7 flex flex-col items-start pr-0 lg:pr-6">
+<!-- Tagline badge -->
+<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-200/80 border border-zinc-300 text-[11px] font-mono-tech tracking-wider uppercase text-zinc-800 mb-6 font-semibold">
+<span class="w-2 h-2 rounded-full bg-brand-neon animate-pulse"></span>
+          OPEN-SOURCE AGENTICOPS ECOSYSTEM
+        </div>
+<!-- Giant Typography Headline -->
+<h1 class="text-5xl xl:text-6xl tracking-tight text-zinc-950 font-extrabold leading-[1.08] mb-6">
+          AgenticOps<br/>
+          for production<br/>
+<span class="italic font-serif font-normal bg-brand-neon/50 px-2 py-0.5 rounded-sm inline-block transform -rotate-1 text-zinc-950">
+            AI agents and workflows.
+          </span>
+</h1>
+<!-- Subtitle -->
+<p class="text-lg text-zinc-600 max-w-xl font-normal leading-relaxed mb-8">
+          Operate your agentic AI systems and workflows with great precision, visibility, and control.
+        </p>
+<!-- CTAs -->
+<div class="flex flex-wrap items-center gap-3.5 mb-8">
+<a class="px-6 py-3 rounded-lg bg-zinc-950 text-white font-medium text-sm hover:bg-zinc-800 transition-interactive shadow-sm flex items-center gap-2" href="#ecosystem">
+            Explore the ecosystem
+          </a>
+<a class="px-6 py-3 rounded-lg bg-white border border-zinc-300 text-zinc-900 font-medium text-sm hover:bg-zinc-50 hover:border-zinc-400 transition-interactive shadow-xs" href="#specification">
+            Read the specification
+          </a>
+</div>
+<!-- Meta Qualities checklist -->
+<div class="flex flex-wrap items-center gap-6 text-xs font-mono-tech text-zinc-600">
+<div class="flex items-center gap-1.5">
+<span class="text-emerald-600 font-bold">✓</span>
+<span>Framework-neutral</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="text-emerald-600 font-bold">✓</span>
+<span>Open-source</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="text-emerald-600 font-bold">✓</span>
+<span>Local-first</span>
+</div>
+</div>
+</div>
+<!-- Hero Right Column: High-tech System Stack Inspection Card -->
+<div class="lg:col-span-5">
+<div class="bg-[#0c0d0e] rounded-xl border border-zinc-800 p-6 shadow-2xl relative text-zinc-200">
+<!-- Terminal Header -->
+<div class="flex items-center justify-between pb-4 border-b border-zinc-800 text-[11px] font-mono-tech">
+<span class="text-zinc-400 tracking-wider font-semibold">FRAMEWORKS / ECOSYSTEM</span>
+<span class="text-brand-neon font-bold flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-brand-neon"></span>
+              ONE OPEN STACK
+            </span>
+</div>
+<!-- Stack Rows Grid -->
+<div class="divide-y divide-zinc-800/80 my-2">
+<!-- Row 01 -->
+<div class="py-3 flex items-center justify-between group hover:bg-zinc-900/50 px-2 rounded transition-colors">
+<div class="flex items-center gap-3">
+<span class="text-xs font-mono-tech text-zinc-500">01</span>
+<span class="text-xs font-mono-tech px-2 py-0.5 rounded bg-zinc-800/90 text-zinc-300">Observe</span>
+<span class="text-sm font-semibold text-white">AgenticLens</span>
+</div>
+<span class="text-xs text-zinc-400 font-mono-tech text-right">End-to-end observability</span>
+</div>
+<!-- Row 02 -->
+<div class="py-3 flex items-center justify-between group hover:bg-zinc-900/50 px-2 rounded transition-colors">
+<div class="flex items-center gap-3">
+<span class="text-xs font-mono-tech text-zinc-500">02</span>
+<span class="text-xs font-mono-tech px-2 py-0.5 rounded bg-zinc-800/90 text-zinc-300">Stress</span>
+<span class="text-sm font-semibold text-white">Agentic Chaos</span>
+</div>
+<span class="text-xs text-zinc-400 font-mono-tech text-right">Make your system more resilient</span>
+</div>
+<!-- Row 03 -->
+<div class="py-3 flex items-center justify-between group hover:bg-zinc-900/50 px-2 rounded transition-colors">
+<div class="flex items-center gap-3">
+<span class="text-xs font-mono-tech text-zinc-500">03</span>
+<span class="text-xs font-mono-tech px-2 py-0.5 rounded bg-zinc-800/90 text-zinc-300">Evaluate</span>
+<span class="text-sm font-semibold text-white">Agentic Evals</span>
+</div>
+<span class="text-xs text-zinc-400 font-mono-tech text-right">Score and release gates</span>
+</div>
+<!-- Row 04 -->
+<div class="py-3 flex items-center justify-between group hover:bg-zinc-900/50 px-2 rounded transition-colors">
+<div class="flex items-center gap-3">
+<span class="text-xs font-mono-tech text-zinc-500">04</span>
+<span class="text-xs font-mono-tech px-2 py-0.5 rounded bg-zinc-800/90 text-zinc-300">Govern</span>
+<span class="text-sm font-semibold text-white">Agentic Sidecar</span>
+</div>
+<span class="text-xs text-zinc-400 font-mono-tech text-right">Real-time intent-guardrails</span>
+</div>
+<!-- Row 05 -->
+<div class="py-3 flex items-center justify-between group hover:bg-zinc-900/50 px-2 rounded transition-colors">
+<div class="flex items-center gap-3">
+<span class="text-xs font-mono-tech text-zinc-500">05</span>
+<span class="text-xs font-mono-tech px-2 py-0.5 rounded bg-zinc-800/90 text-zinc-300">Connect</span>
+<span class="text-sm font-semibold text-white">MCP</span>
+</div>
+<span class="text-xs text-zinc-400 font-mono-tech text-right">One interface for agent tools</span>
+</div>
+<!-- Row 06 -->
+<div class="py-3 flex items-center justify-between group hover:bg-zinc-900/50 px-2 rounded transition-colors">
+<div class="flex items-center gap-3">
+<span class="text-xs font-mono-tech text-zinc-500">06</span>
+<span class="text-xs font-mono-tech px-2 py-0.5 rounded bg-zinc-800/90 text-zinc-300">Operate</span>
+<span class="text-sm font-semibold text-white">Control Tower</span>
+</div>
+<span class="text-xs text-zinc-400 font-mono-tech text-right">Unified dashboard for agent fleet</span>
+</div>
+</div>
+<!-- Bottom Foundation Banner -->
+<div class="mt-4 p-3 bg-zinc-900/90 rounded border border-zinc-800/80">
+<div class="text-[10px] uppercase font-mono-tech text-brand-neon font-bold tracking-wider mb-1">GENERIC FOUNDATION</div>
+<div class="text-xs font-medium text-white flex items-center justify-between">
+<span>AI Operations Specification</span>
+<span class="text-[10px] text-zinc-400 font-mono-tech">v0.4 DRAFT</span>
+</div>
+<p class="text-[11px] text-zinc-400 mt-1 leading-normal">
+              A shared draft for describing agent runs, telemetry, intent boundaries and evidence.
+            </p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- END: HeroSection -->
+<!-- BEGIN: PackageTickerBar -->
+<div class="w-full bg-[#bef264] border-y border-[#a3e635] py-2.5 overflow-x-auto text-black font-mono-tech text-xs font-semibold tracking-tight shadow-inner">
+<div class="max-w-[1440px] mx-auto px-6 flex items-center justify-between whitespace-nowrap gap-8">
+<div class="flex items-center gap-2 hover:opacity-80 cursor-pointer">
+<span>●</span>
+<span>mcp-server</span>
+</div>
+<div class="flex items-center gap-2 hover:opacity-80 cursor-pointer">
+<span>●</span>
+<span>ai-operations-spec</span>
+</div>
+<div class="flex items-center gap-2 hover:opacity-80 cursor-pointer">
+<span>●</span>
+<span>agenticlens</span>
+</div>
+<div class="flex items-center gap-2 hover:opacity-80 cursor-pointer">
+<span>●</span>
+<span>agentic-evals</span>
+</div>
+<div class="flex items-center gap-2 hover:opacity-80 cursor-pointer">
+<span>●</span>
+<span>agentic-chaos</span>
+</div>
+<div class="flex items-center gap-2 hover:opacity-80 cursor-pointer">
+<span>●</span>
+<span>agentic-sidecar</span>
+</div>
+<div class="flex items-center gap-2 hover:opacity-80 cursor-pointer">
+<span>●</span>
+<span>control-tower</span>
+</div>
+</div>
+</div>
+<!-- END: PackageTickerBar -->
+<!-- BEGIN: SevenStagesSection -->
+<section class="py-20 bg-[#090a0f] text-white border-b border-zinc-800" id="platform">
+<div class="max-w-[1440px] mx-auto px-6">
+<!-- Header info -->
+<div class="flex flex-col lg:flex-row lg:items-end justify-between mb-16 gap-6">
+<div>
+<div class="text-xs font-mono-tech uppercase tracking-widest text-[#bef264] font-semibold mb-2">
+            THE OPERATING LOOP
+          </div>
+<h2 class="text-4xl lg:text-5xl font-extrabold tracking-tight">
+            One loop,<br/>
+<span class="text-[#bef264] font-serif italic font-normal">seven stages.</span>
+</h2>
+</div>
+<p class="max-w-xl text-zinc-400 text-sm leading-relaxed">
+          Define shared concepts, supervise agent actions, observe behavior, stress-test and evaluate. Improve from evidence, then operate the fleet. MCP connects the tools across these stages.
+        </p>
+</div>
+<!-- 7 Stage Horizontal Cards Desktop Grid -->
+<div class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-7 gap-3">
+<!-- Stage 01 -->
+<div class="bg-[#121318] border border-zinc-800/80 rounded-lg p-4 flex flex-col justify-between hover:border-zinc-600 transition-all group">
+<div>
+<div class="text-xs font-mono-tech text-zinc-500 mb-2">01</div>
+<h3 class="text-base font-bold text-white mb-1 group-hover:text-[#bef264] transition-colors">Define</h3>
+<span class="text-[11px] font-mono-tech text-[#bef264]/80 block mb-3">ai-operations-spec</span>
+<p class="text-xs text-zinc-400 leading-normal">
+              Set shared draft concepts for runs, steps, and evaluations.
+            </p>
+</div>
+<div class="mt-6 pt-3 border-t border-zinc-800/60 text-[10px] font-mono-tech text-zinc-500">
+            SCHEMA DEFS
+          </div>
+</div>
+<!-- Stage 02 -->
+<div class="bg-[#121318] border border-zinc-800/80 rounded-lg p-4 flex flex-col justify-between hover:border-zinc-600 transition-all group">
+<div>
+<div class="text-xs font-mono-tech text-zinc-500 mb-2">02</div>
+<h3 class="text-base font-bold text-white mb-1 group-hover:text-[#bef264] transition-colors">Supervise &amp; Govern</h3>
+<span class="text-[11px] font-mono-tech text-[#bef264]/80 block mb-3">agentic-sidecar</span>
+<p class="text-xs text-zinc-400 leading-normal">
+              Align intent and control; apply guardrails, critique, optional LLM-as-judge checks, and human approval.
+            </p>
+</div>
+<div class="mt-6 pt-3 border-t border-zinc-800/60 text-[10px] font-mono-tech text-zinc-500">
+            REAL-TIME POLICY
+          </div>
+</div>
+<!-- Stage 03 -->
+<div class="bg-[#121318] border border-zinc-800/80 rounded-lg p-4 flex flex-col justify-between hover:border-zinc-600 transition-all group">
+<div>
+<div class="text-xs font-mono-tech text-zinc-500 mb-2">03</div>
+<h3 class="text-base font-bold text-white mb-1 group-hover:text-[#bef264] transition-colors">Observe</h3>
+<span class="text-[11px] font-mono-tech text-[#bef264]/80 block mb-3">agenticlens</span>
+<p class="text-xs text-zinc-400 leading-normal">
+              End-to-end observability for traces, cost, latency, and agent behavior.
+            </p>
+</div>
+<div class="mt-6 pt-3 border-t border-zinc-800/60 text-[10px] font-mono-tech text-zinc-500">
+            TRACE TELEMETRY
+          </div>
+</div>
+<!-- Stage 04 -->
+<div class="bg-[#121318] border border-zinc-800/80 rounded-lg p-4 flex flex-col justify-between hover:border-zinc-600 transition-all group">
+<div>
+<div class="text-xs font-mono-tech text-zinc-500 mb-2">04</div>
+<h3 class="text-base font-bold text-white mb-1 group-hover:text-[#bef264] transition-colors">Stress</h3>
+<span class="text-[11px] font-mono-tech text-[#bef264]/80 block mb-3">agentic-chaos</span>
+<p class="text-xs text-zinc-400 leading-normal">
+              Inject controlled faults and validate recovery. Make your system more resilient.
+            </p>
+</div>
+<div class="mt-6 pt-3 border-t border-zinc-800/60 text-[10px] font-mono-tech text-zinc-500">
+            FAULT INJECTION
+          </div>
+</div>
+<!-- Stage 05 -->
+<div class="bg-[#121318] border border-zinc-800/80 rounded-lg p-4 flex flex-col justify-between hover:border-zinc-600 transition-all group">
+<div>
+<div class="text-xs font-mono-tech text-zinc-500 mb-2">05</div>
+<h3 class="text-base font-bold text-white mb-1 group-hover:text-[#bef264] transition-colors">Evaluate</h3>
+<span class="text-[11px] font-mono-tech text-[#bef264]/80 block mb-3">agentic-evals</span>
+<p class="text-xs text-zinc-400 leading-normal">
+              Score behavior with deterministic and LLM-as-judge evaluations; gate releases.
+            </p>
+</div>
+<div class="mt-6 pt-3 border-t border-zinc-800/60 text-[10px] font-mono-tech text-zinc-500">
+            GATING MATRIX
+          </div>
+</div>
+<!-- Stage 06 -->
+<div class="bg-[#121318] border border-zinc-800/80 rounded-lg p-4 flex flex-col justify-between hover:border-zinc-600 transition-all group">
+<div>
+<div class="text-xs font-mono-tech text-zinc-500 mb-2">06</div>
+<h3 class="text-base font-bold text-white mb-1 group-hover:text-[#bef264] transition-colors">Improve</h3>
+<span class="text-[11px] font-mono-tech text-[#bef264]/80 block mb-3">control-tower</span>
+<p class="text-xs text-zinc-400 leading-normal">
+              Optimize prompts, models, and workflows using findings from earlier stages.
+            </p>
+</div>
+<div class="mt-6 pt-3 border-t border-zinc-800/60 text-[10px] font-mono-tech text-zinc-500">
+            FEEDBACK LOOP
+          </div>
+</div>
+<!-- Stage 07 -->
+<div class="bg-[#121318] border border-zinc-800/80 rounded-lg p-4 flex flex-col justify-between hover:border-zinc-600 transition-all group">
+<div>
+<div class="text-xs font-mono-tech text-zinc-500 mb-2">07</div>
+<h3 class="text-base font-bold text-white mb-1 group-hover:text-[#bef264] transition-colors">Operate</h3>
+<span class="text-[11px] font-mono-tech text-[#bef264]/80 block mb-3">control-tower</span>
+<p class="text-xs text-zinc-400 leading-normal">
+              Unified dashboard to monitor and manage your AI agent fleet.
+            </p>
+</div>
+<div class="mt-6 pt-3 border-t border-zinc-800/60 text-[10px] font-mono-tech text-zinc-500">
+            FLEET TELEMETRY
+          </div>
+</div>
+</div>
+</div>
+</section>
+<!-- END: SevenStagesSection -->
+<!-- BEGIN: ArchitectureCapabilityMap -->
+<section class="py-20 bg-[#f7f7f8] border-b border-zinc-200" id="architecture">
+<div class="max-w-[1440px] mx-auto px-6">
+<!-- Section Title & Subhead -->
+<div class="flex flex-col lg:flex-row lg:items-end justify-between mb-8 gap-6">
+<div>
+<span class="text-xs font-mono-tech tracking-wider uppercase text-zinc-500 font-semibold">ARCHITECTURE</span>
+<h2 class="text-4xl font-extrabold tracking-tight text-zinc-950 mt-1">
+            The full <span class="underline decoration-wavy decoration-[#a3e635]">capability map.</span>
+</h2>
+</div>
+<p class="text-sm text-zinc-600 max-w-lg leading-relaxed">
+          A map of current product capabilities and integrations, including connections still in development. Control Tower provides a fleet operations view; the tools can also be used independently.
+        </p>
+</div>
+<!-- Capability Diagram Shell -->
+<div class="bg-white rounded-xl border border-zinc-300 shadow-sm overflow-hidden p-6">
+<!-- Top Toolbar / Legend -->
+<div class="flex flex-wrap items-center justify-between pb-6 border-b border-zinc-200 gap-4">
+<!-- Legend Items -->
+<div class="flex flex-wrap items-center gap-4 text-xs font-mono-tech text-zinc-600">
+<div class="flex items-center gap-2">
+<span class="w-3 h-0.5 bg-emerald-600 inline-block"></span>
+<span>CURRENT INTEGRATION</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-3 h-0.5 border-t border-dashed border-zinc-400 inline-block"></span>
+<span>PLANNED INTEGRATION</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-3 h-0.5 border-t border-dotted border-blue-400 inline-block"></span>
+<span>ARCHITECTURE CONTEXT</span>
+</div>
+</div>
+<!-- Controls -->
+<div class="flex items-center gap-2">
+<button class="px-3 py-1 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-xs font-mono-tech rounded border border-zinc-300 transition-colors">
+              FULL DETAIL
+            </button>
+<button class="px-3 py-1 bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-mono-tech rounded transition-colors flex items-center gap-1.5">
+<span>▶</span> TRACK REQUEST
+            </button>
+<button class="p-1 hover:bg-zinc-100 rounded text-zinc-500 text-xs font-mono-tech border border-transparent hover:border-zinc-300">
+              ↺ RESET
+            </button>
+</div>
+</div>
+<!-- Interactive Visual Diagram Canvas -->
+<div class="py-8 bg-zinc-50/50 rounded-lg my-4 p-6 border border-zinc-200/80 bg-grid-pattern relative">
+<!-- Top Tier: Users / Developers -->
+<div class="max-w-xl mx-auto bg-white border border-zinc-300 rounded-lg p-3 text-center shadow-xs mb-8">
+<div class="text-xs font-bold text-zinc-900 uppercase tracking-wider mb-1 font-mono-tech">USERS</div>
+<div class="text-xs text-zinc-500 font-mono-tech flex items-center justify-center gap-4">
+<span>Developers</span>
+<span>•</span>
+<span>AI Teams</span>
+<span>•</span>
+<span>Enterprises</span>
+</div>
+</div>
+<!-- Downward Link -->
+<div class="flex justify-center -my-6 mb-2">
+<div class="w-px h-6 bg-zinc-400"></div>
+</div>
+<!-- Gateway Console Container -->
+<div class="max-w-2xl mx-auto bg-white border border-zinc-300 rounded-md p-2.5 text-center mb-6 shadow-xs">
+<span class="font-mono-tech text-xs font-semibold text-zinc-800">CONSOLE / CLI / API / WGP</span>
+<span class="text-[11px] text-zinc-500 block">One entry point to build, operate and improve agents</span>
+</div>
+<!-- Main Dual Column Hub: DeepAgent Control Tower + AI Frameworks & Runtimes -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch mb-8">
+<!-- Left Large Hub: DeepAgent Control Tower -->
+<div class="lg:col-span-8 bg-[#090a0f] text-white rounded-lg p-5 border border-zinc-800 shadow-md">
+<div class="flex items-center justify-between pb-3 border-b border-zinc-800">
+<div class="flex items-center gap-2">
+<div class="w-2.5 h-2.5 rounded-full bg-brand-neon"></div>
+<h4 class="font-bold text-sm tracking-wide">DeepAgent Control Tower</h4>
+</div>
+<div class="text-[11px] font-mono-tech text-zinc-400">Manage | Monitor | Evaluate | Govern | Scale</div>
+</div>
+<!-- Control Tower Submodules -->
+<div class="grid grid-cols-5 gap-2 mt-4 text-center">
+<div class="p-2 bg-zinc-900 border border-zinc-800 rounded">
+<span class="text-[10px] font-mono-tech text-zinc-400 block leading-tight">Fleet &amp; Agent Registry</span>
+<span class="text-[9px] text-[#bef264]">Console</span>
+</div>
+<div class="p-2 bg-zinc-900 border border-zinc-800 rounded">
+<span class="text-[10px] font-mono-tech text-zinc-400 block leading-tight">Permanent Agent Registry</span>
+</div>
+<div class="p-2 bg-zinc-900 border border-zinc-800 rounded">
+<span class="text-[10px] font-mono-tech text-zinc-400 block leading-tight">Capability and Version Inventory</span>
+</div>
+<div class="p-2 bg-zinc-900 border border-zinc-800 rounded">
+<span class="text-[10px] font-mono-tech text-zinc-400 block leading-tight">Router Authorization</span>
+</div>
+<div class="p-2 bg-zinc-900 border border-zinc-800 rounded">
+<span class="text-[10px] font-mono-tech text-zinc-400 block leading-tight">HTTP API and GUI</span>
+</div>
+</div>
+</div>
+<!-- Right Hub: AI Frameworks & Runtimes -->
+<div class="lg:col-span-4 bg-white border border-zinc-300 rounded-lg p-5 flex flex-col justify-between shadow-xs">
+<div>
+<div class="flex items-center justify-between text-xs font-mono-tech font-bold text-zinc-900 mb-2">
+<span>AI Frameworks &amp; Runtimes</span>
+<span class="text-zinc-400 text-[10px]">INTEGRATION</span>
+</div>
+<div class="flex flex-wrap gap-1.5 mt-2 font-mono-tech text-[11px]">
+<span class="px-2 py-0.5 bg-zinc-100 border border-zinc-200 rounded">LangGraph</span>
+<span class="px-2 py-0.5 bg-zinc-100 border border-zinc-200 rounded">CrewAI</span>
+<span class="px-2 py-0.5 bg-zinc-100 border border-zinc-200 rounded">OpenAI Swarm</span>
+<span class="px-2 py-0.5 bg-zinc-100 border border-zinc-200 rounded">AutoGen</span>
+<span class="px-2 py-0.5 bg-zinc-100 border border-zinc-200 rounded">LlamaIndex</span>
+<span class="px-2 py-0.5 bg-zinc-100 border border-zinc-200 rounded">custom apps</span>
+</div>
+</div>
+<div class="mt-4 pt-2 border-t border-zinc-200 text-[11px] font-mono-tech text-zinc-500 flex items-center justify-between">
+<span>Instrument &amp; Integrate</span>
+<span class="text-brand-neon font-bold text-sm">●</span>
+</div>
+</div>
+</div>
+<!-- Intermediate Bridge: AI Operations Specification -->
+<div class="bg-[#bef264] border border-[#a3e635] text-zinc-950 rounded-lg p-3 text-center font-mono-tech shadow-xs mb-8 flex items-center justify-between px-6">
+<span class="text-xs font-bold uppercase tracking-wider">AI Operations Specification</span>
+<span class="text-[11px]">shared runtime model, semantic events, artifacts, schemas</span>
+<span class="px-2 py-0.5 bg-black text-white text-[10px] rounded font-bold">STANDARDIZED</span>
+</div>
+<!-- Bottom Tier: Package Component Grid -->
+<div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+<!-- Box 1: AgenticLens -->
+<div class="bg-white border-2 border-zinc-300 hover:border-zinc-900 transition-colors rounded-lg p-4 shadow-xs">
+<div class="text-[10px] font-mono-tech text-zinc-400 uppercase tracking-wider">RUN / TRACE LAYER</div>
+<div class="text-base font-bold text-zinc-950 mt-1">AgenticLens</div>
+<div class="text-[11px] font-mono-tech text-zinc-500 mb-3">[agenticlens]</div>
+<ul class="text-xs space-y-1 text-zinc-600 mb-4 font-mono-tech text-[11px]">
+<li>• Observe</li>
+<li>• Evaluate (runtime)</li>
+<li>• Explain</li>
+<li>• Recommend</li>
+</ul>
+<div class="pt-2 border-t border-zinc-200 text-[10px] font-bold text-zinc-900 uppercase font-mono-tech">
+                OBSERVE
+              </div>
+</div>
+<!-- Box 2: Agentic Evals -->
+<div class="bg-white border-2 border-zinc-300 hover:border-zinc-900 transition-colors rounded-lg p-4 shadow-xs">
+<div class="text-[10px] font-mono-tech text-zinc-400 uppercase tracking-wider">EVALUATE</div>
+<div class="text-base font-bold text-zinc-950 mt-1">Agentic Evals</div>
+<div class="text-[11px] font-mono-tech text-zinc-500 mb-3">[agentic-evals]</div>
+<ul class="text-xs space-y-1 text-zinc-600 mb-4 font-mono-tech text-[11px]">
+<li>• Score</li>
+<li>• Benchmark</li>
+<li>• LLM-as-judge</li>
+<li>• Trajectory Evals</li>
+</ul>
+<div class="pt-2 border-t border-zinc-200 text-[10px] font-bold text-zinc-900 uppercase font-mono-tech">
+                EVALUATE
+              </div>
+</div>
+<!-- Box 3: Agentic Sidecar -->
+<div class="bg-white border-2 border-zinc-300 hover:border-zinc-900 transition-colors rounded-lg p-4 shadow-xs">
+<div class="text-[10px] font-mono-tech text-zinc-400 uppercase tracking-wider">SUPERVISE / GOVERN</div>
+<div class="text-base font-bold text-zinc-950 mt-1">Agentic Sidecar</div>
+<div class="text-[11px] font-mono-tech text-zinc-500 mb-3">[agentic-sidecar]</div>
+<ul class="text-xs space-y-1 text-zinc-600 mb-4 font-mono-tech text-[11px]">
+<li>• Supervise</li>
+<li>• Govern</li>
+<li>• Align intent</li>
+<li>• Judge / Critic</li>
+</ul>
+<div class="pt-2 border-t border-zinc-200 text-[10px] font-bold text-zinc-900 uppercase font-mono-tech">
+                SUPERVISE
+              </div>
+</div>
+<!-- Box 4: Agentic Chaos -->
+<div class="bg-white border-2 border-zinc-300 hover:border-zinc-900 transition-colors rounded-lg p-4 shadow-xs">
+<div class="text-[10px] font-mono-tech text-zinc-400 uppercase tracking-wider">TEST / RESILIENCE</div>
+<div class="text-base font-bold text-zinc-950 mt-1">Agentic Chaos</div>
+<div class="text-[11px] font-mono-tech text-zinc-500 mb-3">[agentic-chaos]</div>
+<ul class="text-xs space-y-1 text-zinc-600 mb-4 font-mono-tech text-[11px]">
+<li>• Break</li>
+<li>• Validate</li>
+<li>• Test</li>
+<li>• Stress scenarios</li>
+</ul>
+<div class="pt-2 border-t border-zinc-200 text-[10px] font-bold text-zinc-900 uppercase font-mono-tech">
+                TEST / BREAK
+              </div>
+</div>
+<!-- Box 5: MCP Server -->
+<div class="bg-white border-2 border-zinc-300 hover:border-zinc-900 transition-colors rounded-lg p-4 shadow-xs">
+<div class="text-[10px] font-mono-tech text-zinc-400 uppercase tracking-wider">PROTOCOL &amp; CONNECTIVITY</div>
+<div class="text-base font-bold text-zinc-950 mt-1">MCP Server</div>
+<div class="text-[11px] font-mono-tech text-zinc-500 mb-3">[deep-agentic-core-mcp]</div>
+<ul class="text-xs space-y-1 text-zinc-600 mb-4 font-mono-tech text-[11px]">
+<li>• Unified MCP interface</li>
+<li>• Access tools &amp; data sources</li>
+<li>• Connect to enterprise systems</li>
+<li>• Share context across agents</li>
+</ul>
+<div class="pt-2 border-t border-zinc-200 text-[10px] font-bold text-zinc-900 uppercase font-mono-tech">
+                CONNECT
+              </div>
+</div>
+</div>
+</div>
+<!-- Capability Map Footer Instructions -->
+<div class="flex items-center justify-between text-xs font-mono-tech text-zinc-500">
+<span>COMPONENT DETAILS: Click any card in the map above to see its role, version, and connections here.</span>
+<span class="text-zinc-700 font-medium">Draft MCP-alignment is not stable-contract.</span>
+</div>
+</div>
+</div>
+</section>
+<!-- END: ArchitectureCapabilityMap -->
+<!-- BEGIN: InteractiveProductShowcase -->
+<section class="py-20 bg-white border-b border-zinc-200" id="products">
+<div class="max-w-[1440px] mx-auto px-6">
+<!-- Headline & Explainer -->
+<div class="flex flex-col lg:flex-row lg:items-end justify-between mb-12 gap-6">
+<div>
+<div class="text-xs font-mono-tech uppercase tracking-widest text-zinc-500 font-semibold mb-2">SEE IT IN ACTION</div>
+<h2 class="text-4xl font-extrabold tracking-tight text-zinc-950">
+            What each product<br/>
+<span class="bg-[#bef264] px-1 font-serif italic font-normal">actually does.</span>
+</h2>
+</div>
+<p class="max-w-md text-sm text-zinc-600 leading-relaxed">
+          Six products and a shared draft. Pick one to see what it does and sample output. These are illustrative examples, not live telemetry.
+        </p>
+</div>
+<!-- Main Interactive Container with Sidebar Tabs -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+<!-- Left Product Nav Pills (lg:col-span-4) -->
+<div class="lg:col-span-4 space-y-2">
+<button class="w-full text-left p-3.5 rounded-lg border border-zinc-900 bg-zinc-900 text-white font-mono-tech text-xs flex items-center justify-between shadow-xs">
+<div>
+<span class="text-zinc-400 text-[10px] block">01 / DEFINE</span>
+<span class="font-bold text-sm">AI Operations Spec</span>
+</div>
+<span class="text-[#bef264]">➔</span>
+</button>
+<button class="w-full text-left p-3.5 rounded-lg border border-zinc-200 bg-zinc-50 hover:bg-zinc-100 text-zinc-900 font-mono-tech text-xs flex items-center justify-between transition-colors">
+<div>
+<span class="text-zinc-500 text-[10px] block">02 / OBSERVE</span>
+<span class="font-bold text-sm">AgenticLens</span>
+</div>
+<span class="text-zinc-400">›</span>
+</button>
+<button class="w-full text-left p-3.5 rounded-lg border border-zinc-200 bg-zinc-50 hover:bg-zinc-100 text-zinc-900 font-mono-tech text-xs flex items-center justify-between transition-colors">
+<div>
+<span class="text-zinc-500 text-[10px] block">03 / EVALUATE</span>
+<span class="font-bold text-sm">Agentic Evals</span>
+</div>
+<span class="text-zinc-400">›</span>
+</button>
+<button class="w-full text-left p-3.5 rounded-lg border border-zinc-200 bg-zinc-50 hover:bg-zinc-100 text-zinc-900 font-mono-tech text-xs flex items-center justify-between transition-colors">
+<div>
+<span class="text-zinc-500 text-[10px] block">04 / STRESS</span>
+<span class="font-bold text-sm">Agentic Chaos</span>
+</div>
+<span class="text-zinc-400">›</span>
+</button>
+<button class="w-full text-left p-3.5 rounded-lg border border-zinc-200 bg-zinc-50 hover:bg-zinc-100 text-zinc-900 font-mono-tech text-xs flex items-center justify-between transition-colors">
+<div>
+<span class="text-zinc-500 text-[10px] block">05 / GOVERN</span>
+<span class="font-bold text-sm">Agentic Sidecar</span>
+</div>
+<span class="text-zinc-400">›</span>
+</button>
+<button class="w-full text-left p-3.5 rounded-lg border border-zinc-200 bg-zinc-50 hover:bg-zinc-100 text-zinc-900 font-mono-tech text-xs flex items-center justify-between transition-colors">
+<div>
+<span class="text-zinc-500 text-[10px] block">06 / OPERATE</span>
+<span class="font-bold text-sm">Control Tower</span>
+</div>
+<span class="text-zinc-400">›</span>
+</button>
+<button class="w-full text-left p-3.5 rounded-lg border border-zinc-200 bg-zinc-50 hover:bg-zinc-100 text-zinc-900 font-mono-tech text-xs flex items-center justify-between transition-colors">
+<div>
+<span class="text-zinc-500 text-[10px] block">07 / CONNECT</span>
+<span class="font-bold text-sm">MCP</span>
+</div>
+<span class="text-zinc-400">›</span>
+</button>
+</div>
+<!-- Right Terminal & Spec View (lg:col-span-8) -->
+<div class="lg:col-span-8 bg-[#0d0e12] rounded-xl border border-zinc-800 p-6 text-white shadow-xl">
+<div class="flex items-center justify-between pb-4 border-b border-zinc-800 text-xs font-mono-tech">
+<span class="text-lg font-bold text-white">AI Operations Specification</span>
+<span class="px-2 py-0.5 rounded bg-zinc-800 text-zinc-300">v0.4 DRAFT</span>
+</div>
+<p class="text-sm text-zinc-300 mt-4 leading-relaxed font-normal">
+            A pre-release draft specification for describing runs, steps, modellised calls, evaluations, and incidents. Product integrations are at different stages; stable conformance is not yet claimed.
+          </p>
+<!-- Core capabilities badge matrix -->
+<div class="grid grid-cols-2 gap-4 mt-6 font-mono-tech text-xs">
+<div class="space-y-2">
+<div class="flex items-center gap-2 text-zinc-300">
+<span class="text-emerald-400">●</span>
+<span>Runs, steps &amp; incidents schema</span>
+</div>
+<div class="flex items-center gap-2 text-zinc-300">
+<span class="text-emerald-400">●</span>
+<span>Evaluation &amp; safety signals</span>
+</div>
+</div>
+<div class="space-y-2">
+<div class="flex items-center gap-2 text-zinc-300">
+<span class="text-emerald-400">●</span>
+<span>Model &amp; tool call vocabulary</span>
+</div>
+<div class="flex items-center gap-2 text-zinc-300">
+<span class="text-emerald-400">●</span>
+<span>JSON Schema artifacts, v0.1-v0.4</span>
+</div>
+</div>
+</div>
+<!-- Code / JSON Snippet Block -->
+<div class="mt-6 bg-[#050608] border border-zinc-800 rounded-lg p-4 font-mono-tech text-xs text-zinc-300">
+<div class="flex items-center justify-between pb-2 mb-2 border-b border-zinc-800 text-zinc-500 text-[10px]">
+<span>SPEC_VALIDATION.JSON</span>
+<span class="text-emerald-400">STATUS: VALID</span>
+</div>
+<pre class="overflow-x-auto"><code>{
+  <span class="text-sky-300">"schema_valid"</span>: <span class="text-amber-400">true</span>,
+  <span class="text-sky-300">"semantic_valid"</span>: <span class="text-amber-400">true</span>,
+  <span class="text-sky-300">"aligned"</span>: <span class="text-amber-400">true</span>,
+  <span class="text-sky-300">"target_version"</span>: <span class="text-emerald-300">"v0.4.2-draft"</span>,
+  <span class="text-sky-300">"metrics_conformance"</span>: {
+    <span class="text-sky-300">"trace_fidelity"</span>: <span class="text-purple-300">0.998</span>,
+    <span class="text-sky-300">"evidence_retention"</span>: <span class="text-emerald-300">"100%"</span>
+  }
+}</code></pre>
+</div>
+<div class="mt-6 pt-4 border-t border-zinc-800 flex items-center justify-between">
+<span class="text-xs text-zinc-400 font-mono-tech">A shared draft that supported integrations can validate against.</span>
+<a class="text-xs font-mono-tech text-[#bef264] hover:underline flex items-center gap-1 font-semibold" href="#spec">
+              Read the standard ➔
+            </a>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- END: InteractiveProductShowcase -->
+<!-- BEGIN: HarnessYourAgentsSection -->
+<section class="py-20 bg-[#f7f7f8] border-b border-zinc-200">
+<div class="max-w-[1440px] mx-auto px-6">
+<!-- Headline & Subtitle -->
+<div class="flex flex-col lg:flex-row lg:items-end justify-between mb-12 gap-6">
+<div>
+<div class="text-xs font-mono-tech uppercase tracking-widest text-zinc-500 font-semibold mb-2">PUT THE ECOSYSTEM TO WORK</div>
+<h2 class="text-4xl lg:text-5xl font-extrabold tracking-tight text-zinc-950">
+            Harness your <span class="italic font-serif font-normal bg-[#bef264] px-2 py-0.5 rounded-sm">AI agents.</span>
+</h2>
+</div>
+<p class="max-w-md text-sm text-zinc-600 leading-relaxed">
+          Bring your agent and add the capabilities you need: supervision, observability, resilience testing, evaluation, and fleet operations. Products are modular; supported integrations vary.
+        </p>
+</div>
+<!-- 4 Column Desktop Cards Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+<!-- Card 1 -->
+<div class="bg-white rounded-xl border border-zinc-300 p-6 flex flex-col justify-between hover:shadow-md transition-shadow">
+<div>
+<span class="text-[11px] font-mono-tech text-zinc-500 uppercase tracking-wider block mb-2">01 / SUPERVISE</span>
+<h3 class="text-xl font-bold text-zinc-900 mb-3">Keep agents aligned</h3>
+<p class="text-xs text-zinc-600 leading-relaxed">
+<strong class="text-zinc-900">Agentic Sidecar</strong> carries intent and context into decision-time checks. Add guardrails, critique, LLM-as-judge checks, and human approval paths.
+            </p>
+</div>
+<div class="mt-8 pt-4 border-t border-zinc-200">
+<a class="text-xs font-mono-tech font-bold text-zinc-900 hover:text-black flex items-center justify-between group" href="#">
+<span>Explore Agentic Sidecar</span>
+<span class="group-hover:translate-x-1 transition-transform">↗</span>
+</a>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-[#bef264]/20 rounded-xl border border-[#a3e635] p-6 flex flex-col justify-between hover:shadow-md transition-shadow">
+<div>
+<span class="text-[11px] font-mono-tech text-zinc-700 uppercase tracking-wider block mb-2">02 / OBSERVE</span>
+<h3 class="text-xl font-bold text-zinc-900 mb-3">See what happened</h3>
+<p class="text-xs text-zinc-700 leading-relaxed">
+<strong class="text-zinc-950">AgenticLens</strong> gives you end-to-end observability into workflow traces, tool calls, errors, latency, and cost.
+            </p>
+</div>
+<div class="mt-8 pt-4 border-t border-[#a3e635]/60">
+<a class="text-xs font-mono-tech font-bold text-zinc-900 hover:text-black flex items-center justify-between group" href="#">
+<span>Explore AgenticLens</span>
+<span class="group-hover:translate-x-1 transition-transform">↗</span>
+</a>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-white rounded-xl border border-zinc-300 p-6 flex flex-col justify-between hover:shadow-md transition-shadow">
+<div>
+<span class="text-[11px] font-mono-tech text-zinc-500 uppercase tracking-wider block mb-2">03 / STRESS + EVALUATE</span>
+<h3 class="text-xl font-bold text-zinc-900 mb-3">Break. Measure. Improve.</h3>
+<p class="text-xs text-zinc-600 leading-relaxed">
+<strong class="text-zinc-900">Agentic Chaos</strong> injects controlled faults. <strong class="text-zinc-900">Agentic Evals</strong> scores behavior and compares results. Use what you learn to make your system more resilient.
+            </p>
+</div>
+<div class="mt-8 pt-4 border-t border-zinc-200 flex items-center gap-4 text-xs font-mono-tech font-bold text-zinc-900">
+<a class="hover:underline flex items-center gap-1" href="#">Explore Chaos ↗</a>
+<a class="hover:underline flex items-center gap-1" href="#">Explore Evals ↗</a>
+</div>
+</div>
+<!-- Card 4 (Dark Contrast) -->
+<div class="bg-[#0c0d10] text-white rounded-xl border border-zinc-800 p-6 flex flex-col justify-between hover:shadow-lg transition-shadow">
+<div>
+<span class="text-[11px] font-mono-tech text-[#bef264] uppercase tracking-wider block mb-2">04 / CONNECT + OPERATE</span>
+<h3 class="text-xl font-bold text-white mb-3">Manage your agent fleet</h3>
+<p class="text-xs text-zinc-400 leading-relaxed">
+              Use the <strong class="text-zinc-200">MCP Server</strong> to connect supported workflows to MCP-compatible clients. <strong class="text-zinc-200">Control Tower</strong> brings fleet inventory, evidence, alerts, and incidents into one dashboard.
+            </p>
+</div>
+<div class="mt-8 pt-4 border-t border-zinc-800 flex flex-col gap-1.5 text-xs font-mono-tech text-[#bef264]">
+<a class="hover:underline flex items-center justify-between" href="#">
+<span>Explore MCP</span>
+<span>↗</span>
+</a>
+<a class="hover:underline flex items-center justify-between" href="#">
+<span>Explore Control Tower</span>
+<span>↗</span>
+</a>
+</div>
+</div>
+</div>
+<!-- Bottom Footnote -->
+<div class="mt-8 text-xs font-mono-tech text-zinc-500 flex items-center gap-2">
+<span>↳</span>
+<span>Start with one capability. Connect more as your agent workflows grow.</span>
+</div>
+</div>
+</section>
+<!-- END: HarnessYourAgentsSection -->
+<!-- BEGIN: PyPiEcosystemNumbers -->
+<section class="py-20 bg-white border-b border-zinc-200" id="ecosystem">
+<div class="max-w-[1440px] mx-auto px-6">
+<!-- Headline & Subtitle -->
+<div class="flex flex-col lg:flex-row lg:items-end justify-between mb-12 gap-6">
+<div>
+<div class="text-xs font-mono-tech uppercase tracking-widest text-zinc-500 font-semibold mb-2">ECOSYSTEM ADOPTION</div>
+<h2 class="text-4xl font-extrabold tracking-tight text-zinc-950">
+            The ecosystem <span class="bg-[#bef264] px-1 font-serif italic font-normal">is moving.</span><br/>
+            See it in the numbers.
+          </h2>
+</div>
+<p class="max-w-sm text-sm text-zinc-600 leading-relaxed">
+          Live PyPI download statistics across the DeepAgentLabs ecosystem.
+        </p>
+</div>
+<!-- Dark Telemetry Grid Container -->
+<div class="bg-[#090a0e] rounded-2xl border border-zinc-800 p-8 shadow-2xl text-white">
+<!-- Giant Overall Total Header -->
+<div class="text-center pb-10 border-b border-zinc-800">
+<div class="inline-flex items-center gap-2 text-xs font-mono-tech text-zinc-400 uppercase tracking-widest mb-2 font-medium">
+<span class="w-2 h-2 rounded-full bg-[#bef264]"></span>
+            LIVE PYPI DOWNLOADS • PEPY DATA, CACHED UP TO 12H
+          </div>
+<div class="text-6xl lg:text-7xl font-extrabold text-[#bef264] tracking-tight font-mono-tech">
+            ~457K
+          </div>
+<p class="text-sm text-zinc-400 mt-2 font-mono-tech">
+            downloads across the DeepAgentLabs ecosystem
+          </p>
+</div>
+<!-- 3x2 Grid for Individual Packages -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-10">
+<!-- Stat Box 1: AgenticLens -->
+<div class="bg-[#121318] border border-zinc-800 rounded-xl p-5 flex flex-col justify-between">
+<div>
+<div class="text-3xl font-extrabold font-mono-tech text-white mb-1">~138K</div>
+<div class="text-sm font-bold text-zinc-200">AgenticLens</div>
+<div class="text-[11px] font-mono-tech text-zinc-500">agenticlens</div>
+</div>
+<div class="mt-6 pt-3 border-t border-zinc-800/80 flex items-center justify-between">
+<span class="px-2 py-0.5 bg-zinc-800 text-[10px] font-mono-tech text-zinc-400 rounded">PYPI</span>
+<span class="text-xs font-mono-tech text-[#bef264] hover:underline cursor-pointer">DOWNLOAD STATS ↗</span>
+</div>
+</div>
+<!-- Stat Box 2: MCP -->
+<div class="bg-[#121318] border border-zinc-800 rounded-xl p-5 flex flex-col justify-between">
+<div>
+<div class="text-3xl font-extrabold font-mono-tech text-white mb-1">~126K</div>
+<div class="text-sm font-bold text-zinc-200">Deep Agentic Core MCP</div>
+<div class="text-[11px] font-mono-tech text-zinc-500">deep-agentic-core-mcp</div>
+</div>
+<div class="mt-6 pt-3 border-t border-zinc-800/80 flex items-center justify-between">
+<span class="px-2 py-0.5 bg-zinc-800 text-[10px] font-mono-tech text-zinc-400 rounded">PYPI</span>
+<span class="text-xs font-mono-tech text-[#bef264] hover:underline cursor-pointer">DOWNLOAD STATS ↗</span>
+</div>
+</div>
+<!-- Stat Box 3: Agentic Chaos -->
+<div class="bg-[#121318] border border-zinc-800 rounded-xl p-5 flex flex-col justify-between">
+<div>
+<div class="text-3xl font-extrabold font-mono-tech text-white mb-1">~103K</div>
+<div class="text-sm font-bold text-zinc-200">Agentic Chaos</div>
+<div class="text-[11px] font-mono-tech text-zinc-500">agentic-chaos</div>
+</div>
+<div class="mt-6 pt-3 border-t border-zinc-800/80 flex items-center justify-between">
+<span class="px-2 py-0.5 bg-zinc-800 text-[10px] font-mono-tech text-zinc-400 rounded">PYPI</span>
+<span class="text-xs font-mono-tech text-[#bef264] hover:underline cursor-pointer">DOWNLOAD STATS ↗</span>
+</div>
+</div>
+<!-- Stat Box 4: Agentic Sidecar -->
+<div class="bg-[#121318] border border-zinc-800 rounded-xl p-5 flex flex-col justify-between">
+<div>
+<div class="text-3xl font-extrabold font-mono-tech text-white mb-1">~36K</div>
+<div class="text-sm font-bold text-zinc-200">Agentic Sidecar</div>
+<div class="text-[11px] font-mono-tech text-zinc-500">agentic-sidecar</div>
+</div>
+<div class="mt-6 pt-3 border-t border-zinc-800/80 flex items-center justify-between">
+<span class="px-2 py-0.5 bg-zinc-800 text-[10px] font-mono-tech text-zinc-400 rounded">PYPI</span>
+<span class="text-xs font-mono-tech text-[#bef264] hover:underline cursor-pointer">DOWNLOAD STATS ↗</span>
+</div>
+</div>
+<!-- Stat Box 5: Control Tower -->
+<div class="bg-[#121318] border border-zinc-800 rounded-xl p-5 flex flex-col justify-between">
+<div>
+<div class="text-3xl font-extrabold font-mono-tech text-white mb-1">~31K</div>
+<div class="text-sm font-bold text-zinc-200">AgenticOps Control Tower</div>
+<div class="text-[11px] font-mono-tech text-zinc-500">agenticops-control-tower</div>
+</div>
+<div class="mt-6 pt-3 border-t border-zinc-800/80 flex items-center justify-between">
+<span class="px-2 py-0.5 bg-zinc-800 text-[10px] font-mono-tech text-zinc-400 rounded">PYPI</span>
+<span class="text-xs font-mono-tech text-[#bef264] hover:underline cursor-pointer">DOWNLOAD STATS ↗</span>
+</div>
+</div>
+<!-- Stat Box 6: Agentic Evals -->
+<div class="bg-[#121318] border border-zinc-800 rounded-xl p-5 flex flex-col justify-between">
+<div>
+<div class="text-3xl font-extrabold font-mono-tech text-white mb-1">~23K</div>
+<div class="text-sm font-bold text-zinc-200">Agentic Evals</div>
+<div class="text-[11px] font-mono-tech text-zinc-500">agentic-evals</div>
+</div>
+<div class="mt-6 pt-3 border-t border-zinc-800/80 flex items-center justify-between">
+<span class="px-2 py-0.5 bg-zinc-800 text-[10px] font-mono-tech text-zinc-400 rounded">PYPI</span>
+<span class="text-xs font-mono-tech text-[#bef264] hover:underline cursor-pointer">DOWNLOAD STATS ↗</span>
+</div>
+</div>
+</div>
+<!-- PyPI Bottom Banner note and CTA -->
+<div class="mt-10 pt-6 border-t border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+<p class="text-[11px] font-mono-tech text-zinc-400">
+            PyPI totals can include automated and CI downloads. PePy badge totals may be cached up to 12 hours.
+          </p>
+<a class="px-5 py-2 rounded bg-[#bef264] text-zinc-950 font-semibold font-mono-tech text-xs hover:bg-[#a3e635] transition-colors whitespace-nowrap" href="#ecosystem">
+            Explore the ecosystem ➔
+          </a>
+</div>
+</div>
+</div>
+</section>
+<!-- END: PyPiEcosystemNumbers -->
+<!-- BEGIN: RoadmapSection -->
+<section class="py-20 bg-[#f7f7f8] border-b border-zinc-200" id="roadmap">
+<div class="max-w-[1440px] mx-auto px-6">
+<!-- Section Header -->
+<div class="flex flex-col lg:flex-row lg:items-end justify-between mb-12 gap-6">
+<div>
+<div class="text-xs font-mono-tech uppercase tracking-widest text-zinc-500 font-semibold mb-2">ROADMAP</div>
+<h2 class="text-4xl font-extrabold tracking-tight text-zinc-950">
+            Where the specification<br/>
+<span class="italic font-serif font-normal bg-[#bef264] px-1">is headed.</span>
+</h2>
+</div>
+<a class="text-xs font-mono-tech font-bold text-zinc-800 hover:text-black flex items-center gap-1" href="#roadmap">
+          See the full roadmap ➔
+        </a>
+</div>
+<!-- Roadmap Phases Desktop Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+<!-- Phase v0.1: IN REVIEW -->
+<div class="bg-[#bef264] border border-[#a3e635] rounded-lg p-5 text-zinc-950 flex flex-col justify-between h-44 shadow-xs">
+<div>
+<div class="flex items-center justify-between text-xs font-mono-tech mb-2 font-bold">
+<span>v0.1</span>
+<span class="px-2 py-0.5 bg-black text-[#bef264] rounded text-[10px]">● IN REVIEW</span>
+</div>
+<h3 class="text-base font-bold mb-1">Core concepts</h3>
+<p class="text-xs text-zinc-800 font-mono-tech leading-relaxed">
+              Shared meaning for runs, steps, agents and tools.
+            </p>
+</div>
+</div>
+<!-- Phase v0.2 -->
+<div class="bg-white border border-zinc-300 rounded-lg p-5 flex flex-col justify-between h-44 shadow-xs">
+<div>
+<div class="flex items-center justify-between text-xs font-mono-tech mb-2 text-zinc-500">
+<span>v0.2</span>
+<span class="text-[10px]">EXPLORATORY</span>
+</div>
+<h3 class="text-base font-bold text-zinc-900 mb-1">Relationships</h3>
+<p class="text-xs text-zinc-600 font-mono-tech leading-relaxed">
+              How the pieces connect into execution graphs.
+            </p>
+</div>
+</div>
+<!-- Phase v0.3 -->
+<div class="bg-white border border-zinc-300 rounded-lg p-5 flex flex-col justify-between h-44 shadow-xs">
+<div>
+<div class="flex items-center justify-between text-xs font-mono-tech mb-2 text-zinc-500">
+<span>v0.3</span>
+<span class="text-[10px]">EXPLORATORY</span>
+</div>
+<h3 class="text-base font-bold text-zinc-900 mb-1">Semantics</h3>
+<p class="text-xs text-zinc-600 font-mono-tech leading-relaxed">
+              Standard event names and lifecycles.
+            </p>
+</div>
+</div>
+<!-- Phase v0.4 -->
+<div class="bg-white border border-zinc-300 rounded-lg p-5 flex flex-col justify-between h-44 shadow-xs">
+<div>
+<div class="flex items-center justify-between text-xs font-mono-tech mb-2 text-zinc-500">
+<span>v0.4</span>
+<span class="text-[10px]">EXPLORATORY</span>
+</div>
+<h3 class="text-base font-bold text-zinc-900 mb-1">JSON Schemas</h3>
+<p class="text-xs text-zinc-600 font-mono-tech leading-relaxed">
+              Artifacts anyone can validate.
+            </p>
+</div>
+</div>
+</div>
+<!-- Second Row of Roadmap -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+<!-- Phase v0.5 -->
+<div class="bg-white border border-zinc-300 rounded-lg p-5 flex flex-col justify-between h-44 shadow-xs">
+<div>
+<div class="flex items-center justify-between text-xs font-mono-tech mb-2 text-zinc-500">
+<span>v0.5</span>
+<span class="text-[10px]">PLANNED</span>
+</div>
+<h3 class="text-base font-bold text-zinc-900 mb-1">Versioning</h3>
+<p class="text-xs text-zinc-600 font-mono-tech leading-relaxed">
+              Rules for safe, compatible changes.
+            </p>
+</div>
+</div>
+<!-- Phase v0.6 -->
+<div class="bg-white border border-zinc-300 rounded-lg p-5 flex flex-col justify-between h-44 shadow-xs">
+<div>
+<div class="flex items-center justify-between text-xs font-mono-tech mb-2 text-zinc-500">
+<span>v0.6</span>
+<span class="text-[10px]">PLANNED</span>
+</div>
+<h3 class="text-base font-bold text-zinc-900 mb-1">Extensions</h3>
+<p class="text-xs text-zinc-600 font-mono-tech leading-relaxed">
+              Canonical examples and third-party extensions.
+            </p>
+</div>
+</div>
+<!-- Phase v0.6.x -->
+<div class="bg-white border border-zinc-300 rounded-lg p-5 flex flex-col justify-between h-44 shadow-xs">
+<div>
+<div class="flex items-center justify-between text-xs font-mono-tech mb-2 text-zinc-500">
+<span>v0.6.x</span>
+<span class="text-[10px]">PLANNED</span>
+</div>
+<h3 class="text-base font-bold text-zinc-900 mb-1">Provenance</h3>
+<p class="text-xs text-zinc-600 font-mono-tech leading-relaxed">
+              Evidence, lineage and conformance tests.
+            </p>
+</div>
+</div>
+<!-- Phase v1.0: NORTH STAR (Dark Theme) -->
+<div class="bg-[#0c0d12] border border-zinc-800 rounded-lg p-5 text-white flex flex-col justify-between h-44 shadow-md">
+<div>
+<div class="flex items-center justify-between text-xs font-mono-tech mb-2 font-bold">
+<span class="text-[#bef264]">v1.0</span>
+<span class="text-[10px] text-[#bef264] flex items-center gap-1">★ NORTH STAR</span>
+</div>
+<h3 class="text-base font-bold text-white mb-1">Stable standard</h3>
+<p class="text-xs text-zinc-400 font-mono-tech leading-relaxed">
+              A frozen spec anyone can implement.
+            </p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- END: RoadmapSection -->
+<!-- BEGIN: FaqAccordionSection -->
+<section class="py-20 bg-white border-b border-zinc-200" id="faq">
+<div class="max-w-[1440px] mx-auto px-6">
+<!-- Headline & Subtitle -->
+<div class="flex flex-col lg:flex-row lg:items-end justify-between mb-12 gap-6">
+<div>
+<div class="text-xs font-mono-tech uppercase tracking-widest text-zinc-500 font-semibold mb-2">FAQ / AGENTIC SYSTEMS</div>
+<h2 class="text-4xl lg:text-5xl font-extrabold tracking-tight text-zinc-950">
+            Questions get<br/>
+            harder when agents<br/>
+            become <span class="bg-[#bef264] px-1 font-serif italic font-normal">autonomous.</span>
+</h2>
+</div>
+<p class="max-w-md text-sm text-zinc-600 leading-relaxed">
+          Explore how DeepAgentLabs helps teams observe, evaluate, govern, and test agentic systems.
+        </p>
+</div>
+<!-- Accordion Items List -->
+<div class="border-t border-zinc-200 divide-y divide-zinc-200">
+<!-- FAQ 01 -->
+<details class="group py-5 cursor-pointer">
+<summary class="flex items-center justify-between text-base font-bold text-zinc-900 list-none">
+<div class="flex items-center gap-4">
+<span class="text-xs font-mono-tech text-zinc-400">01</span>
+<span>What happens when AI agents move from demos to production?</span>
+</div>
+<span class="text-zinc-400 group-open:rotate-45 transition-transform text-xl font-mono-tech">+</span>
+</summary>
+<div class="pt-4 pl-8 text-sm text-zinc-600 leading-relaxed font-normal max-w-3xl">
+            In production, agents deal with non-deterministic model responses, unexpected tool failures, latency spikes, and security boundary violations. AgenticOps introduces standard telemetry, intent-guardrails, and deterministic evaluation gates so teams can run fleets reliably.
+          </div>
+</details>
+<!-- FAQ 02 -->
+<details class="group py-5 cursor-pointer">
+<summary class="flex items-center justify-between text-base font-bold text-zinc-900 list-none">
+<div class="flex items-center gap-4">
+<span class="text-xs font-mono-tech text-zinc-400">02</span>
+<span>How do you observe what an AI agent is actually doing?</span>
+</div>
+<span class="text-zinc-400 group-open:rotate-45 transition-transform text-xl font-mono-tech">+</span>
+</summary>
+<div class="pt-4 pl-8 text-sm text-zinc-600 leading-relaxed font-normal max-w-3xl">
+            AgenticLens records structured execution graphs rather than plain text logs. Every step, tool invocation, token cost, prompt version, and model response is captured and tied to a deterministic run ID aligned with the AI Operations Specification.
+          </div>
+</details>
+<!-- FAQ 03 -->
+<details class="group py-5 cursor-pointer">
+<summary class="flex items-center justify-between text-base font-bold text-zinc-900 list-none">
+<div class="flex items-center gap-4">
+<span class="text-xs font-mono-tech text-zinc-400">03</span>
+<span>How can you know whether an AI agent made the right decision?</span>
+</div>
+<span class="text-zinc-400 group-open:rotate-45 transition-transform text-xl font-mono-tech">+</span>
+</summary>
+<div class="pt-4 pl-8 text-sm text-zinc-600 leading-relaxed font-normal max-w-3xl">
+            Through Agentic Evals, runs are assessed against deterministic unit tests, behavioral rubrics, and LLM-as-judge scoring models. Trajectory-level evaluations inspect not just the final output, but the sequence of decisions made.
+          </div>
+</details>
+<!-- FAQ 04 -->
+<details class="group py-5 cursor-pointer">
+<summary class="flex items-center justify-between text-base font-bold text-zinc-900 list-none">
+<div class="flex items-center gap-4">
+<span class="text-xs font-mono-tech text-zinc-400">04</span>
+<span>How can teams govern an AI agent's actions?</span>
+</div>
+<span class="text-zinc-400 group-open:rotate-45 transition-transform text-xl font-mono-tech">+</span>
+</summary>
+<div class="pt-4 pl-8 text-sm text-zinc-600 leading-relaxed font-normal max-w-3xl">
+            Agentic Sidecar enforces runtime intent-guardrails. Before dangerous tool calls (e.g., executing a database write or sending an email) occur, policies can block, warn, critique, or trigger mandatory human approval gates.
+          </div>
+</details>
+<!-- FAQ 05 -->
+<details class="group py-5 cursor-pointer">
+<summary class="flex items-center justify-between text-base font-bold text-zinc-900 list-none">
+<div class="flex items-center gap-4">
+<span class="text-xs font-mono-tech text-zinc-400">05</span>
+<span>How can teams test an agent before it reaches production?</span>
+</div>
+<span class="text-zinc-400 group-open:rotate-45 transition-transform text-xl font-mono-tech">+</span>
+</summary>
+<div class="pt-4 pl-8 text-sm text-zinc-600 leading-relaxed font-normal max-w-3xl">
+            Agentic Chaos applies chaos engineering patterns to agent runtimes: injecting network latency, malformed tool returns, model hallucination prompts, and API outages to test recovery strategies before live deployment.
+          </div>
+</details>
+<!-- FAQ 06 -->
+<details class="group py-5 cursor-pointer">
+<summary class="flex items-center justify-between text-base font-bold text-zinc-900 list-none">
+<div class="flex items-center gap-4">
+<span class="text-xs font-mono-tech text-zinc-400">06</span>
+<span>How do the DeepAgentLabs components work together?</span>
+</div>
+<span class="text-zinc-400 group-open:rotate-45 transition-transform text-xl font-mono-tech">+</span>
+</summary>
+<div class="pt-4 pl-8 text-sm text-zinc-600 leading-relaxed font-normal max-w-3xl">
+            All components are modular and decoupled via the open AI Operations Specification and standard Model Context Protocol (MCP). You can use AgenticLens independently for observability, or assemble the complete stack under Control Tower for fleet management.
+          </div>
+</details>
+</div>
+</div>
+</section>
+<!-- END: FaqAccordionSection -->
+<!-- BEGIN: CommunityBannerSection -->
+<section class="py-20 bg-[#bef264] text-zinc-950 border-b border-[#a3e635]">
+<div class="max-w-[1440px] mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+<!-- Left Column: Vision Statement & CTAs -->
+<div class="lg:col-span-7">
+<div class="text-xs font-mono-tech uppercase tracking-widest text-zinc-800 font-semibold mb-3">
+          BUILD WITH US
+        </div>
+<h2 class="text-5xl font-extrabold tracking-tight leading-[1.1] mb-6">
+          Help define<br/>
+          how AI systems<br/>
+          are operated.
+        </h2>
+<p class="text-sm font-medium text-zinc-800 max-w-xl leading-relaxed mb-6">
+          The standard is early by design. Join the open-source community behind it, or shape the spec directly as a framework author, AI engineer or reliability team.
+        </p>
+<!-- Community Checklist -->
+<div class="flex flex-wrap items-center gap-4 text-xs font-mono-tech text-zinc-900 mb-8 font-semibold">
+<div class="flex items-center gap-1.5">
+<span>●</span>
+<span>Workshops</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span>●</span>
+<span>Technical sessions</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span>●</span>
+<span>Research</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span>●</span>
+<span>Open source</span>
+</div>
+</div>
+<!-- Buttons -->
+<div class="flex flex-wrap items-center gap-3">
+<a class="px-5 py-2.5 rounded-lg bg-white border border-zinc-300 text-zinc-950 font-bold text-xs hover:bg-zinc-50 transition-colors shadow-xs" href="#">
+            Join the discussion
+          </a>
+<a class="px-5 py-2.5 rounded-lg bg-zinc-950 text-white font-bold text-xs hover:bg-zinc-800 transition-colors shadow-xs" href="#">
+            Follow on GitHub
+          </a>
+</div>
+</div>
+<!-- Right Column: Interactive Social Channel Cards -->
+<div class="lg:col-span-5 space-y-3">
+<!-- Discord Card -->
+<a class="flex items-center justify-between p-4 bg-zinc-950 text-white rounded-xl hover:bg-zinc-900 transition-all shadow-md group" href="#">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-zinc-900 flex items-center justify-center font-bold text-[#bef264]">
+              #
+            </div>
+<div>
+<div class="text-sm font-bold">Discord</div>
+<div class="text-[11px] text-zinc-400 font-mono-tech">Join the server · questions, traces, workshops</div>
+</div>
+</div>
+<span class="text-[#bef264] group-hover:translate-x-1 transition-transform">➔</span>
+</a>
+<!-- LinkedIn Card -->
+<a class="flex items-center justify-between p-4 bg-zinc-950 text-white rounded-xl hover:bg-zinc-900 transition-all shadow-md group" href="#">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-zinc-900 flex items-center justify-center font-bold text-[#bef264]">
+              in
+            </div>
+<div>
+<div class="text-sm font-bold">LinkedIn</div>
+<div class="text-[11px] text-zinc-400 font-mono-tech">Releases and workshop announcements</div>
+</div>
+</div>
+<span class="text-[#bef264] group-hover:translate-x-1 transition-transform">➔</span>
+</a>
+<!-- Instagram Card -->
+<a class="flex items-center justify-between p-4 bg-zinc-950 text-white rounded-xl hover:bg-zinc-900 transition-all shadow-md group" href="#">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-zinc-900 flex items-center justify-center font-bold text-[#bef264]">
+              ig
+            </div>
+<div>
+<div class="text-sm font-bold">Instagram</div>
+<div class="text-[11px] text-zinc-400 font-mono-tech">Behind the scenes from sessions</div>
+</div>
+</div>
+<span class="text-[#bef264] group-hover:translate-x-1 transition-transform">➔</span>
+</a>
+<!-- GitHub Card -->
+<a class="flex items-center justify-between p-4 bg-zinc-950 text-white rounded-xl hover:bg-zinc-900 transition-all shadow-md group" href="#">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-zinc-900 flex items-center justify-center font-bold text-[#bef264]">
+              gh
+            </div>
+<div>
+<div class="text-sm font-bold">GitHub</div>
+<div class="text-[11px] text-zinc-400 font-mono-tech">Star, open issues, send PRs</div>
+</div>
+</div>
+<span class="text-[#bef264] group-hover:translate-x-1 transition-transform">➔</span>
+</a>
+</div>
+</div>
+</section>
+<!-- END: CommunityBannerSection -->
+<!-- BEGIN: NewsletterSection -->
+<section class="py-12 bg-[#bef264] border-b border-[#a3e635]">
+<div class="max-w-[1440px] mx-auto px-6 flex flex-col lg:flex-row items-center justify-between gap-6">
+<div>
+<div class="text-[10px] font-mono-tech uppercase tracking-wider text-zinc-800 font-bold mb-1">
+          Skip to content | NEWSLETTER
+        </div>
+<h3 class="text-2xl font-extrabold text-zinc-950">
+          Get DeepAgentLabs<br class="hidden sm:block"/>
+          updates in your inbox.
+        </h3>
+<p class="text-xs text-zinc-800 font-mono-tech mt-1">
+          Release notes, profiling techniques, and early access to new features. No spam, unsubscribe anytime.
+        </p>
+</div>
+<!-- Newsletter Form -->
+<form class="flex w-full lg:w-auto items-stretch gap-2" onsubmit="event.preventDefault();">
+<input class="w-full sm:w-80 px-4 py-2.5 rounded-lg border border-zinc-900 bg-white text-zinc-900 text-xs font-mono-tech focus:ring-2 focus:ring-black focus:outline-none" placeholder="you@example.com" required="" type="email"/>
+<button class="px-5 py-2.5 bg-black hover:bg-zinc-800 text-white font-mono-tech text-xs font-bold rounded-lg transition-colors whitespace-nowrap" type="submit">
+          Subscribe
+        </button>
+</form>
+</div>
+</section>
+<!-- END: NewsletterSection -->
+<!-- BEGIN: GlobalFooter -->
+<footer class="bg-[#090a0f] text-white pt-16 pb-12">
+<div class="max-w-[1440px] mx-auto px-6">
+<!-- Top Grid: Manifesto & Link Columns -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10 pb-16 border-b border-zinc-800">
+<!-- Col 1: Manifesto -->
+<div class="lg:col-span-5 pr-0 lg:pr-8">
+<h4 class="text-base font-bold text-white mb-3">
+            Open infrastructure for <span class="italic text-[#bef264] font-serif font-normal">observable, efficient</span><br/>
+            and <span class="italic text-[#bef264] font-serif font-normal">resilient</span> AI agents, built in the open.
+          </h4>
+<div class="space-y-1.5 text-xs font-mono-tech text-zinc-400">
+<div>● SPEC COMES FIRST</div>
+<div>● WORKS WITH ANY FRAMEWORK</div>
+<div>● RUNS ON YOUR MACHINE</div>
+<div>● FREE AND OPEN SOURCE</div>
+</div>
+</div>
+<!-- Col 2: Products -->
+<div class="lg:col-span-2">
+<div class="text-xs font-mono-tech text-zinc-500 uppercase tracking-wider mb-4 font-semibold">PRODUCTS</div>
+<ul class="space-y-2.5 text-xs font-mono-tech text-zinc-300">
+<li><a class="hover:text-[#bef264] transition-colors" href="#">AgenticLens</a></li>
+<li><a class="hover:text-[#bef264] transition-colors" href="#">Agentic Evals</a></li>
+<li><a class="hover:text-[#bef264] transition-colors" href="#">Agentic Sidecar</a></li>
+<li><a class="hover:text-[#bef264] transition-colors" href="#">Agentic Chaos</a></li>
+<li><a class="hover:text-[#bef264] transition-colors" href="#">MCP Server</a></li>
+<li><a class="hover:text-[#bef264] transition-colors" href="#">Control Tower</a></li>
+</ul>
+</div>
+<!-- Col 3: Explore -->
+<div class="lg:col-span-2">
+<div class="text-xs font-mono-tech text-zinc-500 uppercase tracking-wider mb-4 font-semibold">EXPLORE</div>
+<ul class="space-y-2.5 text-xs font-mono-tech text-zinc-300">
+<li><a class="hover:text-[#bef264] transition-colors" href="#">Specification</a></li>
+<li><a class="hover:text-[#bef264] transition-colors" href="#">Roadmap</a></li>
+<li><a class="hover:text-[#bef264] transition-colors" href="#">Capability map</a></li>
+<li><a class="hover:text-[#bef264] transition-colors" href="#">Products</a></li>
+<li><a class="hover:text-[#bef264] transition-colors" href="#">FAQ</a></li>
+<li><a class="hover:text-[#bef264] transition-colors" href="#">Remote MCP</a></li>
+</ul>
+</div>
+<!-- Col 4: Community -->
+<div class="lg:col-span-3">
+<div class="text-xs font-mono-tech text-zinc-500 uppercase tracking-wider mb-4 font-semibold">COMMUNITY</div>
+<ul class="space-y-2.5 text-xs font-mono-tech text-zinc-300">
+<li><a class="hover:text-[#bef264] transition-colors flex items-center gap-2" href="#"><span>#</span> Discord</a></li>
+<li><a class="hover:text-[#bef264] transition-colors flex items-center gap-2" href="#"><span>in</span> LinkedIn</a></li>
+<li><a class="hover:text-[#bef264] transition-colors flex items-center gap-2" href="#"><span>ig</span> Instagram</a></li>
+<li><a class="hover:text-[#bef264] transition-colors flex items-center gap-2" href="#"><span>gh</span> GitHub</a></li>
+</ul>
+</div>
+</div>
+<!-- Giant DeepAgentLabs Wordmark -->
+<div class="py-12 text-center select-none overflow-hidden">
+<h1 class="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-extrabold text-[#bef264] tracking-tight">
+          DeepAgentLabs
+        </h1>
+</div>
+<!-- Bottom Bar: Spec Status and Copyright -->
+<div class="pt-8 border-t border-zinc-800 flex flex-col md:flex-row items-center justify-between text-xs font-mono-tech text-zinc-500 gap-4">
+<div>
+          © 2025 DEEPAGENTLABS
+        </div>
+<div class="flex items-center gap-2 text-zinc-400">
+<span class="w-2 h-2 rounded-full bg-[#bef264]"></span>
+<span>AI OPERATIONS SPECIFICATION — V0.4 IN REVIEW</span>
+</div>
+<a class="hover:text-white transition-colors flex items-center gap-1 font-semibold text-zinc-400" href="#">
+          BACK TO TOP ↑
+        </a>
+</div>
+</div>
+</footer>
+<!-- END: GlobalFooter -->
+</body></html>
