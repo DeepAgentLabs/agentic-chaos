@@ -1,0 +1,121 @@
+name: Deploy Usecases
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'usecase/**'
+      - '.github/workflows/usecase.yaml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Configure Pages
+        if: github.event_name != 'pull_request'
+        uses: actions/configure-pages@v6
+        continue-on-error: true
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: Website/package-lock.json
+
+      - name: Run FinAssure verification tests
+        continue-on-error: true
+        run: |
+          PYTHONPATH="usecase/Finassure" uv run --no-project --with pytest pytest -o addopts="" usecase/Finassure/tests -q
+
+      - name: Build root website & docs
+        run: |
+          cd Website
+          npm ci
+          npm run build
+          cd ..
+          uv run --no-project --with "mkdocs-material>=9.5" mkdocs build --strict --site-dir site/docs
+          cp -r Website/dist/* site/
+          if [ -d "Demo Website" ]; then cp -r "Demo Website" site/; fi
+          if [ -f og.png ]; then cp og.png site/og.png; fi
+
+      - name: Assemble connected usecases
+        run: |
+          mkdir -p site/usecases
+          mkdir -p site/usecases/assets
+          mkdir -p site/usecases/data
+          mkdir -p site/usecases/technical
+          mkdir -p site/usecases/technical/assets
+          mkdir -p site/usecases/demo
+          mkdir -p site/usecases/project
+          mkdir -p site/usecase
+
+          # 1. Storytelling Page (Entry Point: deepagentlabs.io/agentic-chaos/usecases)
+          cp usecase/Finassure/website/storytelling/index.html site/usecases/index.html
+          cp usecase/Finassure/website/storytelling/storytelling.css site/usecases/storytelling.css
+          cp usecase/Finassure/website/storytelling/storytelling.js site/usecases/storytelling.js
+          if [ -d "usecase/Finassure/website/storytelling/assets" ]; then
+            cp -r usecase/Finassure/website/storytelling/assets/* site/usecases/assets/
+          fi
+          if [ -d "usecase/Finassure/website/storytelling/data" ]; then
+            cp -r usecase/Finassure/website/storytelling/data/* site/usecases/data/
+          fi
+
+          # 2. Technical Description Page (Connected via button from storytelling)
+          cp usecase/Finassure/website/index.html site/usecases/technical.html
+          cp usecase/Finassure/website/index.html site/usecases/technical/index.html
+          cp usecase/Finassure/website/styles.css site/usecases/styles.css
+          cp usecase/Finassure/website/styles.css site/usecases/technical/styles.css
+          cp usecase/Finassure/website/app.js site/usecases/app.js
+          cp usecase/Finassure/website/app.js site/usecases/technical/app.js
+          if [ -d "usecase/Finassure/website/assets" ]; then
+            cp -r usecase/Finassure/website/assets/* site/usecases/assets/
+            cp -r usecase/Finassure/website/assets/* site/usecases/technical/assets/
+          fi
+
+          # 3. Final Product Demo / Whole Project (Connected via button from technical description)
+          cp usecase/Finassure/finassure/static/index.html site/usecases/demo/index.html
+          cp usecase/Finassure/finassure/static/index.html site/usecases/project/index.html
+
+          # Singular alias /usecase -> /usecases
+          echo '<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0; url=../usecases/"><link rel="canonical" href="../usecases/" /></head><body><p>Redirecting to <a href="../usecases/">Use Cases</a>...</p></body></html>' > site/usecase/index.html
+
+          touch site/.nojekyll
+
+      - name: Upload artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

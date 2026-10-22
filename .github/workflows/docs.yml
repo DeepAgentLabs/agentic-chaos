@@ -42,15 +42,52 @@ jobs:
         uses: actions/configure-pages@v6
         continue-on-error: true
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: Website/package-lock.json
+
+      - name: Build website
+        run: |
+          cd Website
+          npm ci
+          npm run build
+          cd ..
+
       - name: Build docs
         run: uv run --no-project --with-requirements _docs-theme/scripts/docs-requirements.txt python _docs-theme/scripts/build_docs.py --project agentic-chaos --repo "$GITHUB_WORKSPACE" --output "$GITHUB_WORKSPACE/site/docs"
 
-      - name: Add product website
+      - name: Add product website & usecases
         run: |
-          cp index.html site/index.html
-          cp site.css site/site.css
-          cp site.js site/site.js
-          cp og.png site/og.png
+          cp -r Website/dist/* site/
+          if [ -d "Demo Website" ]; then cp -r "Demo Website" site/; fi
+          if [ -f og.png ]; then cp og.png site/og.png; fi
+          
+          # Assemble connected usecases
+          if [ -d "usecase/Finassure" ]; then
+            mkdir -p site/usecases/assets site/usecases/data site/usecases/technical/assets site/usecases/demo site/usecases/project site/usecase
+            cp usecase/Finassure/website/storytelling/index.html site/usecases/index.html
+            cp usecase/Finassure/website/storytelling/storytelling.css site/usecases/storytelling.css
+            cp usecase/Finassure/website/storytelling/storytelling.js site/usecases/storytelling.js
+            if [ -d "usecase/Finassure/website/storytelling/assets" ]; then cp -r usecase/Finassure/website/storytelling/assets/* site/usecases/assets/; fi
+            if [ -d "usecase/Finassure/website/storytelling/data" ]; then cp -r usecase/Finassure/website/storytelling/data/* site/usecases/data/; fi
+            cp usecase/Finassure/website/index.html site/usecases/technical.html
+            cp usecase/Finassure/website/index.html site/usecases/technical/index.html
+            cp usecase/Finassure/website/styles.css site/usecases/styles.css
+            cp usecase/Finassure/website/styles.css site/usecases/technical/styles.css
+            cp usecase/Finassure/website/app.js site/usecases/app.js
+            cp usecase/Finassure/website/app.js site/usecases/technical/app.js
+            if [ -d "usecase/Finassure/website/assets" ]; then
+              cp -r usecase/Finassure/website/assets/* site/usecases/assets/
+              cp -r usecase/Finassure/website/assets/* site/usecases/technical/assets/
+            fi
+            cp usecase/Finassure/finassure/static/index.html site/usecases/demo/index.html
+            cp usecase/Finassure/finassure/static/index.html site/usecases/project/index.html
+            echo '<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0; url=../usecases/"><link rel="canonical" href="../usecases/" /></head><body><p>Redirecting to <a href="../usecases/">Use Cases</a>...</p></body></html>' > site/usecase/index.html
+          fi
+
           touch site/.nojekyll
 
 
