@@ -1,15 +1,17 @@
 """KYC Onboarding Agents with AgenticLens and Agentic Chaos."""
 
 from __future__ import annotations
+
 import logging
 from typing import Any
-from pydantic import BaseModel, Field
 
 import agenticlens
-from agentic_chaos import chaos_call
 from finassure.core.models import CaseApplicant, DecisionOutcome
-from finassure.packs.kyc.tools import sanctions_screening_tool
 from finassure.llm import llm_client
+from finassure.packs.kyc.tools import sanctions_screening_tool
+from pydantic import BaseModel, Field
+
+from agentic_chaos import chaos_call
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +41,7 @@ def run_id_check_agent(state: KYCState) -> KYCState:
         agent_role="Government identification validation",
         handoff_to="sanctions_agent",
     ):
+
         def _get_name(n: str) -> str:
             return n
 
@@ -55,12 +58,11 @@ def run_id_check_agent(state: KYCState) -> KYCState:
         state.verified_name = effective_name
         state.id_verified = True
 
-        if state.version == "v2":
-            # Hardened v2: detect if name was altered/corrupted against source document
-            if effective_name != state.case.name:
-                state.escalated = True
-                state.escalation_reason = "IDENTITY_NAME_MISMATCH"
-                state.reason_factors.append("IDENTITY_VERIFICATION_DISCREPANCY")
+        # Hardened v2: detect if name was altered/corrupted against source document
+        if state.version == "v2" and effective_name != state.case.name:
+            state.escalated = True
+            state.escalation_reason = "IDENTITY_NAME_MISMATCH"
+            state.reason_factors.append("IDENTITY_VERIFICATION_DISCREPANCY")
 
         return state
 
@@ -153,12 +155,15 @@ def run_kyc_risk_agent(state: KYCState) -> KYCState:
         handoff_from="sanctions_agent",
         handoff_to="kyc_reviewer_agent",
     ):
-        if state.version == "v2" and not state.escalated:
-            # Contract validation: verify required screening handoff was actually completed
-            if "sanctions_screening" not in state.tools_called or not state.sanctions_verified:
-                state.escalated = True
-                state.escalation_reason = "SANCTIONS_VERIFICATION_MISSING"
-                state.reason_factors.append("MISSING_SANCTIONS_HANDOFF")
+        # Contract validation: verify required screening handoff was actually completed
+        if (
+            state.version == "v2"
+            and not state.escalated
+            and ("sanctions_screening" not in state.tools_called or not state.sanctions_verified)
+        ):
+            state.escalated = True
+            state.escalation_reason = "SANCTIONS_VERIFICATION_MISSING"
+            state.reason_factors.append("MISSING_SANCTIONS_HANDOFF")
 
         if state.sanctions_hit:
             state.decision = DecisionOutcome.DECLINE

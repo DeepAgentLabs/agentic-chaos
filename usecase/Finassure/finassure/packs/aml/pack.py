@@ -1,18 +1,20 @@
 """AML Triage Workflow Pack implementing BaseWorkflowPack."""
 
 from __future__ import annotations
-from typing import Sequence
-from finassure.core.pack import BaseWorkflowPack
+
+from collections.abc import Sequence
+
 from finassure.core.models import CaseApplicant, DecisionOutcome, OracleResult, WorkflowOutcome
-from finassure.packs.aml.oracle import aml_oracle
-from finassure.packs.aml.generator import generate_aml_cases
+from finassure.core.pack import BaseWorkflowPack
 from finassure.packs.aml.agents import (
     AMLState,
-    run_transaction_ingestion_agent,
-    run_jurisdiction_agent,
-    run_aml_triage_agent,
     run_aml_reviewer_agent,
+    run_aml_triage_agent,
+    run_jurisdiction_agent,
+    run_transaction_ingestion_agent,
 )
+from finassure.packs.aml.generator import generate_aml_cases
+from finassure.packs.aml.oracle import aml_oracle
 
 
 class AMLPack(BaseWorkflowPack):

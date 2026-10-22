@@ -1,15 +1,17 @@
 """Agents for AML Triage Pack implementing AgenticLens spans."""
 
 from __future__ import annotations
+
 import logging
 from typing import Any
-from pydantic import BaseModel, Field
 
 import agenticlens
-from agentic_chaos import chaos_call
 from finassure.core.models import CaseApplicant, DecisionOutcome
-from finassure.packs.aml.tools import jurisdiction_lookup_tool
 from finassure.llm import llm_client
+from finassure.packs.aml.tools import jurisdiction_lookup_tool
+from pydantic import BaseModel, Field
+
+from agentic_chaos import chaos_call
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +38,7 @@ def run_transaction_ingestion_agent(state: AMLState) -> AMLState:
         agent_role="Transaction monitoring message parsing",
         handoff_to="jurisdiction_agent",
     ):
+
         def _get_amount(amt: float) -> float:
             return amt
 
@@ -51,7 +54,7 @@ def run_transaction_ingestion_agent(state: AMLState) -> AMLState:
         state.parsed_amount = amt
 
         if state.version == "v2":
-            if not isinstance(amt, (int, float)) or amt <= 0:
+            if not isinstance(amt, int | float) or amt <= 0:
                 state.escalated = True
                 state.escalation_reason = "INVALID_TRANSACTION_PAYLOAD"
                 state.reason_factors.append("MALFORMED_TRANSACTION_AMOUNT")
@@ -106,7 +109,10 @@ def run_jurisdiction_agent(state: AMLState) -> AMLState:
 
         handoff_payload = chaos_call(
             _send_aml_payload,
-            {"jurisdiction_risk": state.jurisdiction_risk, "jurisdiction_verified": state.jurisdiction_verified},
+            {
+                "jurisdiction_risk": state.jurisdiction_risk,
+                "jurisdiction_verified": state.jurisdiction_verified,
+            },
             step_id="jurisdiction_to_triage_handoff",
             step_name="jurisdiction_agent->aml_triage_agent",
             _chaos_edge_id="jurisdiction_agent->aml_triage_agent",
@@ -141,11 +147,14 @@ def run_aml_triage_agent(state: AMLState) -> AMLState:
     ):
         amt = state.parsed_amount
 
-        if state.version == "v2" and not state.escalated:
-            if "jurisdiction_lookup" not in state.tools_called or not state.jurisdiction_verified:
-                state.escalated = True
-                state.escalation_reason = "MISSING_JURISDICTION_HANDOFF"
-                state.reason_factors.append("UNVERIFIED_JURISDICTION")
+        if (
+            state.version == "v2"
+            and not state.escalated
+            and ("jurisdiction_lookup" not in state.tools_called or not state.jurisdiction_verified)
+        ):
+            state.escalated = True
+            state.escalation_reason = "MISSING_JURISDICTION_HANDOFF"
+            state.reason_factors.append("UNVERIFIED_JURISDICTION")
 
         if 9000 <= amt <= 9999:
             state.decision = DecisionOutcome.DECLINE  # File SAR

@@ -1,13 +1,40 @@
 """Synthetic case generator for KYC Onboarding Pack."""
 
 from __future__ import annotations
+
 import random
+
 from finassure.core.models import CaseApplicant
 from finassure.packs.kyc.oracle import kyc_oracle
 
-FIRST_NAMES = ["Alex", "Jordan", "Taylor", "Morgan", "Sam", "Chris", "Pat", "Avery", "Casey", "Riley", "Victor", "Tariq", "Elena"]
-LAST_NAMES = ["Vance", "Kovac", "Sanctioned_Individual", "Petrov", "Minister_Ross", "Chen", "Dubois", "Nakamoto", "Silva"]
+FIRST_NAMES = [
+    "Alex",
+    "Jordan",
+    "Taylor",
+    "Morgan",
+    "Sam",
+    "Chris",
+    "Pat",
+    "Avery",
+    "Casey",
+    "Riley",
+    "Victor",
+    "Tariq",
+    "Elena",
+]
+LAST_NAMES = [
+    "Vance",
+    "Kovac",
+    "Sanctioned_Individual",
+    "Petrov",
+    "Minister_Ross",
+    "Chen",
+    "Dubois",
+    "Nakamoto",
+    "Silva",
+]
 GROUPS = ["established", "thin_file", "gig_economy"]
+
 
 def generate_kyc_cases(count: int = 100, seed: int = 77) -> list[CaseApplicant]:
     """Generate deterministic synthetic KYC cases."""
@@ -21,7 +48,7 @@ def generate_kyc_cases(count: int = 100, seed: int = 77) -> list[CaseApplicant]:
         name = f"{first} {last}"
         ssn = f"{rng.randint(100, 999)}-{rng.randint(10, 99)}-{rng.randint(1000, 9999)}"
         group = rng.choice(GROUPS)
-        
+
         # Inject occasional sanctions or PEP
         bucket = rng.random()
         if bucket < 0.15:

@@ -1,9 +1,8 @@
 """Unit tests for deterministic policy oracles."""
 
-import pytest
 from finassure.core.models import CaseApplicant, DecisionOutcome
-from finassure.packs.underwriting.oracle import underwriting_oracle
 from finassure.packs.kyc.oracle import kyc_oracle
+from finassure.packs.underwriting.oracle import underwriting_oracle
 
 
 def test_underwriting_oracle_clear_approval():
@@ -23,7 +22,10 @@ def test_underwriting_oracle_clear_approval():
     )
     result = underwriting_oracle(case)
     assert result.decision == DecisionOutcome.APPROVE
-    assert "PRIME_CREDIT_PROFILE" in result.reason_factors or "EXCELLENT_CREDIT_COMPENSATING_FACTOR" in result.reason_factors
+    assert (
+        "PRIME_CREDIT_PROFILE" in result.reason_factors
+        or "EXCELLENT_CREDIT_COMPENSATING_FACTOR" in result.reason_factors
+    )
 
 
 def test_underwriting_oracle_hard_declines():

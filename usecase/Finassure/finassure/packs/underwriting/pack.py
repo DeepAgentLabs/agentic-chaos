@@ -1,19 +1,21 @@
 """Underwriting Workflow Pack implementation."""
 
 from __future__ import annotations
-from typing import Sequence
-from finassure.core.pack import BaseWorkflowPack
+
+from collections.abc import Sequence
+
 from finassure.core.models import CaseApplicant, DecisionOutcome, OracleResult, WorkflowOutcome
-from finassure.packs.underwriting.oracle import underwriting_oracle
-from finassure.packs.underwriting.generator import generate_underwriting_cases
+from finassure.core.pack import BaseWorkflowPack
 from finassure.packs.underwriting.agents import (
     UnderwritingState,
-    run_intake_agent,
-    run_doc_extraction_agent,
     run_bureau_agent,
-    run_risk_scorer_agent,
     run_compliance_reviewer_agent,
+    run_doc_extraction_agent,
+    run_intake_agent,
+    run_risk_scorer_agent,
 )
+from finassure.packs.underwriting.generator import generate_underwriting_cases
+from finassure.packs.underwriting.oracle import underwriting_oracle
 
 
 class UnderwritingPack(BaseWorkflowPack):

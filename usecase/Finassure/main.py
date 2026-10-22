@@ -3,6 +3,7 @@
 import uvicorn
 from finassure.config import settings
 
+
 def main():
     print("=" * 60)
     print("  FINASSURE: Financial Multi-Agent Reliability Harness")
@@ -15,6 +16,7 @@ def main():
         port=settings.PORT,
         reload=False,
     )
+
 
 if __name__ == "__main__":
     main()

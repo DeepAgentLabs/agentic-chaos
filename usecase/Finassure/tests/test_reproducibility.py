@@ -1,10 +1,11 @@
-"""Unit tests for Reproducibility: same seed produces 100% identical synthetic cases, decisions, and deterministic oracle outcomes."""
+"""Unit tests for Reproducibility.
 
-import pytest
+Same seed produces identical synthetic cases, decisions, and deterministic oracle outcomes.
+"""
+
+from finassure.packs.kyc.generator import generate_kyc_cases
 from finassure.packs.underwriting.generator import generate_underwriting_cases
 from finassure.packs.underwriting.oracle import underwriting_oracle
-from finassure.packs.kyc.generator import generate_kyc_cases
-from finassure.packs.kyc.oracle import kyc_oracle
 
 
 def test_underwriting_generator_reproducibility():
@@ -14,7 +15,7 @@ def test_underwriting_generator_reproducibility():
 
     assert len(cases_batch1) == len(cases_batch2) == 50
 
-    for c1, c2 in zip(cases_batch1, cases_batch2):
+    for c1, c2 in zip(cases_batch1, cases_batch2, strict=False):
         assert c1.id == c2.id
         assert c1.name == c2.name
         assert c1.ssn == c2.ssn
@@ -36,7 +37,7 @@ def test_kyc_generator_reproducibility():
 
     assert len(cases_batch1) == len(cases_batch2) == 30
 
-    for c1, c2 in zip(cases_batch1, cases_batch2):
+    for c1, c2 in zip(cases_batch1, cases_batch2, strict=False):
         assert c1.id == c2.id
         assert c1.name == c2.name
         assert c1.ssn == c2.ssn

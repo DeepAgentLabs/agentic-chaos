@@ -1,8 +1,10 @@
 """Abstract Pack Contract for pluggable workflow packs."""
 
 from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from typing import Sequence
+from collections.abc import Sequence
+
 from finassure.core.models import CaseApplicant, OracleResult, WorkflowOutcome
 
 

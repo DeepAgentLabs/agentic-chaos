@@ -1,25 +1,25 @@
 """FastAPI server for FinAssure dashboard and runner."""
 
 from __future__ import annotations
-from pathlib import Path
-from typing import Any, List, Optional
-from fastapi import FastAPI, HTTPException, Query, BackgroundTasks
+
+from typing import Any
+
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from finassure.config import settings
-from finassure.core.models import GateVerdict, RunArtifact
-from finassure.core.pack import BaseWorkflowPack
-from finassure.core.scenario import load_scenarios_from_yaml, ChaosScenario
-from finassure.core.runner import ExperimentRunner
-from finassure.core.gate import evaluate_release_gate
-from finassure.core.storage import storage
 from finassure.core.evidence import evidence_generator
-from finassure.packs.underwriting import UnderwritingPack
-from finassure.packs.kyc import KYCPack
+from finassure.core.gate import evaluate_release_gate
+from finassure.core.pack import BaseWorkflowPack
+from finassure.core.runner import ExperimentRunner
+from finassure.core.scenario import load_scenarios_from_yaml
+from finassure.core.storage import storage
 from finassure.packs.aml import AMLPack
+from finassure.packs.kyc import KYCPack
+from finassure.packs.underwriting import UnderwritingPack
 
 app = FastAPI(title="FinAssure API", version="0.1.0")
 
@@ -69,7 +69,10 @@ def list_packs() -> dict[str, Any]:
                 "id": "underwriting",
                 "name": "Loan Underwriting",
                 "versions": ["v1", "v2"],
-                "description": "5-agent financial underwriting pipeline with DTI, bureau lookup, and compliance review.",
+                "description": (
+                    "5-agent financial underwriting pipeline with DTI, "
+                    "bureau lookup, and compliance review."
+                ),
             },
             {
                 "id": "kyc",
@@ -81,7 +84,9 @@ def list_packs() -> dict[str, Any]:
                 "id": "aml",
                 "name": "AML Suspicious Activity",
                 "versions": ["v1", "v2"],
-                "description": "Anti-money laundering transaction structuring and FATF corridor screening.",
+                "description": (
+                    "Anti-money laundering transaction structuring and FATF corridor screening."
+                ),
             },
         ]
     }
@@ -109,7 +114,7 @@ def trigger_experiment(req: RunExperimentRequest) -> dict[str, Any]:
 
     cases = pack.generate_cases(count=req.case_count, seed=42)
     runner = ExperimentRunner(pack)
-    
+
     # Run experiment
     artifacts = runner.run_experiment(
         scenarios=selected_scenarios,
@@ -230,21 +235,25 @@ def compare_versions(
         "deltas": {
             "silent_failure_reduction": (
                 (verdict_a.silent_failure_rate - verdict_b.silent_failure_rate)
-                if verdict_a and verdict_b else None
+                if verdict_a and verdict_b
+                else None
             ),
             "safe_degradation_gain": (
                 (verdict_b.safe_degradation_rate - verdict_a.safe_degradation_rate)
-                if verdict_a and verdict_b else None
+                if verdict_a and verdict_b
+                else None
             ),
             "cost_overhead": (
                 (verdict_b.cost_per_application - verdict_a.cost_per_application)
-                if verdict_a and verdict_b else None
+                if verdict_a and verdict_b
+                else None
             ),
             "latency_overhead_ms": (
                 (verdict_b.p95_latency_ms - verdict_a.p95_latency_ms)
-                if verdict_a and verdict_b else None
+                if verdict_a and verdict_b
+                else None
             ),
-        }
+        },
     }
 
 
@@ -268,13 +277,15 @@ def get_fairness_breakdown(pack: str = "underwriting", version: str = "v2") -> d
     summary = []
     for grp, counts in groups.items():
         tot = max(counts["total"], 1)
-        summary.append({
-            "group": grp,
-            "total_runs": counts["total"],
-            "silent_failure_rate": round(counts["silent_failures"] / tot, 4),
-            "safe_degradation_rate": round(counts["safe_degraded"] / tot, 4),
-            "escalation_rate": round(counts["escalated"] / tot, 4),
-        })
+        summary.append(
+            {
+                "group": grp,
+                "total_runs": counts["total"],
+                "silent_failure_rate": round(counts["silent_failures"] / tot, 4),
+                "safe_degradation_rate": round(counts["safe_degraded"] / tot, 4),
+                "escalation_rate": round(counts["escalated"] / tot, 4),
+            }
+        )
 
     return {"pack": pack, "version": version, "groups": summary}
 
@@ -284,52 +295,203 @@ def get_fairness_breakdown(pack: str = "underwriting", version: str = "v2") -> d
 def get_topology(pack: str = "underwriting") -> dict[str, Any]:
     if pack.lower() == "underwriting":
         nodes = [
-            {"id": "intake_agent", "label": "Intake Agent", "role": "Application intake validator", "type": "agent"},
-            {"id": "doc_extraction_agent", "label": "Document Extraction", "role": "Financial information extractor", "type": "agent"},
-            {"id": "bureau_lookup", "label": "Credit Bureau API", "role": "External Bureau tool", "type": "tool"},
-            {"id": "bureau_agent", "label": "Bureau Agent", "role": "Bureau coordinator", "type": "agent"},
-            {"id": "risk_scorer_agent", "label": "Risk Scorer Agent", "role": "Deterministic policy scoring", "type": "agent"},
-            {"id": "compliance_reviewer_agent", "label": "Compliance Reviewer", "role": "Regulatory adverse notice reviewer", "type": "agent"},
-            {"id": "hitl_review_queue", "label": "Human Reviewer Queue", "role": "HITL escalation queue", "type": "human"},
+            {
+                "id": "intake_agent",
+                "label": "Intake Agent",
+                "role": "Application intake validator",
+                "type": "agent",
+            },
+            {
+                "id": "doc_extraction_agent",
+                "label": "Document Extraction",
+                "role": "Financial information extractor",
+                "type": "agent",
+            },
+            {
+                "id": "bureau_lookup",
+                "label": "Credit Bureau API",
+                "role": "External Bureau tool",
+                "type": "tool",
+            },
+            {
+                "id": "bureau_agent",
+                "label": "Bureau Agent",
+                "role": "Bureau coordinator",
+                "type": "agent",
+            },
+            {
+                "id": "risk_scorer_agent",
+                "label": "Risk Scorer Agent",
+                "role": "Deterministic policy scoring",
+                "type": "agent",
+            },
+            {
+                "id": "compliance_reviewer_agent",
+                "label": "Compliance Reviewer",
+                "role": "Regulatory adverse notice reviewer",
+                "type": "agent",
+            },
+            {
+                "id": "hitl_review_queue",
+                "label": "Human Reviewer Queue",
+                "role": "HITL escalation queue",
+                "type": "human",
+            },
         ]
         edges = [
             {"from": "intake_agent", "to": "doc_extraction_agent", "label": "Raw Application"},
-            {"from": "doc_extraction_agent", "to": "bureau_agent", "label": "Extracted Financials", "fault_point": "handoff_corruption"},
-            {"from": "bureau_agent", "to": "bureau_lookup", "label": "SSN & Credit Lookup", "fault_point": "tool_failure"},
+            {
+                "from": "doc_extraction_agent",
+                "to": "bureau_agent",
+                "label": "Extracted Financials",
+                "fault_point": "handoff_corruption",
+            },
+            {
+                "from": "bureau_agent",
+                "to": "bureau_lookup",
+                "label": "SSN & Credit Lookup",
+                "fault_point": "tool_failure",
+            },
             {"from": "bureau_agent", "to": "risk_scorer_agent", "label": "Credit File Data"},
-            {"from": "risk_scorer_agent", "to": "compliance_reviewer_agent", "label": "Preliminary Determination"},
-            {"from": "compliance_reviewer_agent", "to": "hitl_review_queue", "label": "Escalate (Refer)"},
+            {
+                "from": "risk_scorer_agent",
+                "to": "compliance_reviewer_agent",
+                "label": "Preliminary Determination",
+            },
+            {
+                "from": "compliance_reviewer_agent",
+                "to": "hitl_review_queue",
+                "label": "Escalate (Refer)",
+            },
         ]
     elif pack.lower() == "aml":
         nodes = [
-            {"id": "transaction_ingestion_agent", "label": "Transaction Ingestion Agent", "role": "SWIFT MT103 parsing", "type": "agent"},
-            {"id": "jurisdiction_lookup", "label": "FATF Watchlist API", "role": "Offshore jurisdiction check", "type": "tool"},
-            {"id": "jurisdiction_agent", "label": "Jurisdiction Agent", "role": "Corridor risk classification", "type": "agent"},
-            {"id": "aml_triage_agent", "label": "AML Triage Agent", "role": "Structuring & threshold triage", "type": "agent"},
-            {"id": "aml_reviewer_agent", "label": "AML Reviewer Agent", "role": "SAR filing justification memo", "type": "agent"},
-            {"id": "hitl_aml_queue", "label": "AML Compliance Officer Queue", "role": "SAR/EDD human sign-off", "type": "human"},
+            {
+                "id": "transaction_ingestion_agent",
+                "label": "Transaction Ingestion Agent",
+                "role": "SWIFT MT103 parsing",
+                "type": "agent",
+            },
+            {
+                "id": "jurisdiction_lookup",
+                "label": "FATF Watchlist API",
+                "role": "Offshore jurisdiction check",
+                "type": "tool",
+            },
+            {
+                "id": "jurisdiction_agent",
+                "label": "Jurisdiction Agent",
+                "role": "Corridor risk classification",
+                "type": "agent",
+            },
+            {
+                "id": "aml_triage_agent",
+                "label": "AML Triage Agent",
+                "role": "Structuring & threshold triage",
+                "type": "agent",
+            },
+            {
+                "id": "aml_reviewer_agent",
+                "label": "AML Reviewer Agent",
+                "role": "SAR filing justification memo",
+                "type": "agent",
+            },
+            {
+                "id": "hitl_aml_queue",
+                "label": "AML Compliance Officer Queue",
+                "role": "SAR/EDD human sign-off",
+                "type": "human",
+            },
         ]
         edges = [
-            {"from": "transaction_ingestion_agent", "to": "jurisdiction_agent", "label": "Parsed Transaction", "fault_point": "silent_degradation"},
-            {"from": "jurisdiction_agent", "to": "jurisdiction_lookup", "label": "FATF/Offshore Query", "fault_point": "tool_failure"},
-            {"from": "jurisdiction_agent", "to": "aml_triage_agent", "label": "Jurisdiction Risk Flag", "fault_point": "handoff_corruption"},
-            {"from": "aml_triage_agent", "to": "aml_reviewer_agent", "label": "Triage Factors & Decision"},
+            {
+                "from": "transaction_ingestion_agent",
+                "to": "jurisdiction_agent",
+                "label": "Parsed Transaction",
+                "fault_point": "silent_degradation",
+            },
+            {
+                "from": "jurisdiction_agent",
+                "to": "jurisdiction_lookup",
+                "label": "FATF/Offshore Query",
+                "fault_point": "tool_failure",
+            },
+            {
+                "from": "jurisdiction_agent",
+                "to": "aml_triage_agent",
+                "label": "Jurisdiction Risk Flag",
+                "fault_point": "handoff_corruption",
+            },
+            {
+                "from": "aml_triage_agent",
+                "to": "aml_reviewer_agent",
+                "label": "Triage Factors & Decision",
+            },
             {"from": "aml_reviewer_agent", "to": "hitl_aml_queue", "label": "Escalate (SAR/EDD)"},
         ]
     else:
         nodes = [
-            {"id": "id_check_agent", "label": "Identity Check Agent", "role": "Government ID verification", "type": "agent"},
-            {"id": "sanctions_screening", "label": "Watchlist Screening API", "role": "OFAC/PEP Watchlist tool", "type": "tool"},
-            {"id": "sanctions_agent", "label": "Sanctions Agent", "role": "Watchlist screening coordinator", "type": "agent"},
-            {"id": "kyc_risk_agent", "label": "KYC Risk Rating Agent", "role": "Risk level classification", "type": "agent"},
-            {"id": "kyc_reviewer_agent", "label": "KYC Compliance Reviewer", "role": "KYC sign-off documentation", "type": "agent"},
-            {"id": "hitl_kyc_queue", "label": "Compliance Officer Queue", "role": "Enhanced due diligence", "type": "human"},
+            {
+                "id": "id_check_agent",
+                "label": "Identity Check Agent",
+                "role": "Government ID verification",
+                "type": "agent",
+            },
+            {
+                "id": "sanctions_screening",
+                "label": "Watchlist Screening API",
+                "role": "OFAC/PEP Watchlist tool",
+                "type": "tool",
+            },
+            {
+                "id": "sanctions_agent",
+                "label": "Sanctions Agent",
+                "role": "Watchlist screening coordinator",
+                "type": "agent",
+            },
+            {
+                "id": "kyc_risk_agent",
+                "label": "KYC Risk Rating Agent",
+                "role": "Risk level classification",
+                "type": "agent",
+            },
+            {
+                "id": "kyc_reviewer_agent",
+                "label": "KYC Compliance Reviewer",
+                "role": "KYC sign-off documentation",
+                "type": "agent",
+            },
+            {
+                "id": "hitl_kyc_queue",
+                "label": "Compliance Officer Queue",
+                "role": "Enhanced due diligence",
+                "type": "human",
+            },
         ]
         edges = [
-            {"from": "id_check_agent", "to": "sanctions_agent", "label": "Verified Identity", "fault_point": "silent_degradation"},
-            {"from": "sanctions_agent", "to": "sanctions_screening", "label": "Watchlist Lookup", "fault_point": "tool_failure"},
-            {"from": "sanctions_agent", "to": "kyc_risk_agent", "label": "Screening Results", "fault_point": "handoff_corruption"},
-            {"from": "kyc_risk_agent", "to": "kyc_reviewer_agent", "label": "Risk Score & PEP Flag"},
+            {
+                "from": "id_check_agent",
+                "to": "sanctions_agent",
+                "label": "Verified Identity",
+                "fault_point": "silent_degradation",
+            },
+            {
+                "from": "sanctions_agent",
+                "to": "sanctions_screening",
+                "label": "Watchlist Lookup",
+                "fault_point": "tool_failure",
+            },
+            {
+                "from": "sanctions_agent",
+                "to": "kyc_risk_agent",
+                "label": "Screening Results",
+                "fault_point": "handoff_corruption",
+            },
+            {
+                "from": "kyc_risk_agent",
+                "to": "kyc_reviewer_agent",
+                "label": "Risk Score & PEP Flag",
+            },
             {"from": "kyc_reviewer_agent", "to": "hitl_kyc_queue", "label": "Escalate (EDD)"},
         ]
 
@@ -349,7 +511,11 @@ def generate_evidence_pack(req: EvidencePackRequest) -> dict[str, Any]:
         raise HTTPException(status_code=404, detail="No verdict found to generate evidence pack")
     raw_runs = storage.get_runs(pack_name=req.pack, pack_version=req.version, limit=100)
     # Reconstruct minimal RunArtifact list
-    artifacts = [storage.get_run_artifact(r["run_id"]) for r in raw_runs if storage.get_run_artifact(r["run_id"])]
+    artifacts = [
+        storage.get_run_artifact(r["run_id"])
+        for r in raw_runs
+        if storage.get_run_artifact(r["run_id"])
+    ]
     files = evidence_generator.generate(verdict, artifacts)
     return {
         "status": "generated",
@@ -361,7 +527,9 @@ def generate_evidence_pack(req: EvidencePackRequest) -> dict[str, Any]:
 
 @app.get("/evidence-pack/latest")
 @app.get("/api/evidence-pack/latest")
-def get_latest_evidence_pack(pack: str = "underwriting", version: str = "v2", format: str = "html") -> FileResponse:
+def get_latest_evidence_pack(
+    pack: str = "underwriting", version: str = "v2", format: str = "html"
+) -> FileResponse:
     ext = "md" if format in ("md", "markdown") else format.lower()
     files = list(evidence_generator.evidence_dir.glob(f"evidence_{pack}_{version}_*.{ext}"))
     if not files:
@@ -385,16 +553,22 @@ if ui_dist_path.exists():
 # Serve Use Cases Page & Assets
 usecases_dir = settings.ROOT_DIR / "usecases"
 if usecases_dir.exists():
-    app.mount("/usecases/assets", StaticFiles(directory=str(usecases_dir / "assets")), name="usecases_assets")
+    app.mount(
+        "/usecases/assets",
+        StaticFiles(directory=str(usecases_dir / "assets")),
+        name="usecases_assets",
+    )
+
 
 @app.get("/usecase", response_class=HTMLResponse)
 @app.get("/usecases", response_class=HTMLResponse)
 def serve_usecase_page():
     usecase_html = settings.ROOT_DIR / "usecases" / "index.html"
     if usecase_html.exists():
-        with open(usecase_html, "r", encoding="utf-8") as f:
+        with open(usecase_html, encoding="utf-8") as f:
             return HTMLResponse(content=f.read())
     return HTMLResponse("<h1>FinAssure Use Case Page not found</h1>", status_code=404)
+
 
 @app.get("/usecases/styles.css")
 def serve_usecases_styles():
@@ -403,6 +577,7 @@ def serve_usecases_styles():
         return FileResponse(css_file, media_type="text/css")
     return HTMLResponse("", status_code=404)
 
+
 @app.get("/usecases/app.js")
 def serve_usecases_js():
     js_file = settings.ROOT_DIR / "usecases" / "app.js"
@@ -410,11 +585,11 @@ def serve_usecases_js():
         return FileResponse(js_file, media_type="application/javascript")
     return HTMLResponse("", status_code=404)
 
+
 @app.get("/", response_class=HTMLResponse)
 def serve_dashboard():
     index_html = settings.ROOT_DIR / "finassure" / "static" / "index.html"
     if index_html.exists():
-        with open(index_html, "r", encoding="utf-8") as f:
+        with open(index_html, encoding="utf-8") as f:
             return HTMLResponse(content=f.read())
     return HTMLResponse("<h1>FinAssure Dashboard loading...</h1>")
-

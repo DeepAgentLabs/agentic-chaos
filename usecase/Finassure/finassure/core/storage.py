@@ -1,10 +1,12 @@
 """Local-first storage engine using SQLite index and JSON run artifacts."""
 
 from __future__ import annotations
+
 import json
 import sqlite3
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any
+
 from finassure.config import settings
 from finassure.core.models import GateVerdict, RunArtifact
 
@@ -16,7 +18,7 @@ class StorageEngine:
         self.artifacts_dir = artifacts_dir or settings.ARTIFACTS_DIR
         self.runs_dir = self.artifacts_dir / "runs"
         self.db_path = db_path or settings.STORAGE_DB_PATH
-        
+
         self.runs_dir.mkdir(parents=True, exist_ok=True)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self._init_db()
@@ -78,61 +80,67 @@ class StorageEngine:
             f.write(artifact.model_dump_json(indent=2))
 
         with self._get_connection() as conn:
-            conn.execute("""
+            conn.execute(
+                """
                 INSERT OR REPLACE INTO runs (
                     run_id, pack_name, pack_version, scenario_id, case_id, synthetic_group,
                     clean_run, decision, oracle_decision, escalated, silent_failure,
                     safe_degraded, unsupported_approval, total_cost, total_tokens,
                     latency_ms, passed_evaluations, artifact_path, timestamp
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                artifact.run_id,
-                artifact.pack_name,
-                artifact.pack_version,
-                artifact.scenario_id,
-                artifact.case_id,
-                artifact.synthetic_group,
-                1 if artifact.clean_run else 0,
-                artifact.workflow_outcome.decision.value,
-                artifact.oracle_result.decision.value,
-                1 if artifact.workflow_outcome.escalated else 0,
-                1 if artifact.silent_failure else 0,
-                1 if artifact.safe_degraded else 0,
-                1 if artifact.unsupported_approval else 0,
-                artifact.total_cost,
-                artifact.total_tokens,
-                artifact.latency_ms,
-                1 if artifact.passed_evaluations else 0,
-                str(file_path),
-                artifact.timestamp,
-            ))
+            """,
+                (
+                    artifact.run_id,
+                    artifact.pack_name,
+                    artifact.pack_version,
+                    artifact.scenario_id,
+                    artifact.case_id,
+                    artifact.synthetic_group,
+                    1 if artifact.clean_run else 0,
+                    artifact.workflow_outcome.decision.value,
+                    artifact.oracle_result.decision.value,
+                    1 if artifact.workflow_outcome.escalated else 0,
+                    1 if artifact.silent_failure else 0,
+                    1 if artifact.safe_degraded else 0,
+                    1 if artifact.unsupported_approval else 0,
+                    artifact.total_cost,
+                    artifact.total_tokens,
+                    artifact.latency_ms,
+                    1 if artifact.passed_evaluations else 0,
+                    str(file_path),
+                    artifact.timestamp,
+                ),
+            )
             conn.commit()
         return file_path
 
     def save_verdict(self, verdict: GateVerdict) -> None:
         """Store gate verdict evaluation in database."""
         with self._get_connection() as conn:
-            conn.execute("""
+            conn.execute(
+                """
                 INSERT INTO verdicts (
                     pack_name, pack_version, verdict, overall_score, total_runs,
                     silent_failure_rate, safe_degradation_rate, unsupported_approvals_count,
                     escalation_rate, p95_latency_ms, cost_per_application, data_json, timestamp
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                verdict.pack_name,
-                verdict.pack_version,
-                verdict.verdict,
-                verdict.overall_score,
-                verdict.total_runs,
-                verdict.silent_failure_rate,
-                verdict.safe_degradation_rate,
-                verdict.unsupported_approvals_count,
-                verdict.escalation_rate,
-                verdict.p95_latency_ms,
-                verdict.cost_per_application,
-                verdict.model_dump_json(),
-                verdict.timestamp,
-            ))
+            """,
+                (
+                    verdict.pack_name,
+                    verdict.pack_version,
+                    verdict.verdict,
+                    verdict.overall_score,
+                    verdict.total_runs,
+                    verdict.silent_failure_rate,
+                    verdict.safe_degradation_rate,
+                    verdict.unsupported_approvals_count,
+                    verdict.escalation_rate,
+                    verdict.p95_latency_ms,
+                    verdict.cost_per_application,
+                    verdict.model_dump_json(),
+                    verdict.timestamp,
+                ),
+            )
             conn.commit()
 
     def get_runs(
@@ -166,18 +174,21 @@ class StorageEngine:
         file_path = self.runs_dir / f"{run_id}.json"
         if not file_path.exists():
             return None
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, encoding="utf-8") as f:
             data = json.load(f)
         return RunArtifact.model_validate(data)
 
     def get_latest_verdict(self, pack_name: str, pack_version: str) -> GateVerdict | None:
         """Retrieve most recent release gate verdict for a pack version."""
         with self._get_connection() as conn:
-            cur = conn.execute("""
+            cur = conn.execute(
+                """
                 SELECT data_json FROM verdicts
                 WHERE pack_name = ? AND pack_version = ?
                 ORDER BY timestamp DESC LIMIT 1
-            """, (pack_name, pack_version))
+            """,
+                (pack_name, pack_version),
+            )
             row = cur.fetchone()
             if row:
                 return GateVerdict.model_validate_json(row["data_json"])
@@ -185,7 +196,12 @@ class StorageEngine:
 
     def get_verdict_history(self, pack_name: str | None = None) -> list[dict[str, Any]]:
         """Get timeline of past release gate verdicts."""
-        query = "SELECT id, pack_name, pack_version, verdict, overall_score, total_runs, silent_failure_rate, safe_degradation_rate, unsupported_approvals_count, escalation_rate, p95_latency_ms, cost_per_application, timestamp FROM verdicts"
+        query = (
+            "SELECT id, pack_name, pack_version, verdict, overall_score, total_runs, "
+            "silent_failure_rate, safe_degradation_rate, unsupported_approvals_count, "
+            "escalation_rate, p95_latency_ms, cost_per_application, timestamp "
+            "FROM verdicts"
+        )
         params: list[Any] = []
         if pack_name:
             query += " WHERE pack_name = ?"

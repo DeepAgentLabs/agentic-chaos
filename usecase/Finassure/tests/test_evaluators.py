@@ -1,21 +1,18 @@
 """Unit tests for the complete Evaluator Suite."""
 
-import pytest
+from finassure.core.evaluators import (
+    eval_chaos_stability,
+    eval_decision_consistency,
+    eval_disparate_resilience,
+    eval_fidelity_score,
+    eval_latency_cost_thresholds,
+    eval_required_tools,
+    eval_unsupported_approval,
+)
 from finassure.core.models import (
-    CaseApplicant,
     DecisionOutcome,
     OracleResult,
     WorkflowOutcome,
-)
-from finassure.core.evaluators import (
-    eval_decision_consistency,
-    eval_chaos_stability,
-    eval_required_tools,
-    eval_unsupported_approval,
-    eval_reason_fidelity,
-    eval_fidelity_score,
-    eval_latency_cost_thresholds,
-    eval_disparate_resilience,
 )
 
 
@@ -35,7 +32,7 @@ def test_eval_decision_consistency():
 
 def test_eval_chaos_stability():
     oracle = OracleResult(decision=DecisionOutcome.APPROVE, reason_factors=["PRIME"])
-    
+
     # 1. Faulted run maintains decision -> passed
     wf_resilient = WorkflowOutcome(decision=DecisionOutcome.APPROVE)
     res1 = eval_chaos_stability(wf_resilient, oracle, is_faulted=True)
@@ -43,7 +40,9 @@ def test_eval_chaos_stability():
     assert res1.score == 1.0
 
     # 2. Faulted run escalates -> safe degradation
-    wf_escalated = WorkflowOutcome(decision=DecisionOutcome.REFER, escalated=True, escalation_reason="TIMEOUT")
+    wf_escalated = WorkflowOutcome(
+        decision=DecisionOutcome.REFER, escalated=True, escalation_reason="TIMEOUT"
+    )
     res2 = eval_chaos_stability(wf_escalated, oracle, is_faulted=True)
     assert res2.passed is True
     assert res2.score == 0.95
@@ -68,8 +67,10 @@ def test_eval_required_tools():
 
 def test_eval_unsupported_approval():
     oracle = OracleResult(decision=DecisionOutcome.DECLINE, reason_factors=["BAD_DEBT"])
-    wf_bad = WorkflowOutcome(decision=DecisionOutcome.APPROVE, raw_state={"bureau_status": "unverified"})
-    
+    wf_bad = WorkflowOutcome(
+        decision=DecisionOutcome.APPROVE, raw_state={"bureau_status": "unverified"}
+    )
+
     # Hard fail check
     res = eval_unsupported_approval(wf_bad, oracle, chaos_events=[{"fault_type": "tool_failure"}])
     assert res.passed is False
@@ -88,7 +89,9 @@ def test_eval_fidelity_score():
 
 def test_eval_latency_cost_thresholds():
     # Pass within limits
-    res_pass = eval_latency_cost_thresholds(latency_ms=1200.0, total_cost=0.003, max_latency_ms=4000.0, max_cost_usd=0.05)
+    res_pass = eval_latency_cost_thresholds(
+        latency_ms=1200.0, total_cost=0.003, max_latency_ms=4000.0, max_cost_usd=0.05
+    )
     assert res_pass.passed is True
     assert res_pass.score == 1.0
 
@@ -99,9 +102,13 @@ def test_eval_latency_cost_thresholds():
 
 def test_eval_disparate_resilience():
     # Negligible gap between synthetic groups
-    res_pass = eval_disparate_resilience({"established": 0.01, "thin_file": 0.03, "gig_economy": 0.02}, max_gap_threshold=0.15)
+    res_pass = eval_disparate_resilience(
+        {"established": 0.01, "thin_file": 0.03, "gig_economy": 0.02}, max_gap_threshold=0.15
+    )
     assert res_pass.passed is True
 
     # High disparity gap
-    res_fail = eval_disparate_resilience({"established": 0.01, "thin_file": 0.25}, max_gap_threshold=0.15)
+    res_fail = eval_disparate_resilience(
+        {"established": 0.01, "thin_file": 0.25}, max_gap_threshold=0.15
+    )
     assert res_fail.passed is False

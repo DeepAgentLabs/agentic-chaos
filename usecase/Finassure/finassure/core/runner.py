@@ -1,14 +1,23 @@
 """Experiment Runner orchestrating Agentic Chaos and AgenticLens profiling."""
 
 from __future__ import annotations
+
 import logging
 import time
 import uuid
-from typing import Any, List, Sequence
-import agenticlens
-from agentic_chaos import chaos_session
-from agentic_chaos.integrations.agenticlens import attach_events
+from collections.abc import Sequence
+from typing import Any
 
+import agenticlens
+from finassure.core.evaluators import (
+    eval_chaos_stability,
+    eval_decision_consistency,
+    eval_fidelity_score,
+    eval_latency_cost_thresholds,
+    eval_reason_fidelity,
+    eval_required_tools,
+    eval_unsupported_approval,
+)
 from finassure.core.models import (
     CaseApplicant,
     DecisionOutcome,
@@ -18,16 +27,10 @@ from finassure.core.models import (
 )
 from finassure.core.pack import BaseWorkflowPack
 from finassure.core.scenario import ChaosScenario
-from finassure.core.evaluators import (
-    eval_chaos_stability,
-    eval_decision_consistency,
-    eval_reason_fidelity,
-    eval_required_tools,
-    eval_unsupported_approval,
-    eval_fidelity_score,
-    eval_latency_cost_thresholds,
-)
 from finassure.core.storage import storage
+
+from agentic_chaos import chaos_session
+from agentic_chaos.integrations.agenticlens import attach_events
 
 logger = logging.getLogger(__name__)
 
@@ -74,9 +77,12 @@ class ExperimentRunner:
         is_faulted: bool,
         rep_index: int,
     ) -> RunArtifact:
-        run_id = f"run-{self.pack.name}-{self.pack.version}-{scenario.id}-{case.id}-{rep_index}-{uuid.uuid4().hex[:6]}"
+        run_id = (
+            f"run-{self.pack.name}-{self.pack.version}-{scenario.id}"
+            f"-{case.id}-{rep_index}-{uuid.uuid4().hex[:6]}"
+        )
         profile_name = f"{self.pack.name}:{self.pack.version}:{scenario.id}"
-        
+
         start_time = time.perf_counter()
         workflow_obj = None
 
@@ -146,7 +152,11 @@ class ExperimentRunner:
         raw_lat = getattr(workflow_obj, "latency", None)
         lens_latency = (raw_lat * 1000.0) if (raw_lat is not None) else elapsed_ms
         raw_cost = getattr(workflow_obj, "total_cost", None)
-        lens_cost = raw_cost if (raw_cost is not None and raw_cost > 0) else (0.0015 if self.pack.version == "v1" else 0.0028)
+        lens_cost = (
+            raw_cost
+            if (raw_cost is not None and raw_cost > 0)
+            else (0.0015 if self.pack.version == "v1" else 0.0028)
+        )
         raw_tokens = getattr(workflow_obj, "total_tokens", None)
         lens_tokens = raw_tokens if (raw_tokens is not None and raw_tokens > 0) else 250
 
@@ -158,18 +168,27 @@ class ExperimentRunner:
         evaluations.append(eval_unsupported_approval(outcome, oracle_res, chaos_events))
         evaluations.append(eval_reason_fidelity(outcome, oracle_res))
         evaluations.append(eval_fidelity_score(outcome))
-        evaluations.append(eval_latency_cost_thresholds(latency_ms=max(elapsed_ms, lens_latency), total_cost=lens_cost))
+        evaluations.append(
+            eval_latency_cost_thresholds(
+                latency_ms=max(elapsed_ms, lens_latency), total_cost=lens_cost
+            )
+        )
 
         # Assess reliability indicators
         unsupported = any(
-            e.evaluator_name == "unsupported_approval" and not e.passed
-            for e in evaluations
+            e.evaluator_name == "unsupported_approval" and not e.passed for e in evaluations
         )
-        stability_eval = next((e for e in evaluations if e.evaluator_name == "chaos_stability"), None)
-        silent_failure = (stability_eval is not None and not stability_eval.passed)
+        stability_eval = next(
+            (e for e in evaluations if e.evaluator_name == "chaos_stability"), None
+        )
+        silent_failure = stability_eval is not None and not stability_eval.passed
         safe_degraded = (not silent_failure) and (is_faulted)
 
-        all_passed = all(e.passed for e in evaluations if not e.is_hard_fail) and (not unsupported) and (not silent_failure)
+        all_passed = (
+            all(e.passed for e in evaluations if not e.is_hard_fail)
+            and (not unsupported)
+            and (not silent_failure)
+        )
 
         return RunArtifact(
             run_id=run_id,

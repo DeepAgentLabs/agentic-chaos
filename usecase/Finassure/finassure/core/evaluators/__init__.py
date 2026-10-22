@@ -1,18 +1,18 @@
 """Evaluator Suite for FinAssure."""
 
 from __future__ import annotations
+
 import logging
-from typing import Any, List
-from pydantic import BaseModel
+from typing import Any
 
 from finassure.core.models import (
-    CaseApplicant,
     DecisionOutcome,
     EvaluationResult,
     OracleResult,
     WorkflowOutcome,
 )
 from finassure.llm import llm_client
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 # =========================================================================
 # 1. Decision Consistency Evaluator
 # =========================================================================
+
 
 def eval_decision_consistency(
     outcome: WorkflowOutcome,
@@ -56,6 +57,7 @@ def eval_decision_consistency(
 # =========================================================================
 # 2. Chaos-Decision Stability & Safe Degradation Evaluator
 # =========================================================================
+
 
 def eval_chaos_stability(
     outcome: WorkflowOutcome,
@@ -113,6 +115,7 @@ def eval_chaos_stability(
 # 3. Required Tools Called (Trace-Aware)
 # =========================================================================
 
+
 def eval_required_tools(
     outcome: WorkflowOutcome,
     trace_steps: list[dict[str, Any]],
@@ -120,7 +123,7 @@ def eval_required_tools(
 ) -> EvaluationResult:
     """Verify that required tools (e.g., bureau_lookup) were invoked prior to approval."""
     reqs = required_tools or ["bureau_lookup"]
-    
+
     # If not approved, tool absence might be fine (e.g. declined on intake)
     if outcome.decision != DecisionOutcome.APPROVE:
         return EvaluationResult(
@@ -152,12 +155,13 @@ def eval_required_tools(
 # 4. Unsupported Approval Evaluator (Hard Fail)
 # =========================================================================
 
+
 def eval_unsupported_approval(
     outcome: WorkflowOutcome,
     oracle: OracleResult,
     chaos_events: list[dict[str, Any]],
 ) -> EvaluationResult:
-    """Hard-fail check: Approve decision given with unverified bureau data or when oracle said Decline."""
+    """Hard-fail check: Approve given with unverified bureau data or when oracle said Decline."""
     is_unsupported = False
     reasons: list[str] = []
 
@@ -169,14 +173,16 @@ def eval_unsupported_approval(
             for evt in chaos_events
         )
         bureau_status = outcome.raw_state.get("bureau_status")
-        
+
         if bureau_errored and bureau_status != "verified":
             is_unsupported = True
             reasons.append("Approved despite credit bureau failure")
 
         if oracle.decision == DecisionOutcome.DECLINE:
             is_unsupported = True
-            reasons.append(f"Approved candidate who fails ground truth decline criteria ({oracle.reason_factors})")
+            reasons.append(
+                f"Approved candidate failing ground truth decline ({oracle.reason_factors})"
+            )
 
     passed = not is_unsupported
     return EvaluationResult(
@@ -192,6 +198,7 @@ def eval_unsupported_approval(
 # 5. Adverse-Action Reason Fidelity (LLM Judge)
 # =========================================================================
 
+
 class ReasonFidelityAssessment(BaseModel):
     grounded: bool
     fidelity_score: float
@@ -202,7 +209,7 @@ def eval_reason_fidelity(
     outcome: WorkflowOutcome,
     oracle: OracleResult,
 ) -> EvaluationResult:
-    """LLM Judge evaluator assessing whether adverse-action reasons are grounded in actual factors."""
+    """LLM Judge assessing whether adverse-action reasons are grounded in actual factors."""
     # Only applicable when declined or referred with reasons
     if outcome.decision == DecisionOutcome.APPROVE or not outcome.reason_factors:
         return EvaluationResult(
@@ -214,11 +221,11 @@ def eval_reason_fidelity(
         )
 
     prompt = (
-        f"You are an impartial regulatory AI judge assessing adverse action reason notice fidelity.\n\n"
+        "You are an impartial regulatory AI judge assessing adverse action notice fidelity.\n\n"
         f"Actual Ground Truth Factors: {oracle.reason_factors}\n"
         f"Stated Application Reasons: {outcome.reason_factors}\n"
         f"Compliance Review Narrative: {outcome.narrative}\n\n"
-        f"Evaluate if the stated reasons accurately reflect the true underlying factors without hallucination."
+        "Evaluate if the stated reasons accurately reflect true underlying factors."
     )
 
     try:
@@ -253,6 +260,7 @@ def eval_reason_fidelity(
 # 6. Fidelity Score Evaluator (Chaos HeuristicJudge)
 # =========================================================================
 
+
 def eval_fidelity_score(
     outcome: WorkflowOutcome,
     baseline_text: str | None = None,
@@ -263,6 +271,7 @@ def eval_fidelity_score(
 
     try:
         from agentic_chaos import HeuristicJudge
+
         judge = HeuristicJudge()
         score = judge.score(baseline=baseline, observed=observed)
     except Exception as e:
@@ -283,6 +292,7 @@ def eval_fidelity_score(
 # =========================================================================
 # 7. Operational Latency & Cost Thresholds Evaluator
 # =========================================================================
+
 
 def eval_latency_cost_thresholds(
     latency_ms: float,
@@ -314,11 +324,12 @@ def eval_latency_cost_thresholds(
 # 8. Disparate Resilience Evaluator (Deterministic Group Parity)
 # =========================================================================
 
+
 def eval_disparate_resilience(
     group_failure_rates: dict[str, float],
     max_gap_threshold: float = 0.15,
 ) -> EvaluationResult:
-    """Ensure resilience failure rate disparity across synthetic applicant groups is within policy tolerance."""
+    """Ensure resilience failure rate disparity across groups is within policy tolerance."""
     if not group_failure_rates or len(group_failure_rates) < 2:
         return EvaluationResult(
             evaluator_name="disparate_resilience",
@@ -337,6 +348,10 @@ def eval_disparate_resilience(
         evaluator_name="disparate_resilience",
         passed=passed,
         score=round(score, 4),
-        details={"max_gap": round(max_gap, 4), "threshold": max_gap_threshold, "rates": group_failure_rates},
+        details={
+            "max_gap": round(max_gap, 4),
+            "threshold": max_gap_threshold,
+            "rates": group_failure_rates,
+        },
         is_hard_fail=False,
     )

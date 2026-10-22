@@ -1,18 +1,20 @@
 """KYC Onboarding Pack implementing BaseWorkflowPack."""
 
 from __future__ import annotations
-from typing import Sequence
-from finassure.core.pack import BaseWorkflowPack
+
+from collections.abc import Sequence
+
 from finassure.core.models import CaseApplicant, DecisionOutcome, OracleResult, WorkflowOutcome
-from finassure.packs.kyc.oracle import kyc_oracle
-from finassure.packs.kyc.generator import generate_kyc_cases
+from finassure.core.pack import BaseWorkflowPack
 from finassure.packs.kyc.agents import (
     KYCState,
     run_id_check_agent,
-    run_sanctions_agent,
-    run_kyc_risk_agent,
     run_kyc_reviewer_agent,
+    run_kyc_risk_agent,
+    run_sanctions_agent,
 )
+from finassure.packs.kyc.generator import generate_kyc_cases
+from finassure.packs.kyc.oracle import kyc_oracle
 
 
 class KYCPack(BaseWorkflowPack):

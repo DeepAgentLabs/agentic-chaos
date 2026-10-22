@@ -1,16 +1,20 @@
 """LLM Integration for FinAssure using Google Gemini SDK."""
 
 from __future__ import annotations
+
 import json
 import logging
 import re
-from typing import Any, TypeVar, Type
+from typing import Any, TypeVar
+
 from pydantic import BaseModel
+
 from finassure.config import settings
 
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T", bound=BaseModel)
+
 
 class GeminiLLMClient:
     """Wrapper around google-genai Client for structured and narrative outputs."""
@@ -21,6 +25,7 @@ class GeminiLLMClient:
         if self._api_key and not self._api_key.startswith("your_"):
             try:
                 from google import genai
+
                 self._client = genai.Client(api_key=self._api_key)
             except Exception as e:
                 logger.warning(f"Failed to initialize google.genai client: {e}")
@@ -41,6 +46,7 @@ class GeminiLLMClient:
         if not self._client and settings.has_gemini_key():
             try:
                 from google import genai
+
                 self._api_key = settings.GEMINI_API_KEY
                 self._client = genai.Client(api_key=self._api_key)
             except Exception as e:
@@ -51,6 +57,7 @@ class GeminiLLMClient:
         if self._client:
             try:
                 from google.genai import types
+
                 config = types.GenerateContentConfig(
                     temperature=temperature,
                     system_instruction=system_instruction,
@@ -71,7 +78,7 @@ class GeminiLLMClient:
     def generate_structured(
         self,
         prompt: str,
-        schema: Type[T],
+        schema: type[T],
         system_instruction: str | None = None,
         model: str | None = None,
     ) -> T:
@@ -80,6 +87,7 @@ class GeminiLLMClient:
         if not self._client and settings.has_gemini_key():
             try:
                 from google import genai
+
                 self._api_key = settings.GEMINI_API_KEY
                 self._client = genai.Client(api_key=self._api_key)
             except Exception as e:
@@ -90,6 +98,7 @@ class GeminiLLMClient:
         if self._client:
             try:
                 from google.genai import types
+
                 config = types.GenerateContentConfig(
                     temperature=0.0,
                     response_mime_type="application/json",
@@ -117,43 +126,60 @@ class GeminiLLMClient:
             "Profile meets debt-to-income and credit threshold criteria according to policy rules."
         )
 
-    def _fallback_structured_generation(self, prompt: str, schema: Type[T]) -> T:
+    def _fallback_structured_generation(self, prompt: str, schema: type[T]) -> T:
         """Parse numbers/text from prompt heuristically if offline."""
         if schema.__name__ == "ExtractedFinancials":
             inc_match = re.search(r"Stated income:\s*\$?([\d\.]+)", prompt)
             dep_match = re.search(r"Monthly deposits:\s*\$?([\d\.]+)", prompt)
             income_val = float(inc_match.group(1)) if inc_match else 75000.0
             deposits_val = float(dep_match.group(1)) if dep_match else round(income_val / 12.0, 2)
-            return schema.model_validate({
-                "extracted_income": income_val,
-                "extracted_monthly_deposits": deposits_val,
-                "employer_verified": "Verified",
-                "extraction_confidence": 0.95,
-            })
+            return schema.model_validate(
+                {
+                    "extracted_income": income_val,
+                    "extracted_monthly_deposits": deposits_val,
+                    "employer_verified": "Verified",
+                    "extraction_confidence": 0.95,
+                }
+            )
 
         if schema.__name__ == "ReasonFidelityAssessment":
-            return schema.model_validate({
-                "grounded": True,
-                "fidelity_score": 0.95,
-                "feedback": "Adverse-action reasons are grounded in policy factors.",
-            })
+            return schema.model_validate(
+                {
+                    "grounded": True,
+                    "fidelity_score": 0.95,
+                    "feedback": "Adverse-action reasons are grounded in policy factors.",
+                }
+            )
 
         data: dict[str, Any] = {}
         # Try to extract numbers from prompt
         # Clean regex to find income and deposits precisely
-        income_match = (
-            re.search(r"(?:Annualized Salary|Annual Income|Stated income|approx)\s*[:\$]\s*([\d,]+(?:\.\d+)?)", prompt, re.IGNORECASE)
-            or re.search(r"\$([\d,]+(?:\.\d+)?)\s*(?:/yr|per year|annual)", prompt, re.IGNORECASE)
+        income_match = re.search(
+            r"(?:Annualized Salary|Annual Income|Stated income|approx)\s*[:\$]\s*"
+            r"([\d,]+(?:\.\d+)?)",
+            prompt,
+            re.IGNORECASE,
+        ) or re.search(r"\$([\d,]+(?:\.\d+)?)\s*(?:/yr|per year|annual)", prompt, re.IGNORECASE)
+        deposit_match = re.search(
+            r"(?:Monthly Inflows|Monthly deposits|Deposits)\s*[:\$]\s*([\d,]+(?:\.\d+)?)",
+            prompt,
+            re.IGNORECASE,
+        ) or re.search(r"\$([\d,]+(?:\.\d+)?)\s*(?:/mo|per month)", prompt, re.IGNORECASE)
+        debt_match = re.search(
+            r"(?:debt|liabilities)\s*[:\$]\s*([\d,]+(?:\.\d+)?)", prompt, re.IGNORECASE
         )
-        deposit_match = (
-            re.search(r"(?:Monthly Inflows|Monthly deposits|Deposits)\s*[:\$]\s*([\d,]+(?:\.\d+)?)", prompt, re.IGNORECASE)
-            or re.search(r"\$([\d,]+(?:\.\d+)?)\s*(?:/mo|per month)", prompt, re.IGNORECASE)
+        employer_match = re.search(
+            r"(?:employer|Company Name)\s*[:]\s*([A-Za-z0-9\s]+?)(?:\n|$)", prompt, re.IGNORECASE
         )
-        debt_match = re.search(r"(?:debt|liabilities)\s*[:\$]\s*([\d,]+(?:\.\d+)?)", prompt, re.IGNORECASE)
-        employer_match = re.search(r"(?:employer|Company Name)\s*[:]\s*([A-Za-z0-9\s]+?)(?:\n|$)", prompt, re.IGNORECASE)
-        
-        extracted_income = float(income_match.group(1).replace(",", "")) if income_match else 75000.0
-        extracted_deposits = float(deposit_match.group(1).replace(",", "")) if deposit_match else round(extracted_income / 12.0, 2)
+
+        extracted_income = (
+            float(income_match.group(1).replace(",", "")) if income_match else 75000.0
+        )
+        extracted_deposits = (
+            float(deposit_match.group(1).replace(",", ""))
+            if deposit_match
+            else round(extracted_income / 12.0, 2)
+        )
         extracted_debt = float(debt_match.group(1).replace(",", "")) if debt_match else 15000.0
         employer = employer_match.group(1).strip() if employer_match else "Acme Corp"
 
@@ -194,8 +220,9 @@ class GeminiLLMClient:
                 data[field_name] = "Verified"
             else:
                 data[field_name] = None
-                
+
         return schema.model_validate(data)
+
 
 # Singleton client instance
 llm_client = GeminiLLMClient()

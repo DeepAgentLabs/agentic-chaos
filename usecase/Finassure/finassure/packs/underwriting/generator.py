@@ -1,18 +1,71 @@
 """Synthetic applicant and document generator for loan underwriting."""
 
 from __future__ import annotations
+
 import random
-from typing import List
+
 from finassure.core.models import CaseApplicant
 from finassure.packs.underwriting.oracle import underwriting_oracle
 
-FIRST_NAMES = ["Alex", "Jordan", "Taylor", "Morgan", "Sam", "Chris", "Pat", "Avery", "Casey", "Riley", "Cameron", "Dakota", "Jamie", "Skyler", "Priya", "Carlos", "Mei", "Elena", "Kwame", "Fatima"]
-LAST_NAMES = ["Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis", "Rodriguez", "Martinez", "Patel", "Chen", "Kim", "O'Connor", "Singh", "Ali", "Novak", "Muller"]
-EMPLOYERS = ["Fintech Dynamics", "Apex Health", "Metro Logistics", "Beacon Retail", "Vertex Cloud", "Solaria Energy", "Freelance Consultant", "GigRide Driver", "Omni Global", "Horizon Tech"]
+FIRST_NAMES = [
+    "Alex",
+    "Jordan",
+    "Taylor",
+    "Morgan",
+    "Sam",
+    "Chris",
+    "Pat",
+    "Avery",
+    "Casey",
+    "Riley",
+    "Cameron",
+    "Dakota",
+    "Jamie",
+    "Skyler",
+    "Priya",
+    "Carlos",
+    "Mei",
+    "Elena",
+    "Kwame",
+    "Fatima",
+]
+LAST_NAMES = [
+    "Smith",
+    "Johnson",
+    "Williams",
+    "Brown",
+    "Jones",
+    "Garcia",
+    "Miller",
+    "Davis",
+    "Rodriguez",
+    "Martinez",
+    "Patel",
+    "Chen",
+    "Kim",
+    "O'Connor",
+    "Singh",
+    "Ali",
+    "Novak",
+    "Muller",
+]
+EMPLOYERS = [
+    "Fintech Dynamics",
+    "Apex Health",
+    "Metro Logistics",
+    "Beacon Retail",
+    "Vertex Cloud",
+    "Solaria Energy",
+    "Freelance Consultant",
+    "GigRide Driver",
+    "Omni Global",
+    "Horizon Tech",
+]
 GROUPS = ["established", "thin_file", "gig_economy"]
 
+
 def generate_underwriting_cases(count: int = 200, seed: int = 42) -> list[CaseApplicant]:
-    """Generate deterministic synthetic cases with clear approvals, declines, and ~40% borderline profiles."""
+    """Generate deterministic synthetic cases with approvals, declines, and ~40% borderline."""
     rng = random.Random(seed)
     cases: list[CaseApplicant] = []
 
@@ -72,7 +125,9 @@ def generate_underwriting_cases(count: int = 200, seed: int = 42) -> list[CaseAp
             else:
                 credit_score = rng.randint(650, 730)
                 monthly_debt = round((income / 12.0) * rng.uniform(0.25, 0.35), 2)
-                deposit_ratio = rng.uniform(0.60, 0.72)  # Discrepancy between stated and bank statements
+                deposit_ratio = rng.uniform(
+                    0.60, 0.72
+                )  # Discrepancy between stated and bank statements
 
             requested_amount = round(rng.uniform(15000, 45000), -2)
             messy_doc = True
@@ -126,7 +181,7 @@ def _format_document_text(
 ) -> str:
     """Format realistic paystub and bank statement text with realistic noise."""
     pay_period_gross = round(income / 24.0, 2)
-    
+
     if messy and rng.random() < 0.4:
         # Messy: monthly reported as pay-period or truncated
         return (
@@ -141,7 +196,7 @@ def _format_document_text(
             f"Average Verified Monthly Inflows: ${monthly_deposits:,.2f}\n"
             f"Account Status: Active, Overdrafts: 0\n"
         )
-    
+
     return (
         f"=== VERIFIED PAYSTUB & ASSET DOCUMENT ===\n"
         f"Applicant Name: {name}\n"

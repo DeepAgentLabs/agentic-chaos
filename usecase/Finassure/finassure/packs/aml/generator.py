@@ -1,12 +1,19 @@
 """Synthetic transaction monitoring alert generator for AML Triage Pack."""
 
 from __future__ import annotations
+
 import random
+
 from finassure.core.models import CaseApplicant
 from finassure.packs.aml.oracle import aml_oracle
 
 ACCOUNTS = ["ACC-US-10294", "ACC-CH-99201", "ACC-KY-33019", "ACC-SG-88129", "ACC-DE-44102"]
-OFFSHORE_ENTITIES = ["Apex Offshore Holdings", "Global Shell Ltd", "Vertex Premier Corp", "Standard Domestic Payroll LLC"]
+OFFSHORE_ENTITIES = [
+    "Apex Offshore Holdings",
+    "Global Shell Ltd",
+    "Vertex Premier Corp",
+    "Standard Domestic Payroll LLC",
+]
 GROUPS = ["established", "thin_file", "gig_economy"]
 
 
@@ -18,7 +25,7 @@ def generate_aml_cases(count: int = 50, seed: int = 88) -> list[CaseApplicant]:
     for i in range(count):
         case_id = f"AML-{seed}-{i+1:04d}"
         group = rng.choice(GROUPS)
-        
+
         bucket = rng.random()
         if bucket < 0.20:
             # Structuring ($9,500 - $9,950 to evade CTR)
@@ -47,7 +54,10 @@ def generate_aml_cases(count: int = 50, seed: int = 88) -> list[CaseApplicant]:
             credit_score=750,
             employer=employer,
             employment_years=5.0,
-            documents_text=f"SWIFT MT103 Transfer Message. Amount: ${amount:,.2f}. Remitter: {employer}. Narrative: {purpose}.",
+            documents_text=(
+                f"SWIFT MT103 Transfer Message. Amount: ${amount:,.2f}. "
+                f"Remitter: {employer}. Narrative: {purpose}."
+            ),
             bank_statement_monthly_deposits=45000.0,
             synthetic_group=group,
         )

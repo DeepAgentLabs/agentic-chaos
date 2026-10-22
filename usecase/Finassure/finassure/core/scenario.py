@@ -1,18 +1,20 @@
 """Chaos scenario definition and loader for FinAssure."""
 
 from __future__ import annotations
+
 from pathlib import Path
-from typing import Any, Callable, List, Optional
+from typing import Any
+
 import yaml
 from pydantic import BaseModel, Field
 
 from agentic_chaos import (
-    ToolCallFailureFault,
-    SilentDegradationFault,
     HandoffCorruptionFault,
+    InfiniteLoopFault,
     MemoryCorruptionFault,
     RateLimitStormFault,
-    InfiniteLoopFault,
+    SilentDegradationFault,
+    ToolCallFailureFault,
 )
 
 
@@ -20,7 +22,7 @@ class ChaosScenario(BaseModel):
     id: str
     name: str
     pack: str
-    fault_type: str               # "tool_failure", "silent_degradation", "handoff_corruption", "none", etc.
+    fault_type: str  # "tool_failure", "silent_degradation", "handoff_corruption", "none", etc.
     target: str
     params: dict[str, Any] = Field(default_factory=dict)
     hypothesis: str
@@ -48,14 +50,22 @@ class ChaosScenario(BaseModel):
         if self.fault_type == "silent_degradation":
             corruption = self.params.get("corruption", "halve")
             if corruption == "halve":
-                degrade_fn = lambda x: (x / 2.0) if isinstance(x, (int, float)) else x
+
+                def degrade_fn(x):
+                    return x / 2.0 if isinstance(x, int | float) else x
             elif corruption == "double":
-                degrade_fn = lambda x: (x * 2.0) if isinstance(x, (int, float)) else x
+
+                def degrade_fn(x):
+                    return x * 2.0 if isinstance(x, int | float) else x
             elif corruption == "drop_digit":
-                degrade_fn = lambda x: (x / 10.0) if isinstance(x, (int, float)) else x
+
+                def degrade_fn(x):
+                    return x / 10.0 if isinstance(x, int | float) else x
             else:
-                degrade_fn = lambda x: (x * 0.5) if isinstance(x, (int, float)) else x
-                
+
+                def degrade_fn(x):
+                    return x * 0.5 if isinstance(x, int | float) else x
+
             return [SilentDegradationFault(degrade_fn=degrade_fn)]
 
         if self.fault_type == "handoff_corruption":
@@ -93,7 +103,7 @@ def load_scenarios_from_yaml(yaml_path: Path | str) -> list[ChaosScenario]:
     if not path.exists():
         raise FileNotFoundError(f"Scenario file not found: {path}")
 
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         data = yaml.safe_load(f)
 
     raw_list = data.get("scenarios", [])

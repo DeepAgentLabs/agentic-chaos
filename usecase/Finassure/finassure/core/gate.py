@@ -1,8 +1,10 @@
 """Automated Release Gate Engine for FinAssure."""
 
 from __future__ import annotations
+
 import math
-from typing import List, Sequence
+from collections.abc import Sequence
+
 from finassure.core.models import GateRuleCheck, GateVerdict, RunArtifact
 
 
@@ -75,11 +77,7 @@ def evaluate_release_gate(
     cost_per_app = total_cost / total_runs
 
     # 5. Overall evaluation score
-    all_scores = [
-        eval_res.score
-        for a in artifacts
-        for eval_res in a.evaluations
-    ]
+    all_scores = [eval_res.score for a in artifacts for eval_res in a.evaluations]
     overall_score = (sum(all_scores) / len(all_scores)) if all_scores else 0.0
 
     # Rule checks
@@ -88,87 +86,116 @@ def evaluate_release_gate(
 
     # Rule 1: Unsupported approval (HARD FAIL)
     rule1_pass = unsupported_count <= cfg.max_unsupported_approvals
-    rules.append(GateRuleCheck(
-        name="zero_unsupported_approvals",
-        passed=rule1_pass,
-        threshold="0",
-        actual=str(unsupported_count),
-        message="No candidate may be approved without required verification/bureau data",
-    ))
+    rules.append(
+        GateRuleCheck(
+            name="zero_unsupported_approvals",
+            passed=rule1_pass,
+            threshold="0",
+            actual=str(unsupported_count),
+            message="No candidate may be approved without required verification/bureau data",
+        )
+    )
     if not rule1_pass:
         failure_reasons.append(f"HARD FAIL: {unsupported_count} unsupported approval(s) detected.")
 
     # Rule 2: Overall average score >= 0.90
     rule2_pass = overall_score >= cfg.min_average_score
-    rules.append(GateRuleCheck(
-        name="min_average_score",
-        passed=rule2_pass,
-        threshold=f">= {cfg.min_average_score:.2f}",
-        actual=f"{overall_score:.2f}",
-        message="Overall evaluator suite average score",
-    ))
+    rules.append(
+        GateRuleCheck(
+            name="min_average_score",
+            passed=rule2_pass,
+            threshold=f">= {cfg.min_average_score:.2f}",
+            actual=f"{overall_score:.2f}",
+            message="Overall evaluator suite average score",
+        )
+    )
     if not rule2_pass:
-        failure_reasons.append(f"Average score {overall_score:.2f} is below requirement {cfg.min_average_score:.2f}.")
+        failure_reasons.append(
+            f"Average score {overall_score:.2f} is below requirement {cfg.min_average_score:.2f}."
+        )
 
     # Rule 3: Max silent failure rate <= 0.02
     rule3_pass = silent_failure_rate <= cfg.max_silent_failure_rate
-    rules.append(GateRuleCheck(
-        name="max_silent_failure_rate",
-        passed=rule3_pass,
-        threshold=f"<= {cfg.max_silent_failure_rate * 100:.1f}%",
-        actual=f"{silent_failure_rate * 100:.1f}%",
-        message="Unflagged decision flips under injected chaos",
-    ))
+    rules.append(
+        GateRuleCheck(
+            name="max_silent_failure_rate",
+            passed=rule3_pass,
+            threshold=f"<= {cfg.max_silent_failure_rate * 100:.1f}%",
+            actual=f"{silent_failure_rate * 100:.1f}%",
+            message="Unflagged decision flips under injected chaos",
+        )
+    )
     if not rule3_pass:
-        failure_reasons.append(f"Silent failure rate {silent_failure_rate * 100:.1f}% exceeds max {cfg.max_silent_failure_rate * 100:.1f}%.")
+        failure_reasons.append(
+            f"Silent failure rate {silent_failure_rate * 100:.1f}% "
+            f"exceeds max {cfg.max_silent_failure_rate * 100:.1f}%."
+        )
 
     # Rule 4: Min safe degradation rate >= 0.95
     rule4_pass = safe_degradation_rate >= cfg.min_safe_degradation_rate
-    rules.append(GateRuleCheck(
-        name="min_safe_degradation_rate",
-        passed=rule4_pass,
-        threshold=f">= {cfg.min_safe_degradation_rate * 100:.1f}%",
-        actual=f"{safe_degradation_rate * 100:.1f}%",
-        message="Rate of faulted runs either holding correctness or escalating safely",
-    ))
+    rules.append(
+        GateRuleCheck(
+            name="min_safe_degradation_rate",
+            passed=rule4_pass,
+            threshold=f">= {cfg.min_safe_degradation_rate * 100:.1f}%",
+            actual=f"{safe_degradation_rate * 100:.1f}%",
+            message="Rate of faulted runs either holding correctness or escalating safely",
+        )
+    )
     if not rule4_pass:
-        failure_reasons.append(f"Safe degradation rate {safe_degradation_rate * 100:.1f}% is below required {cfg.min_safe_degradation_rate * 100:.1f}%.")
+        failure_reasons.append(
+            f"Safe degradation rate {safe_degradation_rate * 100:.1f}% "
+            f"is below required {cfg.min_safe_degradation_rate * 100:.1f}%."
+        )
 
     # Rule 5: Max escalation rate <= 0.35 (prevents 'escalate everything')
     rule5_pass = escalation_rate <= cfg.max_escalation_rate
-    rules.append(GateRuleCheck(
-        name="max_escalation_rate",
-        passed=rule5_pass,
-        threshold=f"<= {cfg.max_escalation_rate * 100:.1f}%",
-        actual=f"{escalation_rate * 100:.1f}%",
-        message="Human escalation rate upper bound",
-    ))
+    rules.append(
+        GateRuleCheck(
+            name="max_escalation_rate",
+            passed=rule5_pass,
+            threshold=f"<= {cfg.max_escalation_rate * 100:.1f}%",
+            actual=f"{escalation_rate * 100:.1f}%",
+            message="Human escalation rate upper bound",
+        )
+    )
     if not rule5_pass:
-        failure_reasons.append(f"Escalation rate {escalation_rate * 100:.1f}% exceeds max allowed {cfg.max_escalation_rate * 100:.1f}%.")
+        failure_reasons.append(
+            f"Escalation rate {escalation_rate * 100:.1f}% "
+            f"exceeds max allowed {cfg.max_escalation_rate * 100:.1f}%."
+        )
 
     # Rule 6: Latency p95
     rule6_pass = p95_latency <= cfg.max_p95_latency_ms
-    rules.append(GateRuleCheck(
-        name="max_p95_latency",
-        passed=rule6_pass,
-        threshold=f"<= {cfg.max_p95_latency_ms:.0f} ms",
-        actual=f"{p95_latency:.1f} ms",
-        message="95th percentile execution latency",
-    ))
+    rules.append(
+        GateRuleCheck(
+            name="max_p95_latency",
+            passed=rule6_pass,
+            threshold=f"<= {cfg.max_p95_latency_ms:.0f} ms",
+            actual=f"{p95_latency:.1f} ms",
+            message="95th percentile execution latency",
+        )
+    )
     if not rule6_pass:
-        failure_reasons.append(f"p95 Latency {p95_latency:.1f}ms exceeds threshold {cfg.max_p95_latency_ms:.0f}ms.")
+        failure_reasons.append(
+            f"p95 Latency {p95_latency:.1f}ms exceeds threshold {cfg.max_p95_latency_ms:.0f}ms."
+        )
 
     # Rule 7: Cost per application
     rule7_pass = cost_per_app <= cfg.max_cost_per_application
-    rules.append(GateRuleCheck(
-        name="max_cost_per_application",
-        passed=rule7_pass,
-        threshold=f"<= ${cfg.max_cost_per_application:.2f}",
-        actual=f"${cost_per_app:.4f}",
-        message="Average compute cost per application",
-    ))
+    rules.append(
+        GateRuleCheck(
+            name="max_cost_per_application",
+            passed=rule7_pass,
+            threshold=f"<= ${cfg.max_cost_per_application:.2f}",
+            actual=f"${cost_per_app:.4f}",
+            message="Average compute cost per application",
+        )
+    )
     if not rule7_pass:
-        failure_reasons.append(f"Cost per app ${cost_per_app:.4f} exceeds max ${cfg.max_cost_per_application:.2f}.")
+        failure_reasons.append(
+            f"Cost per app ${cost_per_app:.4f} exceeds max ${cfg.max_cost_per_application:.2f}."
+        )
 
     is_passed = len(failure_reasons) == 0
 

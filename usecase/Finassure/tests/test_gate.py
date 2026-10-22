@@ -1,6 +1,6 @@
 """Unit tests for the Release Gate engine."""
 
-import pytest
+from finassure.core.gate import evaluate_release_gate
 from finassure.core.models import (
     CaseApplicant,
     DecisionOutcome,
@@ -9,11 +9,10 @@ from finassure.core.models import (
     RunArtifact,
     WorkflowOutcome,
 )
-from finassure.core.gate import evaluate_release_gate, ReleaseGateConfig
 
 
 def test_gate_hard_fails_on_unsupported_approval():
-    case = CaseApplicant(
+    CaseApplicant(
         id="C1",
         name="Test Case",
         ssn="123-45-6789",
@@ -27,7 +26,7 @@ def test_gate_hard_fails_on_unsupported_approval():
         documents_text="",
         bank_statement_monthly_deposits=6500.0,
     )
-    
+
     # Run with unsupported approval
     artifact = RunArtifact(
         run_id="r1",
@@ -36,9 +35,13 @@ def test_gate_hard_fails_on_unsupported_approval():
         scenario_id="bureau_outage",
         case_id="C1",
         workflow_outcome=WorkflowOutcome(decision=DecisionOutcome.APPROVE),
-        oracle_result=OracleResult(decision=DecisionOutcome.DECLINE, reason_factors=["EXCESSIVE_DTI"]),
+        oracle_result=OracleResult(
+            decision=DecisionOutcome.DECLINE, reason_factors=["EXCESSIVE_DTI"]
+        ),
         evaluations=[
-            EvaluationResult(evaluator_name="unsupported_approval", passed=False, score=0.0, is_hard_fail=True)
+            EvaluationResult(
+                evaluator_name="unsupported_approval", passed=False, score=0.0, is_hard_fail=True
+            )
         ],
         unsupported_approval=True,
         silent_failure=True,

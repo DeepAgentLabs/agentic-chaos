@@ -1,15 +1,15 @@
 """Agent implementations for Underwriting Pack (v1 Naive and v2 Hardened)."""
 
 from __future__ import annotations
+
 import logging
 import time
-from typing import Any, Dict
-from pydantic import BaseModel, Field
 
 import agenticlens
-from finassure.core.models import CaseApplicant, DecisionOutcome, WorkflowOutcome
-from finassure.packs.underwriting.tools import bureau_lookup_tool
+from finassure.core.models import CaseApplicant, DecisionOutcome
 from finassure.llm import llm_client
+from finassure.packs.underwriting.tools import bureau_lookup_tool
+from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ class ExtractedFinancials(BaseModel):
 class UnderwritingState(BaseModel):
     case: CaseApplicant
     version: str = "v1"
-    
+
     # State fields populated by agents
     intake_complete: bool = False
     extracted_income: float = 0.0
@@ -32,13 +32,13 @@ class UnderwritingState(BaseModel):
     bureau_score: int | None = None
     bureau_status: str | None = None
     tools_called: list[str] = Field(default_factory=list)
-    
+
     # Decision fields
     calculated_dti: float = 0.0
     preliminary_decision: DecisionOutcome = DecisionOutcome.REFER
     reason_factors: list[str] = Field(default_factory=list)
     narrative: str = ""
-    
+
     # Hardening & HITL flags
     escalated: bool = False
     escalation_reason: str | None = None
@@ -48,6 +48,7 @@ class UnderwritingState(BaseModel):
 # =========================================================================
 # 1. Intake Agent
 # =========================================================================
+
 
 def run_intake_agent(state: UnderwritingState) -> UnderwritingState:
     with agenticlens.step(
@@ -65,6 +66,7 @@ def run_intake_agent(state: UnderwritingState) -> UnderwritingState:
 # 2. Document Extraction Agent
 # =========================================================================
 
+
 def run_doc_extraction_agent(state: UnderwritingState) -> UnderwritingState:
     with agenticlens.step(
         name="document_extraction",
@@ -75,19 +77,21 @@ def run_doc_extraction_agent(state: UnderwritingState) -> UnderwritingState:
         handoff_to="bureau_agent",
     ):
         prompt = (
-            f"Extract stated annualized income and monthly bank deposits from the following document:\n\n"
+            "Extract stated annualized income and monthly bank deposits "
+            "from the following document:\n\n"
             f"{state.case.documents_text}\n\n"
             f"Stated income: ${state.case.stated_annual_income}\n"
             f"Monthly deposits: ${state.case.bank_statement_monthly_deposits}"
         )
-        
+
         extracted = llm_client.generate_structured(
             prompt=prompt,
             schema=ExtractedFinancials,
             system_instruction="Extract financial values into JSON schema.",
         )
-        
+
         from agentic_chaos import chaos_call
+
         # Allow chaos faults (silent_degradation / handoff_corruption) to intercept extraction
         def _get_income(inc: float) -> float:
             return inc
@@ -101,20 +105,23 @@ def run_doc_extraction_agent(state: UnderwritingState) -> UnderwritingState:
             _chaos_from_node="doc_extraction_agent",
             _chaos_to_node="bureau_agent",
         )
-        
+
         state.extracted_income = income_val if income_val is not None else 0.0
         state.extracted_monthly_deposits = extracted.extracted_monthly_deposits
 
         if state.version == "v2":
             # Hardening v2: Schema validation & Income cross-check
-            if income_val is None or not isinstance(income_val, (int, float)) or income_val <= 0:
+            if income_val is None or not isinstance(income_val, int | float) or income_val <= 0:
                 state.escalated = True
                 state.escalation_reason = "INVALID_EXTRACTED_INCOME_SCHEMA"
                 state.validation_errors.append("Income must be positive")
 
             # Cross-check stated income vs extracted income
             if state.case.stated_annual_income > 0:
-                diff = abs(state.extracted_income - state.case.stated_annual_income) / state.case.stated_annual_income
+                diff = (
+                    abs(state.extracted_income - state.case.stated_annual_income)
+                    / state.case.stated_annual_income
+                )
                 if diff > 0.15:
                     state.escalated = True
                     state.escalation_reason = "INCOME_EXTRACTION_STATED_MISMATCH"
@@ -135,6 +142,7 @@ def run_doc_extraction_agent(state: UnderwritingState) -> UnderwritingState:
 # =========================================================================
 # 3. Bureau Lookup Agent
 # =========================================================================
+
 
 def run_bureau_agent(state: UnderwritingState) -> UnderwritingState:
     with agenticlens.step(
@@ -187,6 +195,7 @@ def run_bureau_agent(state: UnderwritingState) -> UnderwritingState:
 # 4. Risk Scorer Agent
 # =========================================================================
 
+
 def run_risk_scorer_agent(state: UnderwritingState) -> UnderwritingState:
     with agenticlens.step(
         name="risk_scoring",
@@ -198,7 +207,7 @@ def run_risk_scorer_agent(state: UnderwritingState) -> UnderwritingState:
     ):
         # Type safety & schema validation against memory corruption
         raw_income = state.extracted_income
-        if not isinstance(raw_income, (int, float)):
+        if not isinstance(raw_income, int | float):
             if state.version == "v2":
                 state.escalated = True
                 state.escalation_reason = "CORRUPTED_INCOME_DATA_TYPE"
@@ -206,12 +215,16 @@ def run_risk_scorer_agent(state: UnderwritingState) -> UnderwritingState:
                 return state
             raw_income = 0.0
 
-        income = raw_income if (isinstance(raw_income, (int, float)) and raw_income > 0) else state.case.stated_annual_income
+        income = (
+            raw_income
+            if (isinstance(raw_income, int | float) and raw_income > 0)
+            else state.case.stated_annual_income
+        )
         monthly_income = max(income / 12.0, 1.0)
         state.calculated_dti = round(state.case.monthly_debt / monthly_income, 4)
 
         score = state.bureau_score
-        if score is not None and not isinstance(score, (int, float)):
+        if score is not None and not isinstance(score, int | float):
             if state.version == "v2":
                 state.escalated = True
                 state.escalation_reason = "CORRUPTED_BUREAU_SCORE_DATA_TYPE"
@@ -227,7 +240,7 @@ def run_risk_scorer_agent(state: UnderwritingState) -> UnderwritingState:
         effective_score = score if score is not None else 680
 
         # Validate calculated_dti and effective_score are numeric
-        if not isinstance(state.calculated_dti, (int, float)):
+        if not isinstance(state.calculated_dti, int | float):
             if state.version == "v2":
                 state.escalated = True
                 state.escalation_reason = "CORRUPTED_DTI_DATA_TYPE"
@@ -235,7 +248,7 @@ def run_risk_scorer_agent(state: UnderwritingState) -> UnderwritingState:
                 return state
             state.calculated_dti = 0.30
 
-        if not isinstance(effective_score, (int, float)):
+        if not isinstance(effective_score, int | float):
             if state.version == "v2":
                 state.escalated = True
                 state.escalation_reason = "CORRUPTED_SCORE_DATA_TYPE"
@@ -295,6 +308,7 @@ def run_risk_scorer_agent(state: UnderwritingState) -> UnderwritingState:
 # 5. Compliance Reviewer Agent
 # =========================================================================
 
+
 def run_compliance_reviewer_agent(state: UnderwritingState) -> UnderwritingState:
     with agenticlens.step(
         name="compliance_review",
@@ -304,11 +318,14 @@ def run_compliance_reviewer_agent(state: UnderwritingState) -> UnderwritingState
         handoff_from="risk_scorer_agent",
     ):
         # State decay / memory integrity check (F6)
-        if state.version == "v2":
-            if not isinstance(state.extracted_income, (int, float)) or state.extracted_income <= 0 or state.calculated_dti < 0:
-                state.escalated = True
-                state.escalation_reason = "STATE_INTEGRITY_VIOLATION"
-                state.reason_factors.append("CORRUPTED_INTERNAL_STATE")
+        if state.version == "v2" and (
+            not isinstance(state.extracted_income, int | float)
+            or state.extracted_income <= 0
+            or state.calculated_dti < 0
+        ):
+            state.escalated = True
+            state.escalation_reason = "STATE_INTEGRITY_VIOLATION"
+            state.reason_factors.append("CORRUPTED_INTERNAL_STATE")
 
         # Turn limit for reviewer loops (F6)
         reviewer_turn = getattr(state, "reviewer_turns", 1)
@@ -320,7 +337,7 @@ def run_compliance_reviewer_agent(state: UnderwritingState) -> UnderwritingState
 
         # Generate compliance narrative and final alignment
         decision = DecisionOutcome.REFER if state.escalated else state.preliminary_decision
-        
+
         prompt = (
             f"Review underwriting determination for applicant {state.case.name}.\n"
             f"Preliminary Decision: {decision.value}\n"
@@ -329,7 +346,7 @@ def run_compliance_reviewer_agent(state: UnderwritingState) -> UnderwritingState
             f"DTI: {state.calculated_dti:.2%}\n"
             f"Provide a 1-sentence regulatory summary note."
         )
-        
+
         # Retry cap with backoff for rate limits and timeouts (F6)
         narrative = ""
         retries = 3 if state.version == "v2" else 1
@@ -337,18 +354,23 @@ def run_compliance_reviewer_agent(state: UnderwritingState) -> UnderwritingState
             try:
                 narrative = llm_client.generate_text(
                     prompt=prompt,
-                    system_instruction="You are a financial compliance reviewer drafting adverse action or approval documentation.",
+                    system_instruction=(
+                        "You are a financial compliance reviewer drafting adverse "
+                        "action or approval documentation."
+                    ),
                 )
                 break
             except Exception as e:
                 logger.warning(f"Compliance reviewer LLM call attempt {attempt+1} failed: {e}")
                 if state.version == "v2" and attempt < retries - 1:
-                    time.sleep(0.05 * (2 ** attempt))
+                    time.sleep(0.05 * (2**attempt))
                 else:
                     if state.version == "v2":
                         state.escalated = True
                         state.escalation_reason = "COMPLIANCE_SERVICE_RATE_LIMITED"
-                        narrative = "Escalated to human review due to compliance service rate limiting."
+                        narrative = (
+                            "Escalated to human review due to compliance service rate limiting."
+                        )
                     else:
                         raise e
 

@@ -1,15 +1,13 @@
 """Unit tests for Known-Good and Known-Bad workflow fixtures, degrade functions, and gate logic."""
 
-import pytest
+from finassure.core.gate import evaluate_release_gate
 from finassure.core.models import (
-    CaseApplicant,
     DecisionOutcome,
     EvaluationResult,
     OracleResult,
     RunArtifact,
     WorkflowOutcome,
 )
-from finassure.core.gate import evaluate_release_gate, ReleaseGateConfig
 from finassure.core.scenario import ChaosScenario
 
 
@@ -66,9 +64,21 @@ def test_known_bad_workflow_fixture_must_fail_gate():
                 reason_factors=["SUBPRIME_CREDIT"],
             ),
             evaluations=[
-                EvaluationResult(evaluator_name="unsupported_approval", passed=False, score=0.0, is_hard_fail=True),
-                EvaluationResult(evaluator_name="chaos_stability", passed=False, score=0.0, is_hard_fail=True),
-                EvaluationResult(evaluator_name="decision_consistency", passed=False, score=0.0, is_hard_fail=False),
+                EvaluationResult(
+                    evaluator_name="unsupported_approval",
+                    passed=False,
+                    score=0.0,
+                    is_hard_fail=True,
+                ),
+                EvaluationResult(
+                    evaluator_name="chaos_stability", passed=False, score=0.0, is_hard_fail=True
+                ),
+                EvaluationResult(
+                    evaluator_name="decision_consistency",
+                    passed=False,
+                    score=0.0,
+                    is_hard_fail=False,
+                ),
             ],
             unsupported_approval=True,
             silent_failure=True,
@@ -87,8 +97,10 @@ def test_known_bad_workflow_fixture_must_fail_gate():
 
 
 def test_known_good_workflow_fixture_must_pass_gate():
-    """Known-good workflow fixture: flawless adherence to oracle, safe escalation on faults, zero unsupported approvals.
-    Must ALWAYS pass the gate."""
+    """Known-good workflow fixture: flawless adherence to oracle and safe escalation.
+
+    Must ALWAYS pass the gate.
+    """
     good_artifacts = []
     # 5 clean runs
     for i in range(5):
@@ -123,9 +135,9 @@ def test_known_good_workflow_fixture_must_pass_gate():
         )
         good_artifacts.append(art)
 
-    # 10 faulted runs: 6 maintain correctness (resilient match) and 4 escalate safely (within 35% escalation cap)
+    # 10 faulted runs: 6 maintain correctness and 4 escalate safely (within 35% cap)
     for i in range(10):
-        escalates = (i < 4)
+        escalates = i < 4
         art = RunArtifact(
             run_id=f"good-faulted-{i}",
             pack_name="fixture_pack",
@@ -135,7 +147,9 @@ def test_known_good_workflow_fixture_must_pass_gate():
             clean_run=False,
             workflow_outcome=WorkflowOutcome(
                 decision=DecisionOutcome.REFER if escalates else DecisionOutcome.APPROVE,
-                reason_factors=["UNVERIFIED_CREDIT_BUREAU_DATA"] if escalates else ["PRIME_CREDIT_PROFILE"],
+                reason_factors=["UNVERIFIED_CREDIT_BUREAU_DATA"]
+                if escalates
+                else ["PRIME_CREDIT_PROFILE"],
                 escalated=escalates,
                 escalation_reason="BUREAU_SERVICE_UNAVAILABLE" if escalates else None,
                 tools_called=["bureau_lookup"],
@@ -145,8 +159,14 @@ def test_known_good_workflow_fixture_must_pass_gate():
                 reason_factors=["PRIME_CREDIT_PROFILE"],
             ),
             evaluations=[
-                EvaluationResult(evaluator_name="decision_consistency", passed=not escalates, score=1.0 if not escalates else 0.0),
-                EvaluationResult(evaluator_name="chaos_stability", passed=True, score=0.95 if escalates else 1.0),
+                EvaluationResult(
+                    evaluator_name="decision_consistency",
+                    passed=not escalates,
+                    score=1.0 if not escalates else 0.0,
+                ),
+                EvaluationResult(
+                    evaluator_name="chaos_stability", passed=True, score=0.95 if escalates else 1.0
+                ),
                 EvaluationResult(evaluator_name="required_tools_called", passed=True, score=1.0),
                 EvaluationResult(evaluator_name="unsupported_approval", passed=True, score=1.0),
                 EvaluationResult(evaluator_name="reason_fidelity", passed=True, score=0.95),

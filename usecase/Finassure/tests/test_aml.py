@@ -1,12 +1,9 @@
-import pytest
 import agenticlens
+from finassure.config import settings
+from finassure.core.runner import ExperimentRunner
+from finassure.core.scenario import load_scenarios_from_yaml
 from finassure.packs.aml import AMLPack
 from finassure.packs.aml.generator import generate_aml_cases
-from finassure.packs.aml.oracle import aml_oracle
-from finassure.core.models import DecisionOutcome
-from finassure.core.scenario import load_scenarios_from_yaml
-from finassure.core.runner import ExperimentRunner
-from finassure.config import settings
 
 
 def test_aml_clean_run_matches_oracle():
@@ -21,10 +18,12 @@ def test_aml_clean_run_matches_oracle():
 
 
 def test_aml_jurisdiction_outage_v1_fails_vs_v2_escalates():
-    """FATF jurisdiction tool failure must cause v1 naive to assume clear domestic, whereas v2 strictly escalates."""
-    scenarios = load_scenarios_from_yaml(settings.ROOT_DIR / "finassure" / "packs" / "aml" / "scenarios.yaml")
+    """FATF jurisdiction tool failure causes v1 to assume domestic, whereas v2 escalates."""
+    scenarios = load_scenarios_from_yaml(
+        settings.ROOT_DIR / "finassure" / "packs" / "aml" / "scenarios.yaml"
+    )
     outage_sc = [s for s in scenarios if s.id == "jurisdiction_outage"][0]
-    
+
     cases = generate_aml_cases(count=4, seed=88)
 
     # v1 Naive: defaults to LOW risk without verified lookup -> unsupported / silent failure
@@ -45,7 +44,9 @@ def test_aml_jurisdiction_outage_v1_fails_vs_v2_escalates():
 
 def test_aml_dropped_handoff_v2_escalation():
     """Dropped screening handoff triggers contract validation and safe escalation in v2."""
-    scenarios = load_scenarios_from_yaml(settings.ROOT_DIR / "finassure" / "packs" / "aml" / "scenarios.yaml")
+    scenarios = load_scenarios_from_yaml(
+        settings.ROOT_DIR / "finassure" / "packs" / "aml" / "scenarios.yaml"
+    )
     drop_sc = [s for s in scenarios if s.id == "dropped_jurisdiction_handoff"][0]
 
     cases = generate_aml_cases(count=4, seed=88)
