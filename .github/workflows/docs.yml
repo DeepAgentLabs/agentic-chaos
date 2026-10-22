@@ -33,15 +33,27 @@ jobs:
         uses: actions/configure-pages@v6
         continue-on-error: true
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: Website/package-lock.json
+
+      - name: Build website
+        run: |
+          cd Website
+          npm ci
+          npm run build
+          cd ..
+
       - name: Build docs
         run: uv run --no-project --with "mkdocs-material>=9.5" mkdocs build --strict --site-dir site/docs
 
       - name: Add product website
         run: |
-          cp index.html site/index.html
-          cp site.css site/site.css
-          cp site.js site/site.js
-          cp og.png site/og.png
+          cp -r Website/dist/* site/
+          if [ -f og.png ]; then cp og.png site/og.png; fi
           touch site/.nojekyll
 
 
