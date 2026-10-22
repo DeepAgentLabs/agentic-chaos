@@ -23,7 +23,7 @@ def generate_aml_cases(count: int = 50, seed: int = 88) -> list[CaseApplicant]:
     cases: list[CaseApplicant] = []
 
     for i in range(count):
-        case_id = f"AML-{seed}-{i+1:04d}"
+        case_id = f"AML-{seed}-{i + 1:04d}"
         group = rng.choice(GROUPS)
 
         bucket = rng.random()

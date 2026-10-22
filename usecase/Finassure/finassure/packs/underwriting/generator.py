@@ -70,7 +70,7 @@ def generate_underwriting_cases(count: int = 200, seed: int = 42) -> list[CaseAp
     cases: list[CaseApplicant] = []
 
     for i in range(count):
-        case_id = f"APP-{seed}-{i+1:04d}"
+        case_id = f"APP-{seed}-{i + 1:04d}"
         first_name = rng.choice(FIRST_NAMES)
         last_name = rng.choice(LAST_NAMES)
         name = f"{first_name} {last_name}"

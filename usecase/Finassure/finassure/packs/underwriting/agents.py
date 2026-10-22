@@ -169,7 +169,7 @@ def run_bureau_agent(state: UnderwritingState) -> UnderwritingState:
                     tool_succeeded = True
                     break
             except Exception as e:
-                logger.warning(f"Bureau lookup attempt {attempt+1} encountered: {e}")
+                logger.warning(f"Bureau lookup attempt {attempt + 1} encountered: {e}")
                 if state.version == "v2" and attempt < retries - 1:
                     time.sleep(0.05)  # brief backoff in v2
                     continue
@@ -361,7 +361,7 @@ def run_compliance_reviewer_agent(state: UnderwritingState) -> UnderwritingState
                 )
                 break
             except Exception as e:
-                logger.warning(f"Compliance reviewer LLM call attempt {attempt+1} failed: {e}")
+                logger.warning(f"Compliance reviewer LLM call attempt {attempt + 1} failed: {e}")
                 if state.version == "v2" and attempt < retries - 1:
                     time.sleep(0.05 * (2**attempt))
                 else:

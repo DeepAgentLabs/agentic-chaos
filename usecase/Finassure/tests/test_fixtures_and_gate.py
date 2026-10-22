@@ -143,7 +143,7 @@ def test_known_good_workflow_fixture_must_pass_gate():
             pack_name="fixture_pack",
             pack_version="known_good",
             scenario_id="bureau_outage",
-            case_id=f"CASE-{i+5}",
+            case_id=f"CASE-{i + 5}",
             clean_run=False,
             workflow_outcome=WorkflowOutcome(
                 decision=DecisionOutcome.REFER if escalates else DecisionOutcome.APPROVE,

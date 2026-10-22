@@ -96,7 +96,7 @@ def run_sanctions_agent(state: KYCState) -> KYCState:
                     tool_succeeded = True
                     break
             except Exception as e:
-                logger.warning(f"Sanctions screening fault attempt {attempt+1}: {e}")
+                logger.warning(f"Sanctions screening fault attempt {attempt + 1}: {e}")
                 if state.version == "v2" and attempt < retries - 1:
                     continue
 

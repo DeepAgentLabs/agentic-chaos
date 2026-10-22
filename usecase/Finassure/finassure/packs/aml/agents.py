@@ -90,7 +90,7 @@ def run_jurisdiction_agent(state: AMLState) -> AMLState:
                     tool_succeeded = True
                     break
             except Exception as e:
-                logger.warning(f"Jurisdiction lookup attempt {attempt+1} failed: {e}")
+                logger.warning(f"Jurisdiction lookup attempt {attempt + 1} failed: {e}")
                 if state.version == "v2" and attempt < retries - 1:
                     continue
 

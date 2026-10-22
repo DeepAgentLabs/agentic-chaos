@@ -42,7 +42,7 @@ def generate_kyc_cases(count: int = 100, seed: int = 77) -> list[CaseApplicant]:
     cases: list[CaseApplicant] = []
 
     for i in range(count):
-        case_id = f"KYC-{seed}-{i+1:04d}"
+        case_id = f"KYC-{seed}-{i + 1:04d}"
         first = rng.choice(FIRST_NAMES)
         last = rng.choice(LAST_NAMES)
         name = f"{first} {last}"
