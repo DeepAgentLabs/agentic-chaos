@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 480" width="100%" height="100%" style="background: #090d16; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <defs>
+    <linearGradient id="flowGrad1" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#6366f1" />
+    </linearGradient>
+    <linearGradient id="agentNodeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+    <filter id="softGlow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000000" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+
+  <!-- Title -->
+  <text x="550" y="38" text-anchor="middle" fill="#f8fafc" font-size="20" font-weight="700">FinAssure: 5-Agent Loan Underwriting Data Flow &amp; Fault Interception</text>
+  <text x="550" y="62" text-anchor="middle" fill="#94a3b8" font-size="12">End-to-End Execution Trace under Agentic Chaos Injection &amp; Deterministic Policy Oracle Verification</text>
+
+  <!-- Flow Line Connecting Agents -->
+  <line x1="90" y1="170" x2="1010" y2="170" stroke="#334155" stroke-width="4" stroke-dasharray="6,6" />
+
+  <!-- Node 1: Intake Agent -->
+  <g transform="translate(40, 110)" filter="url(#softGlow)">
+    <rect width="170" height="120" rx="10" fill="url(#agentNodeGrad)" stroke="#38bdf8" stroke-width="1.5" />
+    <circle cx="85" cy="30" r="14" fill="#0284c7" />
+    <text x="85" y="35" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="bold">1</text>
+    <text x="85" y="65" text-anchor="middle" fill="#f8fafc" font-size="13" font-weight="700">Intake Agent</text>
+    <text x="85" y="83" text-anchor="middle" fill="#94a3b8" font-size="10">Schema validation</text>
+    <text x="85" y="99" text-anchor="middle" fill="#38bdf8" font-size="9.5">Applicant metadata</text>
+  </g>
+
+  <!-- Arrow 1 to 2 -->
+  <polygon points="225,170 215,164 215,176" fill="#38bdf8" />
+
+  <!-- Node 2: Doc Extraction Agent -->
+  <g transform="translate(235, 110)" filter="url(#softGlow)">
+    <rect width="180" height="120" rx="10" fill="url(#agentNodeGrad)" stroke="#6366f1" stroke-width="1.5" />
+    <circle cx="90" cy="30" r="14" fill="#4f46e5" />
+    <text x="90" y="35" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="bold">2</text>
+    <text x="90" y="65" text-anchor="middle" fill="#f8fafc" font-size="13" font-weight="700">Doc Extraction</text>
+    <text x="90" y="83" text-anchor="middle" fill="#94a3b8" font-size="10">Income &amp; Bank Inflows</text>
+    <rect x="15" y="94" width="150" height="18" rx="4" fill="#312e81" />
+    <text x="90" y="107" text-anchor="middle" fill="#c7d2fe" font-size="9" font-weight="600">v2 Cross-Checks 90d Inflows</text>
+  </g>
+
+  <!-- Arrow 2 to 3 -->
+  <polygon points="430,170 420,164 420,176" fill="#6366f1" />
+
+  <!-- Node 3: Bureau Agent -->
+  <g transform="translate(440, 110)" filter="url(#softGlow)">
+    <rect width="180" height="120" rx="10" fill="url(#agentNodeGrad)" stroke="#e11d48" stroke-width="1.8" />
+    <circle cx="90" cy="30" r="14" fill="#be123c" />
+    <text x="90" y="35" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="bold">3</text>
+    <text x="90" y="65" text-anchor="middle" fill="#f8fafc" font-size="13" font-weight="700">Credit Bureau</text>
+    <text x="90" y="83" text-anchor="middle" fill="#fda4af" font-size="10" font-weight="600">bureau_lookup tool</text>
+    <rect x="15" y="94" width="150" height="18" rx="4" fill="#4c0519" stroke="#f43f5e" stroke-width="0.8" />
+    <text x="90" y="107" text-anchor="middle" fill="#fecdd3" font-size="9" font-weight="700">⚡ Chaos Fault Target</text>
+  </g>
+
+  <!-- Arrow 3 to 4 -->
+  <polygon points="635,170 625,164 625,176" fill="#e11d48" />
+
+  <!-- Node 4: Risk Scorer Agent -->
+  <g transform="translate(645, 110)" filter="url(#softGlow)">
+    <rect width="180" height="120" rx="10" fill="url(#agentNodeGrad)" stroke="#0d9488" stroke-width="1.5" />
+    <circle cx="90" cy="30" r="14" fill="#0f766e" />
+    <text x="90" y="35" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="bold">4</text>
+    <text x="90" y="65" text-anchor="middle" fill="#f8fafc" font-size="13" font-weight="700">Risk Scorer Agent</text>
+    <text x="90" y="83" text-anchor="middle" fill="#94a3b8" font-size="10">Deterministic DTI Math</text>
+    <rect x="15" y="94" width="150" height="18" rx="4" fill="#134e4a" />
+    <text x="90" y="107" text-anchor="middle" fill="#5eead4" font-size="9" font-weight="600">Calculates Policy Ratios</text>
+  </g>
+
+  <!-- Arrow 4 to 5 -->
+  <polygon points="840,170 830,164 830,176" fill="#0d9488" />
+
+  <!-- Node 5: Compliance Reviewer -->
+  <g transform="translate(850, 110)" filter="url(#softGlow)">
+    <rect width="195" height="120" rx="10" fill="url(#agentNodeGrad)" stroke="#a855f7" stroke-width="1.5" />
+    <circle cx="97" cy="30" r="14" fill="#7e22ce" />
+    <text x="97" y="35" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="bold">5</text>
+    <text x="97" y="65" text-anchor="middle" fill="#f8fafc" font-size="13" font-weight="700">Compliance Reviewer</text>
+    <text x="97" y="83" text-anchor="middle" fill="#94a3b8" font-size="10">Adverse Action Notices</text>
+    <rect x="18" y="94" width="160" height="18" rx="4" fill="#3b0764" />
+    <text x="97" y="107" text-anchor="middle" fill="#d8b4fe" font-size="9" font-weight="600">Safe HITL Escalation Queue</text>
+  </g>
+
+  <!-- Fault Injection Callout (Top) -->
+  <g transform="translate(420, 240)">
+    <path d="M 110 0 L 110 -10" stroke="#f43f5e" stroke-width="2" />
+    <rect x="0" y="0" width="220" height="52" rx="6" fill="#1e1117" stroke="#f43f5e" stroke-width="1" />
+    <text x="110" y="18" text-anchor="middle" fill="#fda4af" font-size="10.5" font-weight="700">Agentic Chaos Injection</text>
+    <text x="110" y="34" text-anchor="middle" fill="#94a3b8" font-size="9">ToolCallFailureFault (outage / timeout)</text>
+    <text x="110" y="46" text-anchor="middle" fill="#cbd5e1" font-size="9">SilentDegradationFault (halved income)</text>
+  </g>
+
+  <!-- Verification & Gate Layer (Bottom) -->
+  <g transform="translate(60, 320)">
+    <rect width="980" height="130" rx="10" fill="#0f172a" stroke="#334155" stroke-width="1.5" />
+    <text x="30" y="32" fill="#f8fafc" font-size="14" font-weight="700">Release Gate &amp; Deterministic Policy Oracle Evaluation</text>
+
+    <!-- Branch v1 -->
+    <rect x="30" y="50" width="440" height="65" rx="6" fill="#1c1917" stroke="#ef4444" stroke-width="1" />
+    <circle cx="50" cy="82" r="10" fill="#ef4444" />
+    <text x="50" y="86" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="bold">✕</text>
+    <text x="70" y="73" fill="#f87171" font-size="12" font-weight="700">v1 (Naive Workflow) → RELEASE GATE: BLOCKED</text>
+    <text x="70" y="90" fill="#cbd5e1" font-size="10.5">Defaults bureau to 680 → <tspan fill="#fca5a5" font-weight="bold">44 Unsupported Approvals</tspan> (Hard Fail!)</text>
+    <text x="70" y="105" fill="#94a3b8" font-size="9.5">Silent Failure Rate: 27.5% (Max allowed: 2.0%) · Safe Degradation: 72.5%</text>
+
+    <!-- Branch v2 -->
+    <rect x="500" y="50" width="450" height="65" rx="6" fill="#064e3b" stroke="#10b981" stroke-width="1" />
+    <circle cx="520" cy="82" r="10" fill="#10b981" />
+    <text x="520" y="86" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="bold">✓</text>
+    <text x="540" y="73" fill="#6ee7b7" font-size="12" font-weight="700">v2 (Hardened Workflow) → RELEASE GATE: PASSED</text>
+    <text x="540" y="90" fill="#ffffff" font-size="10.5">Schema contracts + Stated/Deposit Cross-Check → <tspan fill="#a7f3d0" font-weight="bold">0 Unsupported Approvals</tspan></text>
+    <text x="540" y="105" fill="#a7f3d0" font-size="9.5">Score: 99.2% · Safe Degradation: 100.0% · 15% Escalate to HITL · Cost: +$0.0013</text>
+  </g>
+</svg>
