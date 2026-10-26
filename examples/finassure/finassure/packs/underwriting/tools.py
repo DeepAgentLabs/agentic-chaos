@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from agentic_chaos import wrap_tool
+from finassure.core.inject import inject
 
 
 def _raw_bureau_lookup(ssn: str, credit_score: int = 700) -> dict[str, Any]:
@@ -23,5 +23,6 @@ def _raw_bureau_lookup(ssn: str, credit_score: int = 700) -> dict[str, Any]:
     }
 
 
-# Wrap the tool with Agentic Chaos so that chaos_session can inject faults into it
-bureau_lookup_tool = wrap_tool(_raw_bureau_lookup, tool_name="bureau_lookup")
+def bureau_lookup_tool(**kwargs):
+    """Tool-failure injection point for ToolCallFailureFault(tool_name="bureau_lookup")."""
+    return inject(("tool_failure",), _raw_bureau_lookup, step_name="bureau_lookup", **kwargs)

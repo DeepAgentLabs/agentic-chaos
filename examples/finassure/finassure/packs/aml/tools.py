@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from agentic_chaos import wrap_tool
+from finassure.core.inject import inject
 
 
 def _raw_jurisdiction_lookup(country_or_entity: str) -> dict[str, Any]:
@@ -19,4 +19,8 @@ def _raw_jurisdiction_lookup(country_or_entity: str) -> dict[str, Any]:
     }
 
 
-jurisdiction_lookup_tool = wrap_tool(_raw_jurisdiction_lookup, tool_name="jurisdiction_lookup")
+def jurisdiction_lookup_tool(**kwargs):
+    """Tool-failure injection point for ToolCallFailureFault(tool_name="jurisdiction_lookup")."""
+    return inject(
+        ("tool_failure",), _raw_jurisdiction_lookup, step_name="jurisdiction_lookup", **kwargs
+    )

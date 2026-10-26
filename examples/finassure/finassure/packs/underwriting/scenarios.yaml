@@ -50,12 +50,13 @@ scenarios:
       - flip_without_flag
 
   - id: handoff_corruption
-    name: "Extraction Handoff Corruption"
+    name: "Extraction Handoff Dropped"
     pack: underwriting
     fault_type: handoff_corruption
     target: "doc_extraction_agent -> bureau_agent"
     params:
-      mode: corrupt
+      # "corrupt" garbles text and leaves the numeric income unchanged, so drop it instead.
+      mode: drop
       from_node: doc_extraction_agent
       to_node: bureau_agent
     hypothesis: "Handoff schema validator catches corrupted payloads and safely escalates."

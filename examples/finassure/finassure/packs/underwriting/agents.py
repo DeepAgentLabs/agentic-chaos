@@ -6,6 +6,7 @@ import logging
 import time
 
 import agenticlens
+from finassure.core.inject import inject
 from finassure.core.models import CaseApplicant, DecisionOutcome
 from finassure.llm import llm_client
 from finassure.packs.underwriting.tools import bureau_lookup_tool
@@ -43,6 +44,7 @@ class UnderwritingState(BaseModel):
     escalated: bool = False
     escalation_reason: str | None = None
     validation_errors: list[str] = Field(default_factory=list)
+    reviewer_turns: int = 0
 
 
 # =========================================================================
@@ -90,13 +92,12 @@ def run_doc_extraction_agent(state: UnderwritingState) -> UnderwritingState:
             system_instruction="Extract financial values into JSON schema.",
         )
 
-        from agentic_chaos import chaos_call
-
         # Allow chaos faults (silent_degradation / handoff_corruption) to intercept extraction
         def _get_income(inc: float) -> float:
             return inc
 
-        income_val = chaos_call(
+        income_val = inject(
+            ("silent_degradation", "handoff_corruption"),
             _get_income,
             extracted.extracted_income,
             step_id="extraction_income",
@@ -317,9 +318,23 @@ def run_compliance_reviewer_agent(state: UnderwritingState) -> UnderwritingState
         agent_role="Regulatory compliance and adverse action notice formulation",
         handoff_from="risk_scorer_agent",
     ):
+        # Shared application state read back from memory: the state_decay injection point.
+        def _read_application_state(record: str) -> str:
+            return record
+
+        record = f"{state.case.id}|{state.bureau_status or 'none'}"
+        recalled = inject(
+            ("memory_corruption",),
+            _read_application_state,
+            record,
+            step_id="compliance_reviewer.state_read",
+            step_name="shared_application_state",
+        )
+
         # State decay / memory integrity check (F6)
         if state.version == "v2" and (
-            not isinstance(state.extracted_income, int | float)
+            recalled != record
+            or not isinstance(state.extracted_income, int | float)
             or state.extracted_income <= 0
             or state.calculated_dti < 0
         ):
@@ -327,13 +342,28 @@ def run_compliance_reviewer_agent(state: UnderwritingState) -> UnderwritingState
             state.escalation_reason = "STATE_INTEGRITY_VIOLATION"
             state.reason_factors.append("CORRUPTED_INTERNAL_STATE")
 
-        # Turn limit for reviewer loops (F6)
-        reviewer_turn = getattr(state, "reviewer_turns", 1)
+        # Review loop: the runaway_reviewer injection point. A turn that answers with
+        # anything but "complete" asks for another pass. v2 caps the loop at 3 turns.
+        def _review_turn(turn: int) -> str:
+            return "complete"
+
         max_turns = 3 if state.version == "v2" else 10
-        if state.version == "v2" and reviewer_turn > max_turns:
-            state.escalated = True
-            state.escalation_reason = "REVIEWER_LOOP_TURN_LIMIT_EXCEEDED"
-            state.reason_factors.append("MAX_REVIEW_TURNS_EXCEEDED")
+        while state.reviewer_turns < max_turns:
+            state.reviewer_turns += 1
+            verdict = inject(
+                ("infinite_loop",),
+                _review_turn,
+                state.reviewer_turns,
+                step_id=f"compliance_reviewer.turn_{state.reviewer_turns}",
+                step_name="compliance_reviewer_agent",
+            )
+            if verdict == "complete":
+                break
+        else:
+            if state.version == "v2":
+                state.escalated = True
+                state.escalation_reason = "REVIEWER_LOOP_TURN_LIMIT_EXCEEDED"
+                state.reason_factors.append("MAX_REVIEW_TURNS_EXCEEDED")
 
         # Generate compliance narrative and final alignment
         decision = DecisionOutcome.REFER if state.escalated else state.preliminary_decision
@@ -349,15 +379,21 @@ def run_compliance_reviewer_agent(state: UnderwritingState) -> UnderwritingState
 
         # Retry cap with backoff for rate limits and timeouts (F6)
         narrative = ""
-        retries = 3 if state.version == "v2" else 1
+        retries = 4 if state.version == "v2" else 1
         for attempt in range(retries):
             try:
-                narrative = llm_client.generate_text(
-                    prompt=prompt,
-                    system_instruction=(
-                        "You are a financial compliance reviewer drafting adverse "
-                        "action or approval documentation."
+                # The rate_limit_storm injection point.
+                narrative = inject(
+                    ("rate_limit_storm",),
+                    lambda: llm_client.generate_text(
+                        prompt=prompt,
+                        system_instruction=(
+                            "You are a financial compliance reviewer drafting adverse "
+                            "action or approval documentation."
+                        ),
                     ),
+                    step_id=f"compliance_reviewer.llm_{attempt + 1}",
+                    step_name="llm_client",
                 )
                 break
             except Exception as e:

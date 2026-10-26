@@ -6,12 +6,11 @@ import logging
 from typing import Any
 
 import agenticlens
+from finassure.core.inject import inject
 from finassure.core.models import CaseApplicant, DecisionOutcome
 from finassure.llm import llm_client
 from finassure.packs.aml.tools import jurisdiction_lookup_tool
 from pydantic import BaseModel, Field
-
-from agentic_chaos import chaos_call
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +42,8 @@ def run_transaction_ingestion_agent(state: AMLState) -> AMLState:
             return amt
 
         # Allow chaos fault (silent degradation / corrupted amount) to intercept
-        amt = chaos_call(
+        amt = inject(
+            ("silent_degradation",),
             _get_amount,
             state.case.requested_amount,
             step_id="transaction_ingestion.amount",
@@ -107,7 +107,8 @@ def run_jurisdiction_agent(state: AMLState) -> AMLState:
         def _send_aml_payload(payload: dict[str, Any]) -> dict[str, Any]:
             return payload
 
-        handoff_payload = chaos_call(
+        handoff_payload = inject(
+            ("handoff_corruption",),
             _send_aml_payload,
             {
                 "jurisdiction_risk": state.jurisdiction_risk,

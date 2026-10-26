@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from agentic_chaos import wrap_tool
+from finassure.core.inject import inject
 
 
 def _raw_sanctions_lookup(
@@ -30,4 +30,8 @@ def _raw_sanctions_lookup(
     }
 
 
-sanctions_screening_tool = wrap_tool(_raw_sanctions_lookup, tool_name="sanctions_screening")
+def sanctions_screening_tool(**kwargs):
+    """Tool-failure injection point for ToolCallFailureFault(tool_name="sanctions_screening")."""
+    return inject(
+        ("tool_failure",), _raw_sanctions_lookup, step_name="sanctions_screening", **kwargs
+    )

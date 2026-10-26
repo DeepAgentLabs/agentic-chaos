@@ -52,15 +52,15 @@ class ExperimentRunner:
 
         for sc in scenarios:
             runs_per_case = reps_override if reps_override is not None else sc.runs_per_case
-            faults = sc.instantiate_faults()
-            is_faulted = len(faults) > 0
+            is_faulted = len(sc.instantiate_faults()) > 0
 
             for case in cases:
                 for rep in range(runs_per_case):
                     artifact = self._run_single(
                         scenario=sc,
                         case=case,
-                        faults=faults,
+                        # Fresh faults per run: burst and turn budgets are stateful.
+                        faults=sc.instantiate_faults(),
                         is_faulted=is_faulted,
                         rep_index=rep,
                     )
@@ -164,7 +164,7 @@ class ExperimentRunner:
         evaluations: list[EvaluationResult] = []
         evaluations.append(eval_decision_consistency(outcome, oracle_res, clean_run=not is_faulted))
         evaluations.append(eval_chaos_stability(outcome, oracle_res, is_faulted=is_faulted))
-        evaluations.append(eval_required_tools(outcome, trace_steps))
+        evaluations.append(eval_required_tools(outcome, trace_steps, self.pack.required_tools))
         evaluations.append(eval_unsupported_approval(outcome, oracle_res, chaos_events))
         evaluations.append(eval_reason_fidelity(outcome, oracle_res))
         evaluations.append(eval_fidelity_score(outcome))

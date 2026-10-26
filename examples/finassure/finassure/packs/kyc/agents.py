@@ -6,12 +6,11 @@ import logging
 from typing import Any
 
 import agenticlens
+from finassure.core.inject import inject
 from finassure.core.models import CaseApplicant, DecisionOutcome
 from finassure.llm import llm_client
 from finassure.packs.kyc.tools import sanctions_screening_tool
 from pydantic import BaseModel, Field
-
-from agentic_chaos import chaos_call
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +45,8 @@ def run_id_check_agent(state: KYCState) -> KYCState:
             return n
 
         # Allow chaos fault (silent degradation / altered_name) to intercept name
-        effective_name = chaos_call(
+        effective_name = inject(
+            ("silent_degradation",),
             _get_name,
             state.case.name,
             step_id="id_check_agent.name",
@@ -114,7 +114,8 @@ def run_sanctions_agent(state: KYCState) -> KYCState:
         def _send_screening_payload(payload: dict[str, Any]) -> dict[str, Any]:
             return payload
 
-        screening_payload = chaos_call(
+        screening_payload = inject(
+            ("handoff_corruption",),
             _send_screening_payload,
             {
                 "sanctions_hit": state.sanctions_hit,
