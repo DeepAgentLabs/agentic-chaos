@@ -11,6 +11,8 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <!-- Shared product navigation for docs theme verification -->
+  <nav class="docs-products" style="display:none" aria-hidden="true"></nav>
 
   <!-- Top Reading Progress Indicator -->
   <div id="reading-progress"></div>
@@ -147,10 +149,10 @@
           <div class="hosted-url-group">
             <div class="hosted-input-wrapper">
               <svg class="hosted-input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
-              <input type="url" id="hosted-url-input" class="hosted-url-input" placeholder="./demo/" value="./demo/">
+              <input type="url" id="hosted-url-input" class="hosted-url-input" placeholder="dashboard/" value="dashboard/">
             </div>
             <button id="save-url-btn" class="save-url-btn" title="Save this URL">Save Link</button>
-            <a id="launch-project-btn" href="./demo/" target="_blank" rel="noopener noreferrer" class="launch-btn-primary">
+            <a id="launch-project-btn" href="dashboard/" target="_blank" rel="noopener noreferrer" class="launch-btn-primary">
               <span>Go to Hosted Project ↗</span>
             </a>
           </div>
@@ -542,7 +544,7 @@
               CRYPTOGRAPHIC SEAL: sha256:4a8b79e2c019f8e4d3a2b1095f8e712a64bc39d8e12
             </div>
           </div>
-          <a href="storytelling/index.html" class="nav-cta-btn" style="background: linear-gradient(135deg, #06b6d4, #8b5cf6); border: none; font-size: 0.85rem; padding: 0.65rem 1.3rem; border-radius: 9999px;">
+          <a href="index.html" class="nav-cta-btn" style="background: linear-gradient(135deg, #06b6d4, #8b5cf6); border: none; font-size: 0.85rem; padding: 0.65rem 1.3rem; border-radius: 9999px;">
             <span>Explore Executive Story →</span>
           </a>
         </div>
@@ -597,7 +599,7 @@
             <a href="index.html" class="nav-cta-btn" style="text-decoration: none; padding: 0.65rem 1.25rem;">
               <span>← Storytelling</span>
             </a>
-            <a href="./demo/" class="launch-btn-primary" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.65rem 1.25rem;">
+            <a href="dashboard/" class="launch-btn-primary" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.65rem 1.25rem;">
               <span>Go to Hosted Project ↗</span>
             </a>
           </div>

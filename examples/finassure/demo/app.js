@@ -99,7 +99,7 @@ function initHostedProjectSlot() {
   const saveBtn = document.getElementById('save-url-btn');
 
   const STORAGE_KEY = 'finassure_hosted_url';
-  const DEFAULT_URL = './demo/';
+  const DEFAULT_URL = 'dashboard/';
 
   const savedUrl = localStorage.getItem(STORAGE_KEY) || DEFAULT_URL;
   if (urlInput) urlInput.value = savedUrl;
