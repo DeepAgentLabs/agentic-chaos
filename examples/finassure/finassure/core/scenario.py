@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from agentic_chaos import (
     HandoffCorruptionFault,
@@ -16,6 +16,18 @@ from agentic_chaos import (
     SilentDegradationFault,
     ToolCallFailureFault,
 )
+
+FAULT_TYPES = {
+    "none",
+    "clean",
+    "tool_failure",
+    "tool_call_failure",
+    "silent_degradation",
+    "handoff_corruption",
+    "infinite_loop",
+    "rate_limit_storm",
+    "memory_corruption",
+}
 
 
 class ChaosScenario(BaseModel):
@@ -28,6 +40,13 @@ class ChaosScenario(BaseModel):
     hypothesis: str
     runs_per_case: int = 1
     unsafe_outcomes: list[str] = Field(default_factory=list)
+
+    @field_validator("fault_type")
+    @classmethod
+    def _known_fault_type(cls, value: str) -> str:
+        if value not in FAULT_TYPES:
+            raise ValueError(f"Unknown fault_type {value!r}; expected one of {sorted(FAULT_TYPES)}")
+        return value
 
     def instantiate_faults(self) -> list[Any]:
         """Convert scenario specifications into agentic-chaos Fault objects."""
@@ -61,6 +80,14 @@ class ChaosScenario(BaseModel):
 
                 def degrade_fn(x):
                     return x / 10.0 if isinstance(x, int | float) else x
+            elif corruption == "alter_text":
+
+                def degrade_fn(x):
+                    # Swap the first two letters of the last word: a plausible typo.
+                    if not isinstance(x, str) or " " not in x:
+                        return x
+                    head, last = x.rsplit(" ", 1)
+                    return f"{head} {last[1::-1]}{last[2:]}" if len(last) > 1 else x
             else:
 
                 def degrade_fn(x):
@@ -94,7 +121,7 @@ class ChaosScenario(BaseModel):
             rate = float(self.params.get("rate", 0.3))
             return [MemoryCorruptionFault(mode=mode, rate=rate)]
 
-        return []
+        raise ValueError(f"Unsupported fault_type {self.fault_type!r}")
 
 
 def load_scenarios_from_yaml(yaml_path: Path | str) -> list[ChaosScenario]:

@@ -174,6 +174,7 @@ This test suite maps directly to resilience testing and automated AI governance 
         f_lbl = "PASS" if verdict.silent_failure_rate <= 0.02 else "FAIL"
         d_cls = "badge-pass" if verdict.safe_degradation_rate >= 0.95 else "badge-fail"
         d_lbl = "PASS" if verdict.safe_degradation_rate >= 0.95 else "FAIL"
+        e_cls = "badge-pass" if verdict.escalation_rate <= 0.35 else "badge-fail"
         e_lbl = "PASS" if verdict.escalation_rate <= 0.35 else "FAIL"
 
         return f"""<!DOCTYPE html>
@@ -227,7 +228,7 @@ This test suite maps directly to resilience testing and automated AI governance 
         <td><span class="{d_cls}">{d_lbl}</span></td></tr>
     <tr><td>Escalation Rate</td><td>&lt;= 35.0%</td>
         <td>{verdict.escalation_rate * 100:.1f}%</td>
-        <td><span class="badge-pass">{e_lbl}</span></td></tr>
+        <td><span class="{e_cls}">{e_lbl}</span></td></tr>
   </table>
   <h2>Framework Governance Mapping</h2>
   <p><strong>DORA Scenario Testing</strong> &bull;

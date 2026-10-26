@@ -21,7 +21,13 @@ class KYCPack(BaseWorkflowPack):
     """KYC and Sanctions Onboarding workflow pack."""
 
     def __init__(self, version: str = "v1") -> None:
+        if version not in ("v1", "v2"):
+            raise ValueError(f"Version must be 'v1' or 'v2', got '{version}'")
         self._version = version
+
+    @property
+    def required_tools(self) -> list[str]:
+        return ["sanctions_screening"]
 
     @property
     def name(self) -> str:

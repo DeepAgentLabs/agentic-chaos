@@ -550,41 +550,6 @@ ui_dist_path = settings.ROOT_DIR / "finassure" / "static"
 if ui_dist_path.exists():
     app.mount("/static", StaticFiles(directory=str(ui_dist_path)), name="static")
 
-# Serve Use Cases Page & Assets
-usecases_dir = settings.ROOT_DIR / "usecases"
-if usecases_dir.exists():
-    app.mount(
-        "/usecases/assets",
-        StaticFiles(directory=str(usecases_dir / "assets")),
-        name="usecases_assets",
-    )
-
-
-@app.get("/usecase", response_class=HTMLResponse)
-@app.get("/usecases", response_class=HTMLResponse)
-def serve_usecase_page():
-    usecase_html = settings.ROOT_DIR / "usecases" / "index.html"
-    if usecase_html.exists():
-        with open(usecase_html, encoding="utf-8") as f:
-            return HTMLResponse(content=f.read())
-    return HTMLResponse("<h1>FinAssure Use Case Page not found</h1>", status_code=404)
-
-
-@app.get("/usecases/styles.css")
-def serve_usecases_styles():
-    css_file = settings.ROOT_DIR / "usecases" / "styles.css"
-    if css_file.exists():
-        return FileResponse(css_file, media_type="text/css")
-    return HTMLResponse("", status_code=404)
-
-
-@app.get("/usecases/app.js")
-def serve_usecases_js():
-    js_file = settings.ROOT_DIR / "usecases" / "app.js"
-    if js_file.exists():
-        return FileResponse(js_file, media_type="application/javascript")
-    return HTMLResponse("", status_code=404)
-
 
 @app.get("/", response_class=HTMLResponse)
 def serve_dashboard():

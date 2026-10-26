@@ -23,6 +23,11 @@ class BaseWorkflowPack(ABC):
         """Version identifier, e.g. 'v1' (naive) or 'v2' (hardened)."""
         pass
 
+    @property
+    def required_tools(self) -> list[str]:
+        """Verification tools that must have run before an approval."""
+        return ["bureau_lookup"]
+
     @abstractmethod
     def oracle(self, case: CaseApplicant) -> OracleResult:
         """Deterministic policy oracle defining ground truth for a given case."""

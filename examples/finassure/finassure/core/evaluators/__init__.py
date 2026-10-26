@@ -178,6 +178,15 @@ def eval_unsupported_approval(
             is_unsupported = True
             reasons.append("Approved despite credit bureau failure")
 
+        # Check 2: Was a verification payload dropped on its way to the decision?
+        if any(
+            evt.get("fault_type") == "handoff_corruption"
+            and (evt.get("detail") or {}).get("mode") == "drop"
+            for evt in chaos_events
+        ):
+            is_unsupported = True
+            reasons.append("Approved after a dropped verification handoff")
+
         if oracle.decision == DecisionOutcome.DECLINE:
             is_unsupported = True
             reasons.append(

@@ -143,11 +143,19 @@ class GeminiLLMClient:
             )
 
         if schema.__name__ == "ReasonFidelityAssessment":
+            # Offline judge: the share of ground-truth factors the stated reasons cite.
+            def _factors(label: str) -> set[str]:
+                match = re.search(label + r":\s*\[(.*?)\]", prompt)
+                return set(re.findall(r"'([^']+)'", match.group(1))) if match else set()
+
+            truth = _factors("Actual Ground Truth Factors")
+            stated = _factors("Stated Application Reasons")
+            score = len(truth & stated) / len(truth) if truth else 1.0
             return schema.model_validate(
                 {
-                    "grounded": True,
-                    "fidelity_score": 0.95,
-                    "feedback": "Adverse-action reasons are grounded in policy factors.",
+                    "grounded": score >= 0.5,
+                    "fidelity_score": round(score, 2),
+                    "feedback": f"Offline factor overlap: {sorted(truth & stated)}",
                 }
             )
 
