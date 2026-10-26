@@ -51,7 +51,7 @@ jobs:
       - name: Build root website & docs
         run: |
           cd Website
-          npm ci
+          npm ci --legacy-peer-deps
           npm run build
           cd ..
           uv run --no-project --with "mkdocs-material>=9.5" mkdocs build --strict --site-dir site/docs
