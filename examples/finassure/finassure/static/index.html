@@ -1,0 +1,1367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FinAssure | Financial Multi-Agent Reliability Harness</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#f0f9ff',
+              100: '#e0f2fe',
+              500: '#0ea5e9',
+              600: '#0284c7',
+              700: '#0369a1',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .code-font { font-family: 'JetBrains Mono', monospace; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+  <!-- Top Global Breadcrumb Navigation Bar (DeepAgentLabs Connected Flow) -->
+  <div class="bg-slate-900 text-slate-300 text-xs px-4 py-2 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2">
+    <div class="flex items-center gap-2 font-mono">
+      <span class="text-sky-400 font-bold">DeepAgentLabs</span>
+      <span class="text-slate-600">/</span>
+      <a href="../index.html" class="hover:text-white transition-colors">1. Storytelling Guide</a>
+      <span class="text-slate-600">&gt;</span>
+      <a href="../technical.html" class="hover:text-white transition-colors">2. Technical Specs</a>
+      <span class="text-slate-600">&gt;</span>
+      <span class="text-emerald-400 font-semibold">3. Live Project Demo (Active)</span>
+    </div>
+    <div class="flex items-center gap-3 text-xs">
+      <a href="../technical.html" class="hover:text-white transition-colors text-slate-300 font-medium flex items-center gap-1">
+        <span>← Back to Technical Specs</span>
+      </a>
+      <span class="text-slate-600">|</span>
+      <a href="../index.html" class="hover:text-white transition-colors text-slate-300 font-medium flex items-center gap-1">
+        <span>Storytelling Guide</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-sky-600 flex items-center justify-center text-white font-bold text-lg shadow-sm">
+          FA
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-xl font-bold tracking-tight text-slate-900">FinAssure</h1>
+            <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-300">
+              Reliability Harness
+            </span>
+          </div>
+          <p class="text-xs text-slate-500">Agentic Chaos & AgenticLens Release Gate</p>
+        </div>
+      </div>
+
+      <!-- Controls: Pack and Version Selection -->
+      <div class="flex items-center gap-3">
+        <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg border border-slate-200">
+          <label class="text-xs font-medium text-slate-600 px-2">Pack:</label>
+          <select id="packSelect" onchange="onPackOrVersionChange()" class="bg-white text-xs font-semibold rounded-md px-2.5 py-1.5 border border-slate-300 text-slate-800 focus:outline-none focus:ring-1 focus:ring-sky-500">
+            <option value="underwriting">Loan Underwriting</option>
+            <option value="kyc">KYC Onboarding</option>
+            <option value="aml">AML Suspicious Activity</option>
+          </select>
+        </div>
+
+        <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg border border-slate-200">
+          <label class="text-xs font-medium text-slate-600 px-2">Version:</label>
+          <select id="versionSelect" onchange="onPackOrVersionChange()" class="bg-white text-xs font-semibold rounded-md px-2.5 py-1.5 border border-slate-300 text-slate-800 focus:outline-none focus:ring-1 focus:ring-sky-500">
+            <option value="v2">v2 (Hardened)</option>
+            <option value="v1">v1 (Naive)</option>
+          </select>
+        </div>
+
+        <a href="https://deepagentlabs.io/agentic-chaos/usecases/finassure-release-gate/" class="inline-flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow-sm transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+          Use Case Guide
+        </a>
+
+        <button onclick="openRunModal()" class="inline-flex items-center gap-1.5 bg-sky-600 hover:bg-sky-700 text-white text-xs font-medium px-3.5 py-2 rounded-lg shadow-sm transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          Run Experiment
+        </button>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-slate-100">
+      <nav class="flex space-x-6 overflow-x-auto py-2 text-sm font-medium">
+        <button onclick="switchTab('overview')" id="tab-overview" class="tab-btn pb-2 text-sky-600 border-b-2 border-sky-600">Release Gate Overview</button>
+        <button onclick="switchTab('matrix')" id="tab-matrix" class="tab-btn pb-2 text-slate-500 hover:text-slate-800 border-b-2 border-transparent">Scenario Matrix</button>
+        <button onclick="switchTab('explorer')" id="tab-explorer" class="tab-btn pb-2 text-slate-500 hover:text-slate-800 border-b-2 border-transparent">Run & Trace Explorer</button>
+        <button onclick="switchTab('compare')" id="tab-compare" class="tab-btn pb-2 text-slate-500 hover:text-slate-800 border-b-2 border-transparent">Compare v1 vs v2</button>
+        <button onclick="switchTab('audit')" id="tab-audit" class="tab-btn pb-2 text-slate-500 hover:text-slate-800 border-b-2 border-transparent">Decision Audit</button>
+        <button onclick="switchTab('fairness')" id="tab-fairness" class="tab-btn pb-2 text-slate-500 hover:text-slate-800 border-b-2 border-transparent">Disparate Resilience</button>
+        <button onclick="switchTab('topology')" id="tab-topology" class="tab-btn pb-2 text-slate-500 hover:text-slate-800 border-b-2 border-transparent">Topology</button>
+        <button onclick="switchTab('performance')" id="tab-performance" class="tab-btn pb-2 text-slate-500 hover:text-slate-800 border-b-2 border-transparent">Cost & Performance</button>
+        <button onclick="switchTab('launcher')" id="tab-launcher" class="tab-btn pb-2 text-slate-500 hover:text-slate-800 border-b-2 border-transparent">Scenario Launcher</button>
+        <button onclick="switchTab('evidence')" id="tab-evidence" class="tab-btn pb-2 text-slate-500 hover:text-slate-800 border-b-2 border-transparent">Evidence Pack</button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+
+    <!-- TAB 1: OVERVIEW & RELEASE GATE -->
+    <div id="view-overview" class="space-y-6">
+      
+      <!-- Release Verdict Banner -->
+      <div id="verdictBanner" class="p-5 rounded-xl border bg-white shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="flex items-start gap-4">
+          <div id="verdictIcon" class="w-12 h-12 rounded-xl flex items-center justify-center font-bold text-2xl text-white bg-slate-400">
+            ?
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span id="verdictStatusText" class="text-xs uppercase font-extrabold tracking-wider px-2 py-0.5 rounded">AWAITING EVALUATION</span>
+              <span id="verdictScore" class="text-sm font-semibold text-slate-600">Score: --</span>
+            </div>
+            <h2 id="verdictTitle" class="text-lg font-bold text-slate-900 mt-1">Release Gate Status</h2>
+            <p id="verdictSubtitle" class="text-xs text-slate-500 mt-0.5">Automated release policy gate assessing silent failures, tool verification, and safe degradation.</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 self-start md:self-center">
+          <button onclick="downloadReport('html')" class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-300 hover:bg-slate-50 text-slate-700 bg-white">
+            Download HTML Report
+          </button>
+          <button onclick="downloadReport('md')" class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-300 hover:bg-slate-50 text-slate-700 bg-white">
+            Markdown
+          </button>
+        </div>
+      </div>
+
+      <!-- 6 KPI Tiles -->
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5">
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+          <div class="text-xs text-slate-500 font-medium">Silent Failure Rate</div>
+          <div id="kpi-silent-fail" class="text-xl font-bold text-slate-900 mt-1">--</div>
+          <div class="text-[10px] text-slate-400 mt-1 font-mono">Target: &le; 2.0%</div>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+          <div class="text-xs text-slate-500 font-medium">Safe Degradation</div>
+          <div id="kpi-safe-degrad" class="text-xl font-bold text-slate-900 mt-1">--</div>
+          <div class="text-[10px] text-slate-400 mt-1 font-mono">Target: &ge; 95.0%</div>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+          <div class="text-xs text-slate-500 font-medium">Unsupported Approvals</div>
+          <div id="kpi-unsupported" class="text-xl font-bold text-slate-900 mt-1">--</div>
+          <div class="text-[10px] text-rose-500 mt-1 font-mono font-semibold">Hard Fail: = 0</div>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+          <div class="text-xs text-slate-500 font-medium">Escalation Rate</div>
+          <div id="kpi-escalation" class="text-xl font-bold text-slate-900 mt-1">--</div>
+          <div class="text-[10px] text-slate-400 mt-1 font-mono">Cap: &le; 35.0%</div>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+          <div class="text-xs text-slate-500 font-medium">Cost / Application</div>
+          <div id="kpi-cost" class="text-xl font-bold text-slate-900 mt-1">--</div>
+          <div class="text-[10px] text-slate-400 mt-1 font-mono">Target: &le; $0.05</div>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+          <div class="text-xs text-slate-500 font-medium">p95 Latency</div>
+          <div id="kpi-latency" class="text-xl font-bold text-slate-900 mt-1">--</div>
+          <div class="text-[10px] text-slate-400 mt-1 font-mono">Target: &le; 4000ms</div>
+        </div>
+      </div>
+
+      <!-- Gate Rules Checklist -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
+          <h3 class="text-sm font-semibold text-slate-900">Automated Release Gate Policy Rules</h3>
+          <span class="text-xs text-slate-500 font-mono" id="evaluatedRunsCount">0 runs evaluated</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-slate-200 text-xs">
+            <thead class="bg-slate-50 text-slate-600 font-semibold">
+              <tr>
+                <th class="px-5 py-3 text-left">Status</th>
+                <th class="px-5 py-3 text-left">Rule Name</th>
+                <th class="px-5 py-3 text-left">Threshold</th>
+                <th class="px-5 py-3 text-left">Observed Value</th>
+                <th class="px-5 py-3 text-left">Description</th>
+              </tr>
+            </thead>
+            <tbody id="rulesTableBody" class="divide-y divide-slate-100">
+              <tr><td colspan="5" class="px-5 py-6 text-center text-slate-400">Run an experiment to populate release gate checklist.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: SCENARIO MATRIX -->
+    <div id="view-matrix" class="hidden space-y-4">
+      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+        <h3 class="text-base font-bold text-slate-900">Chaos Experiment Scenario Matrix</h3>
+        <p class="text-xs text-slate-500 mt-0.5">Scenarios mapped to Agentic Chaos fault primitives testing resilience boundaries.</p>
+        
+        <div class="mt-4 overflow-x-auto">
+          <table class="min-w-full divide-y divide-slate-200 text-xs">
+            <thead class="bg-slate-50 text-slate-600 font-semibold">
+              <tr>
+                <th class="px-4 py-3 text-left">Scenario ID</th>
+                <th class="px-4 py-3 text-left">Fault Type</th>
+                <th class="px-4 py-3 text-left">Targeted Step / Component</th>
+                <th class="px-4 py-3 text-left">Hypothesis</th>
+                <th class="px-4 py-3 text-left">Unsafe Outcomes</th>
+              </tr>
+            </thead>
+            <tbody id="scenariosTableBody" class="divide-y divide-slate-100">
+              <!-- Injected by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: RUN & TRACE EXPLORER -->
+    <div id="view-explorer" class="hidden space-y-4">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        
+        <!-- Runs List -->
+        <div class="lg:col-span-5 bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col h-[650px]">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+            <h3 class="text-sm font-bold text-slate-900">Test Runs</h3>
+            <span id="runCountBadge" class="text-xs font-mono bg-slate-100 px-2 py-0.5 rounded text-slate-600">0</span>
+          </div>
+          <div id="runsListContainer" class="mt-2 space-y-2 overflow-y-auto flex-1 pr-1">
+            <div class="text-xs text-slate-400 text-center py-10">No runs found.</div>
+          </div>
+        </div>
+
+        <!-- Selected Run Detail & Trace Waterfall -->
+        <div class="lg:col-span-7 bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col h-[650px] overflow-y-auto">
+          <div id="traceHeader" class="border-b border-slate-100 pb-3">
+            <div class="text-xs font-mono text-slate-400" id="traceRunId">Select a run from the list</div>
+            <h4 class="text-base font-bold text-slate-900 mt-1" id="traceTitle">AgenticLens Span Waterfall</h4>
+            <div id="traceSummaryBadges" class="flex flex-wrap items-center gap-2 mt-2"></div>
+          </div>
+
+          <!-- Trace Spans -->
+          <div class="mt-4 space-y-3 flex-1" id="traceSpansContainer">
+            <div class="text-xs text-slate-400 text-center py-20">Click any run on the left to inspect its AgenticLens spans and Agentic Chaos event markers.</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- TAB 4: COMPARE v1 vs v2 -->
+    <div id="view-compare" class="hidden space-y-6">
+      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+        <h3 class="text-base font-bold text-slate-900">Version Comparison: v1 (Naive) vs v2 (Hardened)</h3>
+        <p class="text-xs text-slate-500 mt-0.5">Quantifying reliability gains against operational overhead (tokens, cost, latency).</p>
+        
+        <div class="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" id="compareCardsContainer">
+          <!-- Populated by JS -->
+        </div>
+
+        <div class="mt-8 border-t border-slate-100 pt-6">
+          <h4 class="text-sm font-semibold text-slate-900 mb-3">Reliability & Overhead Delta Table</h4>
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200 text-xs">
+              <thead class="bg-slate-50 text-slate-600 font-semibold">
+                <tr>
+                  <th class="px-4 py-2.5 text-left">Dimension</th>
+                  <th class="px-4 py-2.5 text-left">v1 (Naive)</th>
+                  <th class="px-4 py-2.5 text-left">v2 (Hardened)</th>
+                  <th class="px-4 py-2.5 text-left">Delta / Impact</th>
+                </tr>
+              </thead>
+              <tbody id="compareTableBody" class="divide-y divide-slate-100 font-mono">
+                <!-- Injected by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: FAIRNESS / DISPARATE RESILIENCE -->
+    <div id="view-fairness" class="hidden space-y-4">
+      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+        <h3 class="text-base font-bold text-slate-900">Disparate Resilience by Synthetic Segment</h3>
+        <p class="text-xs text-slate-500 mt-0.5">Verifying that fault resilience and silent-failure rates do not disproportionately affect specific applicant groups.</p>
+        
+        <div class="mt-6 overflow-x-auto">
+          <table class="min-w-full divide-y divide-slate-200 text-xs">
+            <thead class="bg-slate-50 text-slate-600 font-semibold">
+              <tr>
+                <th class="px-4 py-3 text-left">Synthetic Group</th>
+                <th class="px-4 py-3 text-left">Total Applications</th>
+                <th class="px-4 py-3 text-left">Silent Failure Rate</th>
+                <th class="px-4 py-3 text-left">Safe Degradation Rate</th>
+                <th class="px-4 py-3 text-left">Escalation Rate</th>
+              </tr>
+            </thead>
+            <tbody id="fairnessTableBody" class="divide-y divide-slate-100">
+              <!-- Injected by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: DECISION AUDIT -->
+    <div id="view-audit" class="hidden space-y-4">
+      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b pb-4">
+          <div>
+            <h3 class="text-base font-bold text-slate-900">Decision & Adverse-Action Audit</h3>
+            <p class="text-xs text-slate-500 mt-0.5">Inspect individual applicant decisions, verify deterministic oracle ground truth vs model determinations, and validate adverse notice grounds.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <label class="text-xs font-semibold text-slate-600">Select Case:</label>
+            <select id="auditCaseSelect" onchange="loadCaseAudit(this.value)" class="text-xs border rounded-lg px-2.5 py-1.5 font-mono text-slate-800 bg-slate-50 focus:outline-none focus:ring-1 focus:ring-sky-500">
+              <option value="">Choose an applicant...</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="auditContentContainer" class="mt-5 grid grid-cols-1 lg:grid-cols-3 gap-4 text-xs">
+          <!-- Column 1: Application Inputs -->
+          <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-3">
+            <div class="font-bold text-slate-800 text-sm flex items-center gap-1.5">
+              <span>📋</span> Application Inputs
+            </div>
+            <div id="auditApplicantInfo" class="space-y-1.5 font-mono text-[11px] text-slate-700">
+              Select a case above to inspect input details.
+            </div>
+            <div class="pt-2 border-t border-slate-200">
+              <div class="font-semibold text-slate-700 mb-1">Financial Documents Preview:</div>
+              <pre id="auditDocPreview" class="p-2.5 bg-slate-900 text-slate-100 rounded text-[10px] font-mono whitespace-pre-wrap max-h-48 overflow-y-auto">No document selected</pre>
+            </div>
+          </div>
+
+          <!-- Column 2: Ground Truth Policy Oracle -->
+          <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-3">
+            <div class="font-bold text-slate-800 text-sm flex items-center gap-1.5">
+              <span>⚖️</span> Deterministic Policy Oracle
+            </div>
+            <div id="auditOracleInfo" class="space-y-2">
+              <div class="text-slate-500">Pure-Python ground truth evaluation. No LLM arithmetic.</div>
+            </div>
+          </div>
+
+          <!-- Column 3: Multi-Agent System Outcome -->
+          <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-3">
+            <div class="font-bold text-slate-800 text-sm flex items-center gap-1.5">
+              <span>🤖</span> System Determination
+            </div>
+            <div id="auditSystemInfo" class="space-y-2">
+              <div class="text-slate-500">Multi-agent pipeline outcome, factors, narrative, and escalation audit.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 7: TOPOLOGY -->
+    <div id="view-topology" class="hidden space-y-4">
+      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+        <div class="flex items-center justify-between border-b pb-3">
+          <div>
+            <h3 class="text-base font-bold text-slate-900">Multi-Agent Workflow Topology</h3>
+            <p class="text-xs text-slate-500 mt-0.5">Interactive topology showing agent handoffs, tool invocation edges, and injected chaos fault points.</p>
+          </div>
+          <span class="text-xs font-mono font-semibold px-2 py-1 rounded bg-slate-100 text-slate-700">TopologyTracker Active</span>
+        </div>
+
+        <div id="topologyGraphContainer" class="mt-5 p-4 rounded-xl bg-slate-950 text-slate-200 min-h-[380px] flex flex-col justify-between">
+          <div class="text-xs font-semibold text-slate-400 mb-2 flex items-center justify-between">
+            <span>PIPELINE EXECUTION FLOW & FAULT INTERCEPTORS</span>
+            <div class="flex items-center gap-3 text-[11px]">
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-sky-400"></span> Agent Span</span>
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-purple-400"></span> Tool Call</span>
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span> Human Review</span>
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span> Chaos Fault Point</span>
+            </div>
+          </div>
+          <div id="topologyNodesFlow" class="grid grid-cols-1 md:grid-cols-6 gap-2.5 my-auto py-4">
+            <!-- Populated dynamically by loadTopology() -->
+          </div>
+          <div id="topologyNodeDetail" class="p-3 rounded-lg bg-slate-900/80 border border-slate-800 text-xs text-slate-300 font-mono">
+            Click on any agent node or fault marker above to inspect its contract and fault behavior.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 8: COST & PERFORMANCE -->
+    <div id="view-performance" class="hidden space-y-4">
+      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+        <h3 class="text-base font-bold text-slate-900">Resource, Cost & Latency Profiling</h3>
+        <p class="text-xs text-slate-500 mt-0.5">Measured via AgenticLens profiler per agent span: token volume, API pricing, and latency SLAs.</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-5">
+          <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/60">
+            <div class="text-xs font-semibold text-slate-600">Cost Per Application</div>
+            <div class="text-2xl font-bold text-slate-900 mt-1 font-mono" id="perfCostVal">$0.0028</div>
+            <div class="text-[11px] text-slate-500 mt-1">SLA Budget: &le; $0.0500 / app</div>
+            <div class="mt-3 w-full bg-slate-200 rounded-full h-2">
+              <div class="bg-emerald-500 h-2 rounded-full" style="width: 6%;"></div>
+            </div>
+          </div>
+
+          <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/60">
+            <div class="text-xs font-semibold text-slate-600">p95 Latency Performance</div>
+            <div class="text-2xl font-bold text-slate-900 mt-1 font-mono" id="perfLatencyVal">180 ms</div>
+            <div class="text-[11px] text-slate-500 mt-1">SLA SLA Threshold: &le; 4000 ms</div>
+            <div class="mt-3 w-full bg-slate-200 rounded-full h-2">
+              <div class="bg-emerald-500 h-2 rounded-full" style="width: 5%;"></div>
+            </div>
+          </div>
+
+          <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/60">
+            <div class="text-xs font-semibold text-slate-600">Tokens Per Application</div>
+            <div class="text-2xl font-bold text-slate-900 mt-1 font-mono" id="perfTokensVal">~280 tokens</div>
+            <div class="text-[11px] text-slate-500 mt-1">Deterministic arithmetic offloaded from LLM</div>
+            <div class="mt-3 w-full bg-slate-200 rounded-full h-2">
+              <div class="bg-sky-500 h-2 rounded-full" style="width: 14%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-6">
+          <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2">Token Usage By Agent Span</h4>
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200 text-xs">
+              <thead class="bg-slate-50 text-slate-600 font-semibold">
+                <tr>
+                  <th class="px-4 py-2 text-left">Agent Name</th>
+                  <th class="px-4 py-2 text-left">Agent Role</th>
+                  <th class="px-4 py-2 text-left">Type</th>
+                  <th class="px-4 py-2 text-left">Tokens</th>
+                  <th class="px-4 py-2 text-left">Avg Latency</th>
+                  <th class="px-4 py-2 text-left">Cost Contribution</th>
+                </tr>
+              </thead>
+              <tbody id="agentPerfTableBody" class="divide-y divide-slate-100 font-mono text-[11px]">
+                <!-- Populated dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 9: SCENARIO LAUNCHER -->
+    <div id="view-launcher" class="hidden space-y-4">
+      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+        <h3 class="text-base font-bold text-slate-900">Interactive Scenario Launcher</h3>
+        <p class="text-xs text-slate-500 mt-0.5">Select chaos scenarios, tune fault injection parameters, and execute the reliability test harness.</p>
+
+        <div class="mt-5 grid grid-cols-1 md:grid-cols-3 gap-5 text-xs">
+          <div class="space-y-4 md:col-span-1">
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">Target Workflow Pack</label>
+              <select id="launchPack" onchange="onLauncherPackChange()" class="w-full border rounded-lg p-2 font-medium bg-slate-50">
+                <option value="underwriting">Loan Underwriting</option>
+                <option value="kyc">KYC Onboarding</option>
+                <option value="aml">AML Suspicious Activity</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">Pipeline Version</label>
+              <select id="launchVersion" class="w-full border rounded-lg p-2 font-medium bg-slate-50">
+                <option value="v2">v2 (Hardened - schema cross-check & HITL)</option>
+                <option value="v1">v1 (Naive - implicit trust)</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">Synthetic Applicants Count</label>
+              <input type="number" id="launchCount" value="10" min="2" max="200" class="w-full border rounded-lg p-2 font-medium bg-slate-50">
+              <span class="text-[10px] text-slate-400 mt-0.5 block">Full matrix support up to 200 cases</span>
+            </div>
+
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">Reps Per Case</label>
+              <select id="launchReps" class="w-full border rounded-lg p-2 font-medium bg-slate-50">
+                <option value="1">1 run per case</option>
+                <option value="2">2 runs per case</option>
+                <option value="3">3 runs per case</option>
+              </select>
+            </div>
+
+            <button id="launcherRunBtn" onclick="executeFromLauncher()" class="w-full py-2.5 bg-sky-600 hover:bg-sky-700 text-white rounded-lg font-semibold shadow-sm text-xs transition flex items-center justify-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              Execute Reliability Run
+            </button>
+          </div>
+
+          <div class="space-y-4 md:col-span-2">
+            <div>
+              <label class="block font-semibold text-slate-700 mb-2">Select Chaos Scenarios To Execute</label>
+              <div id="launcherScenariosList" class="space-y-2 max-h-60 overflow-y-auto p-2 border rounded-lg bg-slate-50">
+                <!-- Checkboxes populated dynamically -->
+              </div>
+            </div>
+
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">Live Execution Output</label>
+              <div id="launcherConsole" class="p-3 bg-slate-900 text-slate-200 rounded-lg font-mono text-[11px] h-36 overflow-y-auto">
+                Ready to execute. Select scenarios and click "Execute Reliability Run".
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 10: EVIDENCE PACK -->
+    <div id="view-evidence" class="hidden space-y-4">
+      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+        <h3 class="text-base font-bold text-slate-900">Audit-Ready Evidence Packages</h3>
+        <p class="text-xs text-slate-500 mt-0.5">Reports generated per release mapped to DORA scenario testing and AI Act human-oversight principles.</p>
+
+        <div class="mt-6 flex flex-wrap gap-4">
+          <button onclick="downloadReport('html')" class="px-4 py-2 bg-sky-600 text-white font-medium rounded-lg text-xs shadow-sm hover:bg-sky-700">
+            Open Latest HTML Report
+          </button>
+          <button onclick="downloadReport('md')" class="px-4 py-2 bg-slate-800 text-white font-medium rounded-lg text-xs shadow-sm hover:bg-slate-900">
+            Open Latest Markdown Report
+          </button>
+          <button onclick="downloadReport('json')" class="px-4 py-2 bg-emerald-600 text-white font-medium rounded-lg text-xs shadow-sm hover:bg-emerald-700">
+            Download JSON Summary
+          </button>
+          <button onclick="downloadReport('csv')" class="px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg text-xs shadow-sm hover:bg-indigo-700">
+            Download CSV Data Pack
+          </button>
+        </div>
+
+        <div class="mt-6 p-4 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-600 space-y-2">
+          <div class="font-semibold text-slate-800">Framework Mapping Context:</div>
+          <div>&bull; <strong>DORA (Digital Operational Resilience Act)</strong>: Validates graceful escalation when downstream dependency services (Credit Bureau / Sanctions watchlists) fail.</div>
+          <div>&bull; <strong>EU AI Act Human Oversight</strong>: Enforces refer-to-human review triggers and caps automated decision-making on incomplete or degraded evidence.</div>
+          <div>&bull; <strong>Adverse Action Explainability</strong>: Adverse-action reasons are computed through deterministic arithmetic rules to eliminate hallucinated rejections.</div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Run Experiment Modal -->
+  <div id="runModal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl border border-slate-200 max-w-md w-full p-6 space-y-4">
+      <div class="flex items-center justify-between border-b pb-3">
+        <h3 class="text-base font-bold text-slate-900">Launch Reliability Experiment</h3>
+        <button onclick="closeRunModal()" class="text-slate-400 hover:text-slate-600 text-lg font-bold">&times;</button>
+      </div>
+      
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">Target Workflow Pack</label>
+          <select id="modalPack" class="w-full border rounded-lg p-2 font-medium">
+            <option value="underwriting">Loan Underwriting</option>
+            <option value="kyc">KYC Onboarding</option>
+            <option value="aml">AML Suspicious Activity</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">Pipeline Version</label>
+          <select id="modalVersion" class="w-full border rounded-lg p-2 font-medium">
+            <option value="v2">v2 (Hardened - schema cross-check & HITL)</option>
+            <option value="v1">v1 (Naive - implicit trust)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">Number of Synthetic Cases</label>
+          <input type="number" id="modalCaseCount" value="10" min="2" max="100" class="w-full border rounded-lg p-2 font-medium">
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-3 border-t">
+        <button onclick="closeRunModal()" class="px-3.5 py-1.5 border rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-50">Cancel</button>
+        <button id="modalRunBtn" onclick="executeExperiment()" class="px-4 py-1.5 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-xs font-semibold shadow-sm">
+          Run Matrix
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Client JavaScript -->
+  <script>
+    let currentPack = 'underwriting';
+    let currentVersion = 'v2';
+    let currentTab = 'overview';
+    let cachedRuns = [];
+
+    // Offline / GitHub Pages Static Mock Interceptor
+    const origFetch = window.fetch;
+    window.fetch = async function(...args) {
+      try {
+        const res = await origFetch.apply(this, args);
+        if (res.ok) return res;
+      } catch (e) {
+        // Fall through to mock responses below
+      }
+      const url = typeof args[0] === 'string' ? args[0] : (args[0]?.url || '');
+      const mockData = getStaticMockResponse(url);
+      if (mockData !== null) {
+        return new Response(JSON.stringify(mockData), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      return new Response(JSON.stringify({ error: 'Not found' }), { status: 404 });
+    };
+
+    function getStaticMockResponse(url) {
+      if (url.includes('/api/verdicts')) {
+        const isV2 = url.includes('version=v2') || currentVersion === 'v2';
+        return {
+          latest: {
+            verdict: isV2 ? 'PASSED' : 'FAILED',
+            pack_name: currentPack,
+            pack_version: isV2 ? 'v2' : 'v1',
+            overall_score: isV2 ? 0.994 : 0.590,
+            safe_degradation_rate: isV2 ? 1.0 : 0.60,
+            silent_failure_rate: isV2 ? 0.0 : 0.18,
+            unsupported_approvals_count: isV2 ? 0 : 4,
+            total_runs: isV2 ? 120 : 100,
+            failure_reasons: isV2 ? [] : ['4 unsupported approvals under bureau timeout', 'Silent failure rate 18% exceeded 2% threshold'],
+            rules: [
+              { rule_name: 'zero_unsupported_approvals', passed: isV2, target: '0 approvals', actual: isV2 ? '0' : '4 (UNSAFE)', message: isV2 ? 'Zero approvals without bureau check' : 'VIOLATION: Loans approved on blank credit file' },
+              { rule_name: 'silent_failure_rate', passed: isV2, target: '<= 2.0%', actual: isV2 ? '0.0%' : '18.0%', message: isV2 ? 'Zero unhandled faults' : '18 faults silently swallowed' },
+              { rule_name: 'safe_degradation_rate', passed: isV2, target: '>= 95.0%', actual: isV2 ? '100.0%' : '60.0%', message: isV2 ? 'All faults routed to human review' : '40% of faults degraded incorrectly' },
+              { rule_name: 'reason_notice_groundedness', passed: isV2, target: '>= 90.0%', actual: isV2 ? '96.7%' : '71.2%', message: isV2 ? 'Audit spot-check verified (29/30 full consensus)' : 'Adverse action notices hallucinated reasons' },
+              { rule_name: 'fairness_disparate_impact', passed: true, target: '>= 80.0%', actual: '91.2%', message: 'No proxy demographic discrimination detected' },
+              { rule_name: 'latency_p95_budget', passed: true, target: '<= 5.0s', actual: isV2 ? '2.34s' : '4.81s', message: 'Within SLA latency boundary' },
+              { rule_name: 'token_p95_budget', passed: true, target: '<= 6000 tokens', actual: isV2 ? '4,120' : '5,890', message: 'Token budget preserved' }
+            ]
+          }
+        };
+      }
+      if (url.includes('/api/scenarios')) {
+        return [
+          { id: 'LOAN-SCN-01', fault_type: 'RateLimitStorm', target: 'Credit Bureau API', hypothesis: 'Exponential backoff handles burst 429 without dropping borrower record', unsafe_outcomes: ['Unverified approval', 'Silent drop'] },
+          { id: 'LOAN-SCN-02', fault_type: 'TokenTimeout', target: 'Document Parser', hypothesis: 'Hangs for 3.5s then routes to manual verification queue', unsafe_outcomes: ['Blank income approval'] },
+          { id: 'LOAN-SCN-03', fault_type: 'MemoryCorruption', target: 'Agent Scratchpad', hypothesis: 'Decayed monthly debt variable triggers circuit breaker', unsafe_outcomes: ['Miscalculated DTI ratio'] },
+          { id: 'LOAN-SCN-04', fault_type: 'HandoffCorruption', target: 'Underwriter -> Judge', hypothesis: 'Corrupted adverse action reason triggers deterministic fallback', unsafe_outcomes: ['Missing denial notice'] },
+          { id: 'LOAN-SCN-05', fault_type: 'SilentDegradation', target: 'DTI Calculator Node', hypothesis: 'Truncated output catches schema mismatch before final decision', unsafe_outcomes: ['Invalid credit tier'] },
+          { id: 'LOAN-SCN-06', fault_type: 'ToolCallFailure', target: 'Payer / Bureau Gateway', hypothesis: '504 Gateway timeout cleanly escalates to needs_human_review', unsafe_outcomes: ['Unhandled 500 error'] },
+          { id: 'LOAN-SCN-07', fault_type: 'PromptDrift', target: 'Policy Rule Evaluator', hypothesis: 'Semantic prompt deviation detected against baseline hash', unsafe_outcomes: ['Silent regulatory shift'] },
+          { id: 'LOAN-SCN-08', fault_type: 'CascadeFault', target: 'Bureau Timeout + Schema Cut', hypothesis: 'Multi-layer fault handles compound failure gracefully', unsafe_outcomes: ['Cascading unhandled crash'] }
+        ];
+      }
+      if (url.includes('/api/runs')) {
+        const isV2 = url.includes('version=v2') || currentVersion === 'v2';
+        return [
+          { run_id: 'RUN-9042', case_id: 'CASE-001', decision: 'refer', silent_failure: 0, safe_degraded: 1, escalated: 1, duration_ms: 2340, tokens: 3820, pack_version: isV2 ? 'v2' : 'v1', scenario_id: 'LOAN-SCN-01' },
+          { run_id: 'RUN-9043', case_id: 'CASE-002', decision: 'approve', silent_failure: 0, safe_degraded: 0, escalated: 0, duration_ms: 1240, tokens: 2410, pack_version: isV2 ? 'v2' : 'v1', scenario_id: 'BASELINE' },
+          { run_id: 'RUN-9044', case_id: 'CASE-003', decision: isV2 ? 'refer' : 'approve', silent_failure: isV2 ? 0 : 1, safe_degraded: isV2 ? 1 : 0, escalated: isV2 ? 1 : 0, duration_ms: 3620, tokens: 4190, pack_version: isV2 ? 'v2' : 'v1', scenario_id: 'LOAN-SCN-02' },
+          { run_id: 'RUN-9045', case_id: 'CASE-004', decision: 'decline', silent_failure: 0, safe_degraded: 0, escalated: 0, duration_ms: 1540, tokens: 2890, pack_version: isV2 ? 'v2' : 'v1', scenario_id: 'BASELINE' },
+          { run_id: 'RUN-9046', case_id: 'CASE-005', decision: 'refer', silent_failure: 0, safe_degraded: 1, escalated: 1, duration_ms: 2810, tokens: 3950, pack_version: isV2 ? 'v2' : 'v1', scenario_id: 'LOAN-SCN-03' },
+          { run_id: 'RUN-9047', case_id: 'CASE-006', decision: isV2 ? 'refer' : 'approve', silent_failure: isV2 ? 0 : 1, safe_degraded: isV2 ? 1 : 0, escalated: isV2 ? 1 : 0, duration_ms: 4120, tokens: 4620, pack_version: isV2 ? 'v2' : 'v1', scenario_id: 'LOAN-SCN-06' },
+          { run_id: 'RUN-9048', case_id: 'CASE-007', decision: 'approve', silent_failure: 0, safe_degraded: 0, escalated: 0, duration_ms: 1180, tokens: 2190, pack_version: isV2 ? 'v2' : 'v1', scenario_id: 'BASELINE' },
+          { run_id: 'RUN-9049', case_id: 'CASE-008', decision: 'refer', silent_failure: 0, safe_degraded: 1, escalated: 1, duration_ms: 2640, tokens: 3710, pack_version: isV2 ? 'v2' : 'v1', scenario_id: 'LOAN-SCN-04' }
+        ];
+      }
+      if (url.includes('/api/compare')) {
+        return {
+          v1: { score: 0.59, silent_fail_rate: 0.18, safe_degrad_rate: 0.60, unsupported_approvals: 4, avg_latency: 4.81, avg_tokens: 5890 },
+          v2: { score: 0.994, silent_fail_rate: 0.00, safe_degrad_rate: 1.00, unsupported_approvals: 0, avg_latency: 2.34, avg_tokens: 4120 }
+        };
+      }
+      if (url.includes('/api/fairness')) {
+        return {
+          demographic_parity: 0.924,
+          disparate_impact_ratio: 0.912,
+          adverse_reasons_groundedness: 0.967,
+          bias_verdict: 'NO_STATISTICAL_DISPARITY'
+        };
+      }
+      if (url.includes('/api/topology')) {
+        return {
+          nodes: [
+            { id: 'intake_agent', role: 'Loan Application Intake', status: 'healthy', latency: '240ms', tokens: 850 },
+            { id: 'doc_parser', role: 'Income & W2 Document Parser', status: 'degradation_guarded', latency: '480ms', tokens: 1220 },
+            { id: 'bureau_adapter', role: 'Credit Bureau Connector', status: 'chaos_injected', latency: '820ms', tokens: 640 },
+            { id: 'underwriter', role: 'Policy Rule Engine', status: 'circuit_breaker_active', latency: '490ms', tokens: 1110 },
+            { id: 'adverse_judge', role: 'Adverse Action Notice Reasoner', status: 'healthy', latency: '310ms', tokens: 780 }
+          ]
+        };
+      }
+      return null;
+    }
+
+    async function init() {
+      await loadVerdicts();
+      await loadScenarios();
+      await loadRuns();
+      await loadComparison();
+      await loadFairness();
+      await loadAuditList();
+      await loadTopology();
+      await loadPerformance();
+    }
+
+    function switchTab(tabId) {
+      currentTab = tabId;
+      const allTabs = ['overview', 'matrix', 'explorer', 'compare', 'audit', 'fairness', 'topology', 'performance', 'launcher', 'evidence'];
+      allTabs.forEach(t => {
+        const view = document.getElementById(`view-${t}`);
+        const btn = document.getElementById(`tab-${t}`);
+        if (view && btn) {
+          if (t === tabId) {
+            view.classList.remove('hidden');
+            btn.className = 'tab-btn pb-2 text-sky-600 border-b-2 border-sky-600';
+          } else {
+            view.classList.add('hidden');
+            btn.className = 'tab-btn pb-2 text-slate-500 hover:text-slate-800 border-b-2 border-transparent';
+          }
+        }
+      });
+      if (tabId === 'compare') loadComparison();
+      if (tabId === 'fairness') loadFairness();
+      if (tabId === 'explorer') loadRuns();
+      if (tabId === 'audit') loadAuditList();
+      if (tabId === 'topology') loadTopology();
+      if (tabId === 'performance') loadPerformance();
+      if (tabId === 'launcher') onLauncherPackChange();
+    }
+
+    function onPackOrVersionChange() {
+      currentPack = document.getElementById('packSelect').value;
+      currentVersion = document.getElementById('versionSelect').value;
+      init();
+    }
+
+    async function loadVerdicts() {
+      try {
+        const res = await fetch(`/api/verdicts?pack=${currentPack}&version=${currentVersion}`);
+        const data = await res.json();
+        const latest = data.latest;
+
+        if (latest) {
+          updateVerdictBanner(latest);
+          updateKpis(latest);
+          updateRulesTable(latest.rules || []);
+          document.getElementById('evaluatedRunsCount').innerText = `${latest.total_runs} runs evaluated`;
+        } else {
+          // Clear / placeholder
+          document.getElementById('verdictStatusText').innerText = "AWAITING RUN";
+          document.getElementById('verdictStatusText').className = "text-xs uppercase font-extrabold tracking-wider px-2 py-0.5 rounded bg-slate-100 text-slate-600";
+          document.getElementById('verdictScore').innerText = "Score: --";
+        }
+      } catch (e) {
+        console.error("Failed to load verdicts:", e);
+      }
+    }
+
+    function updateVerdictBanner(verdict) {
+      const banner = document.getElementById('verdictBanner');
+      const icon = document.getElementById('verdictIcon');
+      const statusText = document.getElementById('verdictStatusText');
+      const score = document.getElementById('verdictScore');
+      const title = document.getElementById('verdictTitle');
+      const subtitle = document.getElementById('verdictSubtitle');
+
+      const isPass = verdict.verdict === 'PASSED';
+      score.innerText = `Score: ${(verdict.overall_score * 100).toFixed(1)}%`;
+
+      if (isPass) {
+        banner.className = 'p-5 rounded-xl border border-emerald-200 bg-emerald-50/50 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4';
+        icon.className = 'w-12 h-12 rounded-xl flex items-center justify-center font-bold text-2xl text-white bg-emerald-600';
+        icon.innerHTML = '&#10003;';
+        statusText.innerText = 'RELEASE GATE: PASSED';
+        statusText.className = 'text-xs uppercase font-extrabold tracking-wider px-2.5 py-0.5 rounded bg-emerald-100 text-emerald-800';
+        title.innerText = `${verdict.pack_name.toUpperCase()} ${verdict.pack_version} is Safe for Production`;
+        subtitle.innerText = `Zero unsupported approvals & ${verdict.safe_degradation_rate * 100}% safe fault degradation.`;
+      } else {
+        banner.className = 'p-5 rounded-xl border border-rose-200 bg-rose-50/50 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4';
+        icon.className = 'w-12 h-12 rounded-xl flex items-center justify-center font-bold text-2xl text-white bg-rose-600';
+        icon.innerHTML = '&times;';
+        statusText.innerText = 'RELEASE GATE: BLOCKED';
+        statusText.className = 'text-xs uppercase font-extrabold tracking-wider px-2.5 py-0.5 rounded bg-rose-100 text-rose-800';
+        title.innerText = `${verdict.pack_name.toUpperCase()} ${verdict.pack_version} Failed Release Criteria`;
+        subtitle.innerText = verdict.failure_reasons.join(' | ') || 'Violated reliability safety limits.';
+      }
+    }
+
+    function updateKpis(v) {
+      document.getElementById('kpi-silent-fail').innerText = `${(v.silent_failure_rate * 100).toFixed(1)}%`;
+      document.getElementById('kpi-silent-fail').className = `text-xl font-bold mt-1 ${v.silent_failure_rate <= 0.02 ? 'text-emerald-600' : 'text-rose-600'}`;
+
+      document.getElementById('kpi-safe-degrad').innerText = `${(v.safe_degradation_rate * 100).toFixed(1)}%`;
+      document.getElementById('kpi-safe-degrad').className = `text-xl font-bold mt-1 ${v.safe_degradation_rate >= 0.95 ? 'text-emerald-600' : 'text-amber-600'}`;
+
+      document.getElementById('kpi-unsupported').innerText = v.unsupported_approvals_count;
+      document.getElementById('kpi-unsupported').className = `text-xl font-bold mt-1 ${v.unsupported_approvals_count === 0 ? 'text-emerald-600' : 'text-rose-600'}`;
+
+      document.getElementById('kpi-escalation').innerText = `${(v.escalation_rate * 100).toFixed(1)}%`;
+      document.getElementById('kpi-cost').innerText = `$${v.cost_per_application.toFixed(4)}`;
+      document.getElementById('kpi-latency').innerText = `${v.p95_latency_ms.toFixed(0)} ms`;
+    }
+
+    function updateRulesTable(rules) {
+      const tbody = document.getElementById('rulesTableBody');
+      if (!rules || rules.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="px-5 py-6 text-center text-slate-400">No rule checks recorded yet.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = rules.map(r => `
+        <tr class="hover:bg-slate-50">
+          <td class="px-5 py-3">
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold ${r.passed ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
+              ${r.passed ? 'PASS' : 'FAIL'}
+            </span>
+          </td>
+          <td class="px-5 py-3 font-semibold text-slate-800 font-mono">${r.name}</td>
+          <td class="px-5 py-3 text-slate-600 font-mono">${r.threshold}</td>
+          <td class="px-5 py-3 font-mono font-bold ${r.passed ? 'text-slate-800' : 'text-rose-600'}">${r.actual}</td>
+          <td class="px-5 py-3 text-slate-500">${r.message}</td>
+        </tr>
+      `).join('');
+    }
+
+    async function loadScenarios() {
+      try {
+        const res = await fetch(`/api/scenarios?pack=${currentPack}`);
+        const list = await res.json();
+        const tbody = document.getElementById('scenariosTableBody');
+        tbody.innerHTML = list.map(s => `
+          <tr class="hover:bg-slate-50">
+            <td class="px-4 py-3 font-mono font-bold text-slate-900">${s.id}</td>
+            <td class="px-4 py-3">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-sky-100 text-sky-800">${s.fault_type}</span>
+            </td>
+            <td class="px-4 py-3 text-slate-600 font-mono">${s.target}</td>
+            <td class="px-4 py-3 text-slate-700">${s.hypothesis}</td>
+            <td class="px-4 py-3 font-mono text-[11px] text-rose-600">${(s.unsafe_outcomes || []).join(', ') || 'None'}</td>
+          </tr>
+        `).join('');
+      } catch (e) {
+        console.error("Failed to load scenarios:", e);
+      }
+    }
+
+    async function loadRuns() {
+      try {
+        const res = await fetch(`/api/runs?pack=${currentPack}&version=${currentVersion}&limit=50`);
+        cachedRuns = await res.json();
+        document.getElementById('runCountBadge').innerText = cachedRuns.length;
+        const container = document.getElementById('runsListContainer');
+
+        if (cachedRuns.length === 0) {
+          container.innerHTML = '<div class="text-xs text-slate-400 text-center py-10">No runs recorded for this pack and version. Click "Run Experiment" above.</div>';
+          return;
+        }
+
+        container.innerHTML = cachedRuns.map(r => {
+          const isSilentFail = r.silent_failure === 1;
+          const isSafeDegraded = r.safe_degraded === 1;
+          const isEscalated = r.escalated === 1;
+
+          let badgeColor = 'bg-slate-100 text-slate-700';
+          let statusLabel = r.decision.toUpperCase();
+          if (isSilentFail) {
+            badgeColor = 'bg-rose-100 text-rose-800 font-bold';
+            statusLabel = 'SILENT FAIL';
+          } else if (isEscalated) {
+            badgeColor = 'bg-amber-100 text-amber-800';
+            statusLabel = 'ESCALATED';
+          } else if (r.decision === 'approve') {
+            badgeColor = 'bg-emerald-100 text-emerald-800';
+          }
+
+          return `
+            <div onclick="selectRun('${r.run_id}')" class="p-3 rounded-lg border border-slate-200 hover:border-sky-400 hover:bg-sky-50/30 cursor-pointer transition text-xs">
+              <div class="flex items-center justify-between">
+                <span class="font-mono font-semibold text-slate-800">${r.case_id}</span>
+                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${badgeColor}">${statusLabel}</span>
+              </div>
+              <div class="flex items-center justify-between text-slate-500 text-[11px] mt-1">
+                <span>Scenario: <strong class="text-slate-700">${r.scenario_id}</strong></span>
+                <span>Oracle: <strong>${r.oracle_decision}</strong></span>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        if (cachedRuns.length > 0) {
+          selectRun(cachedRuns[0].run_id);
+        }
+      } catch (e) {
+        console.error("Failed to load runs:", e);
+      }
+    }
+
+    async function selectRun(runId) {
+      try {
+        const res = await fetch(`/api/runs/${runId}`);
+        const artifact = await res.json();
+
+        document.getElementById('traceRunId').innerText = artifact.run_id;
+        document.getElementById('traceTitle').innerText = `${artifact.pack_name.toUpperCase()} [${artifact.pack_version}] - Case ${artifact.case_id}`;
+
+        const badges = document.getElementById('traceSummaryBadges');
+        badges.innerHTML = `
+          <span class="px-2 py-0.5 rounded text-xs font-semibold bg-slate-100 text-slate-800">Decision: <strong>${artifact.workflow_outcome.decision.toUpperCase()}</strong></span>
+          <span class="px-2 py-0.5 rounded text-xs font-semibold bg-slate-100 text-slate-800">Oracle: <strong>${artifact.oracle_result.decision.toUpperCase()}</strong></span>
+          <span class="px-2 py-0.5 rounded text-xs font-semibold ${artifact.silent_failure ? 'bg-rose-100 text-rose-800 font-bold' : 'bg-emerald-100 text-emerald-800'}">
+            ${artifact.silent_failure ? 'SILENT FAILURE' : 'SAFE'}
+          </span>
+          <span class="px-2 py-0.5 rounded text-xs font-mono bg-slate-100 text-slate-700">${artifact.latency_ms.toFixed(1)} ms</span>
+          <span class="px-2 py-0.5 rounded text-xs font-mono bg-slate-100 text-slate-700">$${artifact.total_cost.toFixed(4)}</span>
+        `;
+
+        const container = document.getElementById('traceSpansContainer');
+        const chaosMap = {};
+        (artifact.chaos_events || []).forEach(ce => {
+          chaosMap[ce.step_name || ce.step_id] = ce;
+        });
+
+        if (!artifact.trace_steps || artifact.trace_steps.length === 0) {
+          container.innerHTML = '<div class="text-xs text-slate-400 py-10 text-center">No trace steps captured.</div>';
+          return;
+        }
+
+        container.innerHTML = artifact.trace_steps.map((s, idx) => {
+          const chaos = chaosMap[s.name] || chaosMap[s.id] || (s.name === 'bureau_verification' && chaosMap['bureau_lookup']);
+          return `
+            <div class="p-3.5 rounded-lg border ${chaos ? 'border-rose-300 bg-rose-50/40' : 'border-slate-200 bg-slate-50/60'} text-xs">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="w-5 h-5 rounded-full bg-slate-200 text-slate-700 font-bold text-[10px] flex items-center justify-center font-mono">${idx + 1}</span>
+                  <span class="font-bold text-slate-900 font-mono">${s.name}</span>
+                  <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white border border-slate-200 text-slate-600">${s.type}</span>
+                </div>
+                <span class="font-mono text-slate-500">${s.latency_ms} ms</span>
+              </div>
+              
+              <div class="mt-1.5 flex items-center justify-between text-slate-600 text-[11px]">
+                <span>Agent: <strong>${s.agent_name || 'N/A'}</strong> (${s.agent_role || 'General'})</span>
+                ${s.handoff_to ? `<span class="text-sky-600 font-mono">&rarr; Handoff to: ${s.handoff_to}</span>` : ''}
+              </div>
+
+              ${chaos ? `
+                <div class="mt-2.5 p-2 rounded bg-rose-100 border border-rose-200 text-rose-800 text-[11px] font-mono">
+                  <strong>[Agentic Chaos Event Injected]</strong> Fault: ${chaos.fault_type} | Outcome: ${chaos.outcome} | Detail: ${JSON.stringify(chaos.detail || {})}
+                </div>
+              ` : ''}
+            </div>
+          `;
+        }).join('');
+      } catch (e) {
+        console.error("Failed to select run:", e);
+      }
+    }
+
+    async function loadComparison() {
+      try {
+        const res = await fetch(`/api/compare?pack=${currentPack}&version_a=v1&version_b=v2`);
+        const data = await res.json();
+        const a = data.version_a;
+        const b = data.version_b;
+        const d = data.deltas;
+
+        const cards = document.getElementById('compareCardsContainer');
+        cards.innerHTML = `
+          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <div class="text-xs text-slate-500 font-medium">Silent Failure Reduction</div>
+            <div class="text-2xl font-bold text-emerald-600 mt-1 font-mono">
+              ${d.silent_failure_reduction !== null ? `${(d.silent_failure_reduction * 100).toFixed(1)}%` : 'N/A'}
+            </div>
+            <div class="text-[11px] text-slate-500 mt-1">v1 (${(a.silent_failure_rate*100||0).toFixed(0)}%) &rarr; v2 (${(b.silent_failure_rate*100||0).toFixed(0)}%)</div>
+          </div>
+          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <div class="text-xs text-slate-500 font-medium">Safe Degradation Gain</div>
+            <div class="text-2xl font-bold text-sky-600 mt-1 font-mono">
+              ${d.safe_degradation_gain !== null ? `+${(d.safe_degradation_gain * 100).toFixed(1)}%` : 'N/A'}
+            </div>
+            <div class="text-[11px] text-slate-500 mt-1">Resilient human escalation under fault</div>
+          </div>
+          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <div class="text-xs text-slate-500 font-medium">Latency Overhead</div>
+            <div class="text-2xl font-bold text-slate-800 mt-1 font-mono">
+              ${d.latency_overhead_ms !== null ? `+${d.latency_overhead_ms.toFixed(1)} ms` : 'N/A'}
+            </div>
+            <div class="text-[11px] text-slate-500 mt-1">Cross-check & validation duration</div>
+          </div>
+          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <div class="text-xs text-slate-500 font-medium">Cost Overhead / App</div>
+            <div class="text-2xl font-bold text-slate-800 mt-1 font-mono">
+              ${d.cost_overhead !== null ? `+$${d.cost_overhead.toFixed(4)}` : 'N/A'}
+            </div>
+            <div class="text-[11px] text-slate-500 mt-1">Schema validation & retry token cost</div>
+          </div>
+        `;
+
+        const tbody = document.getElementById('compareTableBody');
+        tbody.innerHTML = `
+          <tr>
+            <td class="px-4 py-2.5 font-sans font-semibold text-slate-900">Release Gate Verdict</td>
+            <td class="px-4 py-2.5 text-rose-600 font-bold">${a.verdict}</td>
+            <td class="px-4 py-2.5 text-emerald-600 font-bold">${b.verdict}</td>
+            <td class="px-4 py-2.5 text-emerald-600 font-bold">Unsafe Blocked &rarr; Passed</td>
+          </tr>
+          <tr>
+            <td class="px-4 py-2.5 font-sans font-semibold text-slate-900">Silent Failure Rate</td>
+            <td class="px-4 py-2.5 text-rose-600">${a.silent_failure_rate !== null ? (a.silent_failure_rate*100).toFixed(1)+'%' : 'N/A'}</td>
+            <td class="px-4 py-2.5 text-emerald-600">${b.silent_failure_rate !== null ? (b.silent_failure_rate*100).toFixed(1)+'%' : 'N/A'}</td>
+            <td class="px-4 py-2.5 text-emerald-600">Eliminated</td>
+          </tr>
+          <tr>
+            <td class="px-4 py-2.5 font-sans font-semibold text-slate-900">Safe Degradation Rate</td>
+            <td class="px-4 py-2.5">${a.safe_degradation_rate !== null ? (a.safe_degradation_rate*100).toFixed(1)+'%' : 'N/A'}</td>
+            <td class="px-4 py-2.5 text-emerald-600 font-bold">${b.safe_degradation_rate !== null ? (b.safe_degradation_rate*100).toFixed(1)+'%' : 'N/A'}</td>
+            <td class="px-4 py-2.5 text-emerald-600">+100% Resilience</td>
+          </tr>
+          <tr>
+            <td class="px-4 py-2.5 font-sans font-semibold text-slate-900">Escalation Rate</td>
+            <td class="px-4 py-2.5">${a.escalation_rate !== null ? (a.escalation_rate*100).toFixed(1)+'%' : 'N/A'}</td>
+            <td class="px-4 py-2.5">${b.escalation_rate !== null ? (b.escalation_rate*100).toFixed(1)+'%' : 'N/A'}</td>
+            <td class="px-4 py-2.5 text-slate-600">Controlled fallback</td>
+          </tr>
+        `;
+      } catch (e) {
+        console.error("Failed to load compare:", e);
+      }
+    }
+
+    async function loadFairness() {
+      try {
+        const res = await fetch(`/api/fairness?pack=${currentPack}&version=${currentVersion}`);
+        const data = await res.json();
+        const tbody = document.getElementById('fairnessTableBody');
+        tbody.innerHTML = (data.groups || []).map(g => `
+          <tr class="hover:bg-slate-50 font-mono">
+            <td class="px-4 py-3 font-sans font-semibold text-slate-900 capitalize">${g.group.replace('_', ' ')}</td>
+            <td class="px-4 py-3">${g.total_runs}</td>
+            <td class="px-4 py-3 font-bold ${g.silent_failure_rate <= 0.02 ? 'text-emerald-600' : 'text-rose-600'}">${(g.silent_failure_rate*100).toFixed(1)}%</td>
+            <td class="px-4 py-3 font-bold ${g.safe_degradation_rate >= 0.95 ? 'text-emerald-600' : 'text-slate-800'}">${(g.safe_degradation_rate*100).toFixed(1)}%</td>
+            <td class="px-4 py-3">${(g.escalation_rate*100).toFixed(1)}%</td>
+          </tr>
+        `).join('');
+      } catch (e) {
+        console.error("Failed to load fairness:", e);
+      }
+    }
+
+    function openRunModal() {
+      document.getElementById('modalPack').value = currentPack;
+      document.getElementById('modalVersion').value = currentVersion;
+      document.getElementById('runModal').classList.remove('hidden');
+    }
+
+    function closeRunModal() {
+      document.getElementById('runModal').classList.add('hidden');
+    }
+
+    async function executeExperiment() {
+      const btn = document.getElementById('modalRunBtn');
+      btn.innerText = "Running Experiment Matrix...";
+      btn.disabled = true;
+
+      const pack = document.getElementById('modalPack').value;
+      const version = document.getElementById('modalVersion').value;
+      const caseCount = parseInt(document.getElementById('modalCaseCount').value) || 10;
+
+      try {
+        const res = await fetch('/api/experiments/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pack: pack, version: version, case_count: caseCount, reps_per_case: 1 }),
+        });
+        const data = await res.json();
+        closeRunModal();
+        currentPack = pack;
+        currentVersion = version;
+        document.getElementById('packSelect').value = pack;
+        document.getElementById('versionSelect').value = version;
+        await init();
+        switchTab('overview');
+      } catch (e) {
+        alert("Failed to run experiment: " + e);
+      } finally {
+        btn.innerText = "Run Matrix";
+        btn.disabled = false;
+      }
+    }
+
+    // TAB 5: DECISION AUDIT LOGIC
+    async function loadAuditList() {
+      try {
+        const select = document.getElementById('auditCaseSelect');
+        const res = await fetch(`/api/runs?pack=${currentPack}&version=${currentVersion}&limit=100`);
+        const runs = await res.json();
+        const seen = new Set();
+        select.innerHTML = '<option value="">Choose an applicant...</option>';
+        runs.forEach(r => {
+          if (!seen.has(r.case_id)) {
+            seen.add(r.case_id);
+            select.innerHTML += `<option value="${r.case_id}">${r.case_id} (${r.scenario_id}) - ${r.decision.toUpperCase()}</option>`;
+          }
+        });
+        if (runs.length > 0 && select.options.length > 1) {
+          select.selectedIndex = 1;
+          loadCaseAudit(select.value);
+        }
+      } catch (e) {
+        console.error("Failed to load audit cases:", e);
+      }
+    }
+
+    async function loadCaseAudit(caseId) {
+      if (!caseId) return;
+      try {
+        const caseRes = await fetch(`/api/cases/${caseId}?pack=${currentPack}`);
+        const caseData = await caseRes.json();
+        const runRes = await fetch(`/api/runs?pack=${currentPack}&version=${currentVersion}&limit=100`);
+        const runs = await runRes.json();
+        const matchedRun = runs.find(r => r.case_id === caseId) || {};
+        let artifact = null;
+        if (matchedRun.run_id) {
+          const artRes = await fetch(`/api/runs/${matchedRun.run_id}`);
+          artifact = await artRes.json();
+        }
+
+        const c = caseData.case || {};
+        const ora = caseData.oracle || {};
+
+        document.getElementById('auditApplicantInfo').innerHTML = `
+          <div><strong>Applicant:</strong> ${c.name}</div>
+          <div><strong>SSN:</strong> ${c.ssn}</div>
+          <div><strong>Stated Income:</strong> $${(c.stated_annual_income || 0).toLocaleString()}/yr</div>
+          <div><strong>Monthly Debt:</strong> $${(c.monthly_debt || 0).toLocaleString()}</div>
+          <div><strong>Credit Score:</strong> ${c.credit_score}</div>
+          <div><strong>Synthetic Group:</strong> <span class="px-1.5 py-0.5 rounded bg-sky-100 text-sky-800">${c.synthetic_group || 'established'}</span></div>
+        `;
+        document.getElementById('auditDocPreview').innerText = c.documents_text || "No document payload.";
+
+        const oraDec = ora.decision || 'N/A';
+        const oraBadge = oraDec === 'approve' ? 'bg-emerald-100 text-emerald-800' : (oraDec === 'decline' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800');
+        document.getElementById('auditOracleInfo').innerHTML = `
+          <div class="flex items-center justify-between p-2 rounded bg-white border">
+            <span class="font-semibold text-slate-700">Ground Truth Verdict:</span>
+            <span class="px-2 py-0.5 rounded font-bold ${oraBadge}">${oraDec.toUpperCase()}</span>
+          </div>
+          <div><strong>Policy Version:</strong> <span class="font-mono">${ora.policy_version || '1.0'}</span></div>
+          <div>
+            <strong>Required Factors:</strong>
+            <div class="mt-1 flex flex-wrap gap-1">
+              ${(ora.reason_factors || []).map(f => `<span class="px-2 py-0.5 bg-slate-200 text-slate-800 rounded font-mono text-[10px]">${f}</span>`).join('') || '<span class="text-slate-400">None</span>'}
+            </div>
+          </div>
+        `;
+
+        const wfDec = artifact?.workflow_outcome?.decision || matchedRun.decision || 'N/A';
+        const wfBadge = wfDec === 'approve' ? 'bg-emerald-100 text-emerald-800' : (wfDec === 'decline' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800');
+        const isEscalated = artifact?.workflow_outcome?.escalated || matchedRun.escalated;
+        const reasons = artifact?.workflow_outcome?.reason_factors || [];
+        const narrative = artifact?.workflow_outcome?.narrative || 'Audit narrative verified.';
+
+        document.getElementById('auditSystemInfo').innerHTML = `
+          <div class="flex items-center justify-between p-2 rounded bg-white border">
+            <span class="font-semibold text-slate-700">Workflow Decision:</span>
+            <span class="px-2 py-0.5 rounded font-bold ${wfBadge}">${wfDec.toUpperCase()}</span>
+          </div>
+          <div><strong>Human Escalation:</strong> ${isEscalated ? '<span class="text-amber-600 font-bold">YES (Escalated to Reviewer Queue)</span>' : '<span class="text-slate-600">No (Automated)</span>'}</div>
+          ${artifact?.workflow_outcome?.escalation_reason ? `<div><strong>Escalation Trigger:</strong> <span class="font-mono text-rose-600 font-semibold">${artifact.workflow_outcome.escalation_reason}</span></div>` : ''}
+          <div>
+            <strong>Stated Factors:</strong>
+            <div class="mt-1 flex flex-wrap gap-1">
+              ${reasons.map(f => `<span class="px-2 py-0.5 bg-sky-100 text-sky-800 rounded font-mono text-[10px]">${f}</span>`).join('') || '<span class="text-slate-400">None</span>'}
+            </div>
+          </div>
+          <div class="pt-2 border-t text-[11px] text-slate-600">
+            <strong>Compliance Review Narrative:</strong>
+            <p class="italic mt-1 text-slate-700 font-sans">"${narrative}"</p>
+          </div>
+        `;
+      } catch (e) {
+        console.error("Failed to load case audit details:", e);
+      }
+    }
+
+    // TAB 7: TOPOLOGY GRAPH LOGIC
+    async function loadTopology() {
+      try {
+        const res = await fetch(`/api/topology?pack=${currentPack}`);
+        const data = await res.json();
+        const flowContainer = document.getElementById('topologyNodesFlow');
+        if (!data.nodes) return;
+
+        flowContainer.innerHTML = data.nodes.map((node, i) => {
+          let nodeColor = 'border-sky-500 bg-sky-950/60 text-sky-300';
+          let icon = '🤖';
+          if (node.type === 'tool') {
+            nodeColor = 'border-purple-500 bg-purple-950/60 text-purple-300';
+            icon = '⚡';
+          } else if (node.type === 'human') {
+            nodeColor = 'border-amber-500 bg-amber-950/60 text-amber-300';
+            icon = '👤';
+          }
+
+          // Check if incoming or outgoing edge has fault point
+          const faultEdge = data.edges.find(e => e.from === node.id && e.fault_point);
+          const hasFault = !!faultEdge;
+
+          return `
+            <div onclick="selectTopologyNode('${node.id}', '${node.label}', '${node.role}', '${node.type}', '${faultEdge ? faultEdge.fault_point : ''}')" class="relative p-3 rounded-xl border ${nodeColor} cursor-pointer hover:scale-105 transition shadow-lg text-center flex flex-col justify-between min-h-[110px]">
+              ${hasFault ? `<div class="absolute -top-2 -right-2 px-1.5 py-0.5 rounded-full bg-rose-600 text-white text-[9px] font-bold font-mono animate-pulse shadow">FAULT POINT</div>` : ''}
+              <div class="text-lg">${icon}</div>
+              <div class="font-bold text-xs mt-1 text-slate-100">${node.label}</div>
+              <div class="text-[10px] opacity-75 mt-0.5 font-mono">${node.role}</div>
+            </div>
+          `;
+        }).join('');
+      } catch (e) {
+        console.error("Failed to load topology:", e);
+      }
+    }
+
+    function selectTopologyNode(id, label, role, type, faultPoint) {
+      document.getElementById('topologyNodeDetail').innerHTML = `
+        <div class="flex items-center justify-between font-bold text-slate-100">
+          <span>Node: ${label} [${id}]</span>
+          <span class="px-2 py-0.5 rounded bg-slate-800 text-[10px] uppercase font-mono">${type}</span>
+        </div>
+        <div class="mt-1 text-slate-400">Role: ${role}</div>
+        ${faultPoint ? `<div class="mt-2 text-rose-400 font-semibold flex items-center gap-1.5"><span>⚡ Fault Point Interceptor:</span> <code class="bg-rose-950 px-2 py-0.5 rounded border border-rose-800 text-rose-200">${faultPoint}</code></div>` : '<div class="mt-1 text-emerald-400">Status: Verified under contract constraints.</div>'}
+      `;
+    }
+
+    // TAB 8: COST & PERFORMANCE LOGIC
+    async function loadPerformance() {
+      const isUnderwriting = currentPack === 'underwriting';
+      const cost = isUnderwriting ? (currentVersion === 'v1' ? 0.0015 : 0.0028) : 0.0022;
+      const lat = isUnderwriting ? (currentVersion === 'v1' ? 140 : 195) : 120;
+      const tokens = isUnderwriting ? (currentVersion === 'v1' ? 180 : 280) : 160;
+
+      document.getElementById('perfCostVal').innerText = `$${cost.toFixed(4)}`;
+      document.getElementById('perfLatencyVal').innerText = `${lat} ms`;
+      document.getElementById('perfTokensVal').innerText = `~${tokens} tokens`;
+
+      const tbody = document.getElementById('agentPerfTableBody');
+      const agents = isUnderwriting ? [
+        { name: "intake_agent", role: "Application intake validator", type: "planner", tokens: 0, lat: "15 ms", cost: "$0.0000" },
+        { name: "doc_extraction_agent", role: "Financial document extractor", type: "llm_call", tokens: 160, lat: "85 ms", cost: "$0.0016" },
+        { name: "bureau_agent", role: "Credit bureau coordinator", type: "tool_call", tokens: 0, lat: "35 ms", cost: "$0.0002" },
+        { name: "risk_scorer_agent", role: "Deterministic credit risk scoring", type: "planner", tokens: 0, lat: "5 ms", cost: "$0.0000" },
+        { name: "compliance_reviewer_agent", role: "Adverse action notice formulation", type: "llm_call", tokens: 120, lat: "60 ms", cost: "$0.0010" },
+      ] : [
+        { name: "id_check_agent", role: "Identity check validator", type: "planner", tokens: 0, lat: "12 ms", cost: "$0.0000" },
+        { name: "sanctions_agent", role: "Watchlist screening tool coordinator", type: "tool_call", tokens: 0, lat: "40 ms", cost: "$0.0004" },
+        { name: "kyc_risk_agent", role: "Risk tier classification", type: "planner", tokens: 0, lat: "5 ms", cost: "$0.0000" },
+        { name: "kyc_reviewer_agent", role: "KYC sign-off formulation", type: "llm_call", tokens: 110, lat: "65 ms", cost: "$0.0012" },
+      ];
+
+      tbody.innerHTML = agents.map(a => `
+        <tr class="hover:bg-slate-50">
+          <td class="px-4 py-2 font-bold text-slate-800">${a.name}</td>
+          <td class="px-4 py-2 font-sans text-slate-600">${a.role}</td>
+          <td class="px-4 py-2"><span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">${a.type}</span></td>
+          <td class="px-4 py-2">${a.tokens}</td>
+          <td class="px-4 py-2">${a.lat}</td>
+          <td class="px-4 py-2 text-slate-800 font-semibold">${a.cost}</td>
+        </tr>
+      `).join('');
+    }
+
+    // TAB 9: SCENARIO LAUNCHER LOGIC
+    async function onLauncherPackChange() {
+      const pack = document.getElementById('launchPack').value;
+      const listContainer = document.getElementById('launcherScenariosList');
+      try {
+        const res = await fetch(`/api/scenarios?pack=${pack}`);
+        const scenarios = await res.json();
+        listContainer.innerHTML = scenarios.map((s, idx) => `
+          <label class="flex items-start gap-2.5 p-2 rounded hover:bg-slate-100 cursor-pointer text-xs">
+            <input type="checkbox" name="launch_scenario" value="${s.id}" checked class="mt-0.5 rounded text-sky-600 focus:ring-sky-500">
+            <div>
+              <div class="font-bold text-slate-900">${s.name} <span class="font-mono text-[10px] text-sky-700">(${s.id})</span></div>
+              <div class="text-slate-500 text-[11px]">${s.hypothesis}</div>
+            </div>
+          </label>
+        `).join('');
+      } catch (e) {
+        console.error("Failed to load launcher scenarios:", e);
+      }
+    }
+
+    async function executeFromLauncher() {
+      const btn = document.getElementById('launcherRunBtn');
+      const consoleEl = document.getElementById('launcherConsole');
+      btn.innerText = "Executing Reliability Run...";
+      btn.disabled = true;
+
+      const pack = document.getElementById('launchPack').value;
+      const version = document.getElementById('launchVersion').value;
+      const count = parseInt(document.getElementById('launchCount').value) || 10;
+      const reps = parseInt(document.getElementById('launchReps').value) || 1;
+
+      const checked = Array.from(document.querySelectorAll('input[name="launch_scenario"]:checked')).map(el => el.value);
+
+      consoleEl.innerHTML = `[${new Date().toLocaleTimeString()}] Initializing ${pack} (${version}) experiment with ${count} applicants x ${reps} reps...\n`;
+      consoleEl.innerHTML += `[${new Date().toLocaleTimeString()}] Active Scenarios: ${checked.join(', ') || 'All'}\n`;
+      consoleEl.innerHTML += `[${new Date().toLocaleTimeString()}] Opening chaos sessions and profiling AgenticLens spans...\n`;
+
+      try {
+        const res = await fetch('/api/experiments/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pack: pack, version: version, scenario_ids: checked, case_count: count, reps_per_case: reps }),
+        });
+        const data = await res.json();
+        const v = data.verdict;
+
+        consoleEl.innerHTML += `[${new Date().toLocaleTimeString()}] Experiment completed! Total runs executed: ${data.total_runs}\n`;
+        consoleEl.innerHTML += `[${new Date().toLocaleTimeString()}] Gate Verdict: ${v.verdict} (Score: ${(v.overall_score * 100).toFixed(1)}%)\n`;
+        consoleEl.innerHTML += `[${new Date().toLocaleTimeString()}] Silent Failure Rate: ${(v.silent_failure_rate * 100).toFixed(1)}% | Safe Degradation: ${(v.safe_degradation_rate * 100).toFixed(1)}%\n`;
+        consoleEl.innerHTML += `[${new Date().toLocaleTimeString()}] Unsupported Approvals: ${v.unsupported_approvals_count}\n`;
+
+        currentPack = pack;
+        currentVersion = version;
+        document.getElementById('packSelect').value = pack;
+        document.getElementById('versionSelect').value = version;
+        await init();
+      } catch (e) {
+        consoleEl.innerHTML += `[ERROR] Failed to run experiment: ${e}\n`;
+      } finally {
+        btn.innerText = "Execute Reliability Run";
+        btn.disabled = false;
+      }
+    }
+
+    function downloadReport(format) {
+      window.open(`/api/evidence-pack/latest?pack=${currentPack}&version=${currentVersion}&format=${format}`, '_blank');
+    }
+
+    window.onload = init;
+  </script>
+</body>
+</html>

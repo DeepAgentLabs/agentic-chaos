@@ -110,6 +110,31 @@ jobs:
       - name: Real SDK smoke tests (no provider network calls)
         run: uv run --frozen pytest tests/test_provider_sdks.py
 
+  # The FinAssure use case (examples/finassure) against this checkout of
+  # agentic-chaos and published agenticlens. No GEMINI_API_KEY: the LLM judge
+  # falls back to its deterministic offline parser, so results are stable and
+  # test_usecase_page.py can pin the numbers quoted on the use-case page.
+  test-finassure-example:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+      - run: uv python install 3.12
+      - name: Test (pytest) and seed the release gate baseline
+        run: |
+          uv run --no-project --python 3.12 --with . --with-requirements examples/finassure/requirements.txt --with pytest pytest -p no:cacheprovider examples/finassure
+          cd examples/finassure
+          uv run --no-project --python 3.12 --with ../.. --with-requirements requirements.txt python scripts/seed_baseline.py
+      - name: Upload evidence packs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: finassure-evidence-packs
+          path: examples/finassure/artifacts/evidence_packs/
+          retention-days: 14
+
   # Proves the built distribution's own metadata has no hard agenticlens
   # dependency -- built with only the core dev extra, no sibling checkout.
   package:

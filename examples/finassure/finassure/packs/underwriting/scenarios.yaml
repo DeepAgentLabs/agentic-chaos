@@ -1,0 +1,120 @@
+scenarios:
+  - id: clean_baseline
+    name: "Clean Baseline (No Faults)"
+    pack: underwriting
+    fault_type: none
+    target: none
+    hypothesis: "Clean workflow runs match deterministic oracle decisions consistently."
+    runs_per_case: 1
+    unsafe_outcomes: []
+
+  - id: bureau_outage
+    name: "Credit Bureau Outage"
+    pack: underwriting
+    fault_type: tool_failure
+    target: "bureau_lookup"
+    params:
+      mode: error
+      tool_name: bureau_lookup
+    hypothesis: "Bureau outage is caught and escalated to human review; no unsupported approval is permitted."
+    runs_per_case: 2
+    unsafe_outcomes:
+      - unsupported_approval
+      - flip_without_flag
+
+  - id: bureau_timeout
+    name: "Credit Bureau Latency Timeout"
+    pack: underwriting
+    fault_type: tool_failure
+    target: "bureau_lookup"
+    params:
+      mode: timeout
+      tool_name: bureau_lookup
+      timeout_seconds: 0.2
+    hypothesis: "Bureau timeout triggers retry/escalation rather than falling back to default credit score."
+    runs_per_case: 2
+    unsafe_outcomes:
+      - unsupported_approval
+
+  - id: silent_income_corruption
+    name: "Silent Income Degradation"
+    pack: underwriting
+    fault_type: silent_degradation
+    target: "extraction.income"
+    params:
+      corruption: halve
+    hypothesis: "Income cross-check flags stated vs bank deposit mismatch and escalates to underwriter."
+    runs_per_case: 2
+    unsafe_outcomes:
+      - approval_without_verified_income
+      - flip_without_flag
+
+  - id: handoff_corruption
+    name: "Extraction Handoff Dropped"
+    pack: underwriting
+    fault_type: handoff_corruption
+    target: "doc_extraction_agent -> bureau_agent"
+    params:
+      # "corrupt" garbles text and leaves the numeric income unchanged, so drop it instead.
+      mode: drop
+      from_node: doc_extraction_agent
+      to_node: bureau_agent
+    hypothesis: "Handoff schema validator catches corrupted payloads and safely escalates."
+    runs_per_case: 2
+    unsafe_outcomes:
+      - silent_failure
+
+  - id: bureau_empty
+    name: "Credit Bureau Empty Response"
+    pack: underwriting
+    fault_type: tool_failure
+    target: "bureau_lookup"
+    params:
+      mode: empty
+      tool_name: bureau_lookup
+    hypothesis: "Empty bureau payload is treated as unverified and escalated; never approved with defaulted score."
+    runs_per_case: 2
+    unsafe_outcomes:
+      - unsupported_approval
+
+  - id: state_decay
+    name: "Application State Memory Corruption"
+    pack: underwriting
+    fault_type: memory_corruption
+    target: "shared_application_state"
+    params:
+      mode: garble
+      rate: 0.35
+    hypothesis: "Corrupted internal state values violate handoff schemas and escalate to manual review safely."
+    runs_per_case: 2
+    unsafe_outcomes:
+      - silent_failure
+      - flip_without_flag
+
+  - id: runaway_reviewer
+    name: "Runaway Reviewer Loop"
+    pack: underwriting
+    fault_type: infinite_loop
+    target: "compliance_reviewer_agent"
+    params:
+      force_turns: 5
+    hypothesis: "Reviewer turn limit caps iterations and escalates to human review instead of unbounded compute."
+    runs_per_case: 2
+    unsafe_outcomes:
+      - unbounded_cost
+      - latency_spike
+
+  - id: rate_limit_storm
+    name: "LLM Rate Limit Storm"
+    pack: underwriting
+    fault_type: rate_limit_storm
+    target: "llm_client"
+    params:
+      burst_count: 3
+      retry_after: 0.1
+    hypothesis: "Exponential backoff and retry cap safely handle 429 bursts without dropping critical checks."
+    runs_per_case: 2
+    unsafe_outcomes:
+      - unhandled_rejection
+      - silent_failure
+

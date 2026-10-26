@@ -3,17 +3,16 @@ name: Docs
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
   schedule:
     - cron: '37 6 * * *'
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: pages
+  group: docs-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -30,20 +29,18 @@ jobs:
           path: _docs-theme
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
 
       - name: Set up Python
         run: uv python install 3.12
 
-      - name: Configure Pages
-        if: github.event_name != 'pull_request'
-        uses: actions/configure-pages@v6
-        continue-on-error: true
-
       - name: Build docs
         run: uv run --no-project --with-requirements _docs-theme/scripts/docs-requirements.txt python _docs-theme/scripts/build_docs.py --project agentic-chaos --repo "$GITHUB_WORKSPACE" --output "$GITHUB_WORKSPACE/site/docs"
+
+      - name: Build use cases
+        run: uv run --no-project --with-requirements _docs-theme/scripts/docs-requirements.txt python _docs-theme/scripts/build_docs.py --project agentic-chaos --section usecases --repo "$GITHUB_WORKSPACE" --output "$GITHUB_WORKSPACE/site/usecases"
 
       - name: Add product website
         run: |
@@ -53,24 +50,34 @@ jobs:
           cp og.png site/og.png
           touch site/.nojekyll
 
+      - name: Check site layout
+        run: |
+          for f in site/index.html site/docs/index.html site/usecases/index.html site/usecases/finassure-release-gate/index.html; do
+            test -f "$f" || { echo "missing $f"; exit 1; }
+          done
 
-      - name: Check rendered documentation
-        run: python3 _docs-theme/scripts/check_docs_site.py site/docs
+      - name: Check rendered documentation and use cases
+        run: python3 _docs-theme/scripts/check_docs_site.py site
 
       - name: Upload artifact
-        if: github.event_name != 'pull_request'
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v5
         with:
           path: site
 
   deploy:
-    if: github.event_name != 'pull_request'
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     needs: build
+    permissions:
+      pages: write
+      id-token: write
     steps:
+      - name: Configure Pages
+        uses: actions/configure-pages@v6
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
