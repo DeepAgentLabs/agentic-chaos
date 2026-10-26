@@ -42,6 +42,13 @@ jobs:
       - name: Build use cases
         run: uv run --no-project --with-requirements _docs-theme/scripts/docs-requirements.txt python _docs-theme/scripts/build_docs.py --project agentic-chaos --section usecases --repo "$GITHUB_WORKSPACE" --output "$GITHUB_WORKSPACE/site/usecases"
 
+      - name: Add FinAssure interactive demo assets
+        run: |
+          if [ -d "examples/finassure/demo" ]; then
+            mkdir -p site/usecases/finassure-release-gate/demo
+            cp -r examples/finassure/demo/* site/usecases/finassure-release-gate/demo/
+          fi
+
       - name: Add product website
         run: |
           cp index.html site/index.html
@@ -52,7 +59,7 @@ jobs:
 
       - name: Check site layout
         run: |
-          for f in site/index.html site/docs/index.html site/usecases/index.html site/usecases/finassure-release-gate/index.html; do
+          for f in site/index.html site/docs/index.html site/usecases/index.html site/usecases/finassure-release-gate/index.html site/usecases/finassure-release-gate/demo/index.html; do
             test -f "$f" || { echo "missing $f"; exit 1; }
           done
 

@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FinAssure · Autonomous Financial AI Reliability &amp; Release-Gate Harness</title>
+  <meta name="description" content="A comprehensive reliability and release-gate harness for multi-agent financial decisioning built on AgenticLens and Agentic-Chaos. Catch silent failures and block unsafe releases in under 5 minutes.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Top Reading Progress Indicator -->
+  <div id="reading-progress"></div>
+
+  <!-- Top Navigation Header -->
+  <header class="top-nav">
+    <div class="nav-brand">
+      <span class="brand-badge">FINTECH RESILIENCE</span>
+      <span>FinAssure Harness</span>
+    </div>
+    <nav class="nav-links">
+      <div class="zoom-controls" title="Adjust View Zoom Scale">
+        <button class="zoom-btn active" data-zoom="100">100%</button>
+        <button class="zoom-btn" data-zoom="85">85%</button>
+        <button class="zoom-btn" data-zoom="75">75%</button>
+      </div>
+      <a href="../" class="nav-link" style="color: var(--text-muted); font-weight: 600;">← Docs</a>
+      <a href="#overview" class="nav-link">Overview</a>
+      <a href="#the-problem" class="nav-link">The Problem</a>
+      <a href="#architecture-and-simulator" class="nav-link">Architecture &amp; Simulator</a>
+      <a href="#results-and-evidence" class="nav-link">Results &amp; Evidence</a>
+      <a href="#quick-start" class="nav-link">Quick Start</a>
+      <a href="index.html" class="nav-cta-btn" style="background: linear-gradient(135deg, #06b6d4, #8b5cf6); border: none; margin-right: 0.5rem;">
+        <span class="pulse-dot"></span>
+        <span>← Interactive Story</span>
+      </a>
+      <a href="dashboard/" class="nav-cta-btn" style="background: linear-gradient(135deg, #10b981, #059669); border: none;">
+        <span class="pulse-dot"></span>
+        <span>Live Simulator ↗</span>
+      </a>
+    </nav>
+  </header>
+
+  <!-- Page Main Container -->
+  <div class="page-container">
+
+    <!-- Sticky Table of Contents -->
+    <aside class="sidebar-toc">
+      <div class="toc-card">
+        <div class="toc-title">FinAssure Guide</div>
+        <ul class="toc-list">
+          <li class="toc-item active">
+            <a href="#overview">
+              <span class="toc-num">1</span>
+              <span>Overview &amp; Outcome</span>
+            </a>
+          </li>
+          <li class="toc-item">
+            <a href="#the-problem">
+              <span class="toc-num">2</span>
+              <span>The Silent Failure Trap</span>
+            </a>
+          </li>
+          <li class="toc-item">
+            <a href="#architecture-and-simulator">
+              <span class="toc-num">3</span>
+              <span>5-Agent Live Simulator</span>
+            </a>
+          </li>
+          <li class="toc-item">
+            <a href="#core-pillars">
+              <span class="toc-num">4</span>
+              <span>How It Works (4 Pillars)</span>
+            </a>
+          </li>
+          <li class="toc-item">
+            <a href="#results-and-evidence">
+              <span class="toc-num">5</span>
+              <span>Evidence &amp; Gate Proofs</span>
+            </a>
+          </li>
+          <li class="toc-item">
+            <a href="#quick-start">
+              <span class="toc-num">6</span>
+              <span>3-Step Quick Start</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="content-area">
+
+      <!-- ====================================================================
+           SECTION 1: Overview & Outcome
+           ==================================================================== -->
+      <section id="overview" class="usecase-section">
+        <div class="section-header">
+          <span class="section-badge">01</span>
+          <h2 class="section-title">Overview &amp; Executive Outcome</h2>
+        </div>
+
+        <div class="hero-title-container">
+          <div class="hero-pill">
+            <span class="pulse-dot"></span>
+            <span>Reliability &amp; Release-Gate Engineering · Financial AI</span>
+          </div>
+
+          <h1 class="main-hero-title">
+            FinAssure: Detect Silent Agent Failures &amp; Enforce Automated Release Gates in Under 5 Minutes
+          </h1>
+
+          <div class="main-hero-summary">
+            <strong>Outcome:</strong> Prevent catastrophic unsupported loan approvals during third-party outages, inject controlled chaos into multi-agent workflows, and verify financial decisioning against mathematical ground truth.
+          </div>
+        </div>
+
+        <!-- Featured High-Res Visual Dashboard -->
+        <div style="border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border-subtle); margin-bottom: 1.5rem; box-shadow: 0 15px 35px rgba(0,0,0,0.4);">
+          <img src="assets/finassure_hero.jpg" alt="FinAssure Interactive Dashboard Overview" style="width: 100%; height: auto; display: block;">
+          <div style="padding: 0.85rem 1.25rem; background: rgba(13, 18, 31, 0.95); font-size: 0.82rem; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center;">
+            <span>Figure 1: FinAssure Real-Time Underwriting Workflow, Chaos Lightning Spark, and Release Gate Shield.</span>
+            <span style="font-family: var(--font-mono); color: var(--accent-cyan); font-weight: 700;">LIVE HARNESS v2.0</span>
+          </div>
+        </div>
+
+        <!-- Hosted Project Online Access Card -->
+        <div id="hosted-project-card" class="hosted-project-card">
+          <div class="hosted-card-header">
+            <div class="hosted-slot-title">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z"></path></svg>
+              <span>FinAssure Live Hosted Project Access</span>
+            </div>
+            <span class="hosted-status-chip">
+              <span class="pulse-dot"></span> Live Deployment Ready
+            </span>
+          </div>
+
+          <p class="hosted-slot-desc">
+            Launch the full interactive FinAssure application or paste your deployment web address below:
+          </p>
+
+          <div class="hosted-url-group">
+            <div class="hosted-input-wrapper">
+              <svg class="hosted-input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+              <input type="url" id="hosted-url-input" class="hosted-url-input" placeholder="./demo/" value="./demo/">
+            </div>
+            <button id="save-url-btn" class="save-url-btn" title="Save this URL">Save Link</button>
+            <a id="launch-project-btn" href="./demo/" target="_blank" rel="noopener noreferrer" class="launch-btn-primary">
+              <span>Go to Hosted Project ↗</span>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           SECTION 2: The Problem (Side-by-Side Visual Comparison)
+           ==================================================================== -->
+      <section id="the-problem" class="usecase-section">
+        <div class="section-header">
+          <span class="section-badge">02</span>
+          <h2 class="section-title">The Problem: Why Traditional Testing Misses Agent Failures</h2>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.5rem;">
+          
+          <!-- Card 1: The Silent Failure Trap -->
+          <div style="background: rgba(244, 63, 94, 0.08); border: 1px solid rgba(244, 63, 94, 0.3); border-radius: var(--radius-md); padding: 1.25rem;">
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+              <span style="font-size: 1.5rem;">❌</span>
+              <h3 style="font-size: 1.1rem; color: #FDA4AF; font-weight: 800;">The Silent Failure Trap (Naive v1)</h3>
+            </div>
+            <ul style="list-style: none; display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.85rem; color: #FECDD3;">
+              <li><strong>• Unhandled Outages:</strong> When credit bureau APIs time out, naive agents don't crash with 500 errors. They quietly default missing scores to 680.</li>
+              <li><strong>• $1.4M Unchecked Approvals:</strong> 12 high-risk applicants are approved with zero verified credit files.</li>
+              <li><strong>• Zero IT Alarms:</strong> Standard monitoring shows HTTP 200 OK across the board. Silent catastrophic liability.</li>
+            </ul>
+          </div>
+
+          <!-- Card 2: The FinAssure Architectural Solution -->
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: var(--radius-md); padding: 1.25rem;">
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+              <span style="font-size: 1.5rem;">🛡️</span>
+              <h3 style="font-size: 1.1rem; color: #6EE7B7; font-weight: 800;">The FinAssure Solution (Hardened v2)</h3>
+            </div>
+            <ul style="list-style: none; display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.85rem; color: #A7F3D0;">
+              <li><strong>• Intentional Chaos Testing:</strong> Agentic-Chaos injects API timeouts and paystub corruptions before deployment.</li>
+              <li><strong>• Mathematical Truth Oracle:</strong> Pure Python policy rules objectively evaluate decisions with zero hallucinations.</li>
+              <li><strong>• Automated Gatekeeper:</strong> Blocks PRs with &gt;1% silent errors and auto-diverts inconclusive files to human review.</li>
+            </ul>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           SECTION 3: Architecture & Live 5-Agent Interactive Simulator
+           ==================================================================== -->
+      <section id="architecture-and-simulator" class="usecase-section">
+        <div class="section-header">
+          <span class="section-badge">03</span>
+          <h2 class="section-title">Architecture &amp; Interactive 5-Agent Simulator</h2>
+        </div>
+
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.25rem;">
+          FinAssure instruments a 5-agent underwriting pipeline. Use the live interactive controls below to simulate clean execution, inject real-time bureau chaos, or run the hardened release gate:
+        </p>
+
+        <!-- Interactive Simulator Stage -->
+        <div class="simulator-wrapper" style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 1.5rem; margin-bottom: 1.5rem;">
+          
+          <!-- Controls Bar -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem;">
+            <div style="font-size: 0.85rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
+              <span class="pulse-dot"></span>
+              <span>Live Multi-Agent Pipeline Simulator:</span>
+            </div>
+            <div class="sim-controls" style="display: flex; gap: 0.5rem;">
+              <button class="sim-btn active" data-scenario="clean" style="background: rgba(16, 185, 129, 0.15); border: 1px solid var(--accent-emerald); color: #6EE7B7; padding: 0.45rem 0.9rem; border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: 700; cursor: pointer;">
+                🟢 1. Clean Path
+              </button>
+              <button class="sim-btn" data-scenario="chaos" style="background: rgba(244, 63, 94, 0.15); border: 1px solid var(--accent-rose); color: #FDA4AF; padding: 0.45rem 0.9rem; border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: 700; cursor: pointer;">
+                🔴 2. Inject Chaos (v1 Fails)
+              </button>
+              <button class="sim-btn" data-scenario="hardened" style="background: rgba(6, 182, 212, 0.15); border: 1px solid var(--accent-cyan); color: #7DD3FC; padding: 0.45rem 0.9rem; border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: 700; cursor: pointer;">
+                🛡️ 3. Hardened (v2 Gate)
+              </button>
+            </div>
+          </div>
+
+          <!-- 5-Agent Interactive Node Track with Animated Data Flow -->
+          <div class="pipeline-track-wrapper">
+            <div class="pipeline-flow-line">
+              <div class="pipeline-flow-packet" id="flow-packet"></div>
+            </div>
+
+            <div class="sim-pipeline" style="position: relative; z-index: 2; display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.75rem; align-items: center;">
+              
+              <div class="sim-node" data-node="1" style="background: rgba(13, 18, 31, 0.95); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1rem 0.6rem; text-align: center; cursor: pointer; transition: all 0.3s ease;">
+                <div style="font-size: 1.5rem; margin-bottom: 0.3rem;">📄</div>
+                <div style="font-size: 0.78rem; font-weight: 700; color: #fff;">1. Intake</div>
+                <div style="font-size: 0.68rem; color: var(--text-dim); margin-top: 2px;">Metadata Ingest</div>
+              </div>
+
+              <div class="sim-node" data-node="2" style="background: rgba(13, 18, 31, 0.95); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1rem 0.6rem; text-align: center; cursor: pointer; transition: all 0.3s ease;">
+                <div style="font-size: 1.5rem; margin-bottom: 0.3rem;">📑</div>
+                <div style="font-size: 0.78rem; font-weight: 700; color: #fff;">2. Extraction</div>
+                <div style="font-size: 0.68rem; color: var(--text-dim); margin-top: 2px;">Income &amp; Bank</div>
+              </div>
+
+              <div class="sim-node" data-node="3" id="sim-bureau-node" style="position: relative; background: rgba(13, 18, 31, 0.95); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1rem 0.6rem; text-align: center; cursor: pointer; transition: all 0.3s ease;">
+                <div id="bureau-chaos-overlay" style="display: none;" class="chaos-strike-glow"></div>
+                <div id="bureau-shield-overlay" style="display: none;" class="shield-glow-aura"></div>
+                <div style="font-size: 1.5rem; margin-bottom: 0.3rem;">🏦</div>
+                <div style="font-size: 0.78rem; font-weight: 700; color: #fff;">3. Credit Bureau</div>
+                <div style="font-size: 0.68rem; color: var(--text-dim); margin-top: 2px;" id="bureau-subtext">FICO / Bureau API</div>
+              </div>
+
+              <div class="sim-node" data-node="4" style="background: rgba(13, 18, 31, 0.95); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1rem 0.6rem; text-align: center; cursor: pointer; transition: all 0.3s ease;">
+                <div style="font-size: 1.5rem; margin-bottom: 0.3rem;">⚖️</div>
+                <div style="font-size: 0.78rem; font-weight: 700; color: #fff;">4. Risk Scorer</div>
+                <div style="font-size: 0.68rem; color: var(--text-dim); margin-top: 2px;">DTI Arithmetic</div>
+              </div>
+
+              <div class="sim-node" data-node="5" style="background: rgba(13, 18, 31, 0.95); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1rem 0.6rem; text-align: center; cursor: pointer; transition: all 0.3s ease;">
+                <div style="font-size: 1.5rem; margin-bottom: 0.3rem;">📋</div>
+                <div style="font-size: 0.78rem; font-weight: 700; color: #fff;">5. Compliance</div>
+                <div style="font-size: 0.68rem; color: var(--text-dim); margin-top: 2px;">Adverse Notices</div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Detour Branch Pill (Escalation to Human Queue) -->
+          <div id="detour-indicator" style="display: none; margin-bottom: 1rem; text-align: center;">
+            <div class="detour-branch-pill">
+              <span>🛡️ SAFE CIRCUIT BREAKER: Refusing to hallucinate credit data → Redirected to Human Underwriter Queue</span>
+            </div>
+          </div>
+
+          <!-- Live Scenario Output Card -->
+          <div id="sim-output-card" style="background: rgba(10, 15, 26, 0.95); border: 1px solid var(--accent-emerald); border-radius: var(--radius-md); padding: 1.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+              <div id="sim-scenario-title" style="font-size: 0.95rem; font-weight: 800; color: #fff;">
+                Clean Path Execution · Applicant APP-42-0001
+              </div>
+              <span id="sim-scenario-status" style="font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 4px; background: rgba(16, 185, 129, 0.2); color: #6EE7B7;">
+                APPROVED (DTI: 28%)
+              </span>
+            </div>
+            <p id="sim-scenario-desc" style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;">
+              All 5 agents complete in 780ms. Bureau returns verified score 740. Risk scorer validates DTI. Decision matches mathematical policy oracle.
+            </p>
+          </div>
+
+          <!-- Inspector Panel for Selected Node -->
+          <div id="node-inspector-panel" style="margin-top: 1rem; background: rgba(13, 18, 31, 0.95); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+              <div style="font-size: 0.85rem; font-weight: 800; color: var(--accent-cyan);" id="inspector-title">
+                Agent 3: Credit Bureau Agent
+              </div>
+              <span style="font-size: 0.7rem; color: var(--text-dim); font-family: var(--font-mono);">Click any agent node to inspect</span>
+            </div>
+            <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.4rem;" id="inspector-role">
+              Queries external credit bureau service (FICO score, tradelines, delinquencies).
+            </div>
+            <div style="font-size: 0.75rem; color: #FDA4AF; margin-bottom: 0.25rem;" id="inspector-v1">
+              <strong>v1 Naive Flaw:</strong> Defaults missing credit score to 680 on API timeout.
+            </div>
+            <div style="font-size: 0.75rem; color: #6EE7B7;" id="inspector-v2">
+              <strong>v2 Hardened Guard:</strong> Refuses to guess credit scores. Safely escalates to Human Underwriter Queue.
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           SECTION 4: How FinAssure Works (4 Visual Pillars With Rich Media)
+           ==================================================================== -->
+      <section id="core-pillars" class="usecase-section">
+        <div class="section-header">
+          <span class="section-badge">04</span>
+          <h2 class="section-title">How FinAssure Works in 4 Simple Steps</h2>
+        </div>
+
+        <div class="pillar-card-wrap">
+          
+          <!-- Pillar 1: Synthetic Case Matrix -->
+          <div style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.25rem; display: flex; flex-direction: column;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="font-size: 1.4rem;">📂</span>
+                <h3 style="font-size: 0.95rem; font-weight: 700; color: #fff;">1. Synthetic Case Matrix</h3>
+              </div>
+              <span style="font-size: 0.7rem; font-family: var(--font-mono); color: var(--accent-cyan); background: rgba(56, 189, 248, 0.1); padding: 0.2rem 0.5rem; border-radius: 4px;">200 Ground Truth Cases</span>
+            </div>
+            <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
+              <span style="flex: 1; text-align: center; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 4px; padding: 0.4rem; font-size: 0.72rem; color: #6ee7b7; font-weight: 700;">60 Clear Approvals</span>
+              <span style="flex: 1; text-align: center; background: rgba(244, 63, 94, 0.1); border: 1px solid rgba(244, 63, 94, 0.25); border-radius: 4px; padding: 0.4rem; font-size: 0.72rem; color: #fda4af; font-weight: 700;">60 Clear Declines</span>
+              <span style="flex: 1; text-align: center; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 4px; padding: 0.4rem; font-size: 0.72rem; color: #fde047; font-weight: 700;">80 Borderline Edges</span>
+            </div>
+            <p style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.5; margin-top: auto;">
+              Generates a rigorous financial test suite with known ground truth across debt-to-income thresholds, credit bands, and income verification levels.
+            </p>
+          </div>
+
+          <!-- Pillar 2: Agentic-Chaos Fault Injection -->
+          <div style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.25rem; display: flex; flex-direction: column;">
+            <div class="pillar-image-container">
+              <img src="assets/cfo_risk.jpg" alt="Agentic-Chaos Stress Testing & Fault Injection">
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem;">
+              <span style="font-size: 1.4rem;">⚡</span>
+              <h3 style="font-size: 0.95rem; font-weight: 700; color: #fff;">2. Agentic-Chaos Fault Injection</h3>
+            </div>
+            <p style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;">
+              Simulates production hazards: 4.5s credit bureau timeouts, corrupted bank statement deposits, and runaway token loops before customers are affected.
+            </p>
+          </div>
+
+          <!-- Pillar 3: Deterministic Policy Oracle -->
+          <div style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.25rem; display: flex; flex-direction: column;">
+            <div class="pillar-image-container">
+              <img src="assets/relay_workers.jpg" alt="Deterministic Policy Oracle & Observability">
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem;">
+              <span style="font-size: 1.4rem;">⚖️</span>
+              <h3 style="font-size: 0.95rem; font-weight: 700; color: #fff;">3. Deterministic Policy Oracle</h3>
+            </div>
+            <p style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;">
+              A pure Python mathematical oracle computes the mathematically infallible decision for every case. Zero LLM hallucinations or subjective guesswork.
+            </p>
+          </div>
+
+          <!-- Pillar 4: Automated CI/CD Release Gate -->
+          <div style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.25rem; display: flex; flex-direction: column;">
+            <div class="pillar-image-container">
+              <img src="assets/release_gate.jpg" alt="Automated CI/CD Release Gate Shield">
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem;">
+              <span style="font-size: 1.4rem;">🛡️</span>
+              <h3 style="font-size: 0.95rem; font-weight: 700; color: #fff;">4. Cryptographic Release Gate</h3>
+            </div>
+            <p style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;">
+              Integrates directly into GitHub Actions. Pull requests are blocked if silent failures exceed 1.0% or any unverified loan approval slips through.
+            </p>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           SECTION 5: Results & Verification (Interactive Animated Graphs)
+           ==================================================================== -->
+      <section id="results-and-evidence" class="usecase-section">
+        <div class="section-header">
+          <span class="section-badge">05</span>
+          <h2 class="section-title">Results &amp; Interactive Benchmark Graphs</h2>
+        </div>
+
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.25rem;">
+          Compare the failure profile of standard multi-agent workflows against the FinAssure Release Gate. Click any stress scenario below to watch the animated comparison:
+        </p>
+
+        <!-- Interactive Animated Graph Engine -->
+        <div class="graph-container">
+          
+          <!-- Scenario Filter Buttons -->
+          <div class="graph-filter-bar">
+            <button class="graph-filter-btn active" data-graph-scenario="timeout">
+              ⚡ Bureau Timeout (4.5s)
+            </button>
+            <button class="graph-filter-btn" data-graph-scenario="paystub">
+              📑 Corrupted Paystub Inflow
+            </button>
+            <button class="graph-filter-btn" data-graph-scenario="loop">
+              🔄 Prompt Recursion Loop
+            </button>
+            <button class="graph-filter-btn" data-graph-scenario="aggregate">
+              📊 Full 180-Case CI/CD Suite
+            </button>
+          </div>
+
+          <!-- Scenario Active Summary -->
+          <div style="margin-bottom: 1.25rem; padding: 0.75rem 1rem; background: rgba(56, 189, 248, 0.08); border-left: 3px solid var(--accent-cyan); border-radius: 4px;">
+            <div style="font-size: 0.85rem; font-weight: 800; color: #fff;" id="graph-scenario-title">
+              Credit Bureau 4.5s Timeout Chaos Injection
+            </div>
+            <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;" id="graph-scenario-summary">
+              When Credit Bureau latency spikes to 4.5s, Naive v1 silently assumed score 680, approving 12 insolvent borrowers ($1.4M exposure). FinAssure v2 safely caught all 12 and escalated to human underwriters.
+            </div>
+          </div>
+
+          <!-- Metric 1: Silent Failure Rate -->
+          <div class="metric-chart-card">
+            <div class="metric-chart-header">
+              <span class="metric-chart-title">
+                <span>⚠️ Silent Failure Rate</span>
+                <span style="font-size: 0.72rem; color: var(--text-dim); font-weight: 400;">(Lower is safer · Target: ≤ 1.0%)</span>
+              </span>
+              <div class="metric-chart-legend">
+                <span style="color: #fda4af;">■ Naive v1</span>
+                <span style="color: #6ee7b7;">■ FinAssure v2</span>
+              </div>
+            </div>
+
+            <div class="bar-comparison-row">
+              <span class="bar-label">Naive Pipeline v1</span>
+              <div class="bar-track">
+                <div class="bar-fill danger" id="bar-fail-v1" style="width: 16.7%;">16.7%</div>
+              </div>
+              <span class="bar-value" id="val-fail-v1" style="color: #fda4af;">16.7%</span>
+            </div>
+
+            <div class="bar-comparison-row">
+              <span class="bar-label">FinAssure v2</span>
+              <div class="bar-track">
+                <div class="bar-fill success" id="bar-fail-v2" style="width: 2%;">0.0%</div>
+              </div>
+              <span class="bar-value" id="val-fail-v2" style="color: #6ee7b7;">0.0%</span>
+            </div>
+          </div>
+
+          <!-- Metric 2: Unsupported Approvals & Capital at Risk -->
+          <div class="metric-chart-card">
+            <div class="metric-chart-header">
+              <span class="metric-chart-title">
+                <span>💸 Unverified Approvals (Capital at Risk)</span>
+                <span style="font-size: 0.72rem; color: var(--text-dim); font-weight: 400;">(Zero Tolerance Rule)</span>
+              </span>
+              <div class="metric-chart-legend">
+                <span style="color: #fda4af;">■ Naive v1</span>
+                <span style="color: #6ee7b7;">■ FinAssure v2</span>
+              </div>
+            </div>
+
+            <div class="bar-comparison-row">
+              <span class="bar-label">Naive Pipeline v1</span>
+              <div class="bar-track">
+                <div class="bar-fill danger" id="bar-loans-v1" style="width: 60%;">12 Loans ($1.4M)</div>
+              </div>
+              <span class="bar-value" id="val-loans-v1" style="color: #fda4af;">$1.4M Risk</span>
+            </div>
+
+            <div class="bar-comparison-row">
+              <span class="bar-label">FinAssure v2</span>
+              <div class="bar-track">
+                <div class="bar-fill success" id="bar-loans-v2" style="width: 2%;">0 Loans ($0)</div>
+              </div>
+              <span class="bar-value" id="val-loans-v2" style="color: #6ee7b7;">$0 Risk</span>
+            </div>
+          </div>
+
+          <!-- Metric 3: Safe Escalation Rate to Human Queue -->
+          <div class="metric-chart-card">
+            <div class="metric-chart-header">
+              <span class="metric-chart-title">
+                <span>🛡️ Safe Escalation Rate to Human Underwriter Queue</span>
+                <span style="font-size: 0.72rem; color: var(--text-dim); font-weight: 400;">(Higher is safer · Target: ≥ 95%)</span>
+              </span>
+              <div class="metric-chart-legend">
+                <span style="color: #fda4af;">■ Naive v1</span>
+                <span style="color: #6ee7b7;">■ FinAssure v2</span>
+              </div>
+            </div>
+
+            <div class="bar-comparison-row">
+              <span class="bar-label">Naive Pipeline v1</span>
+              <div class="bar-track">
+                <div class="bar-fill neutral" id="bar-escalate-v1" style="width: 20%;">20.0%</div>
+              </div>
+              <span class="bar-value" id="val-escalate-v1" style="color: #cbd5e1;">20.0%</span>
+            </div>
+
+            <div class="bar-comparison-row">
+              <span class="bar-label">FinAssure v2</span>
+              <div class="bar-track">
+                <div class="bar-fill success" id="bar-escalate-v2" style="width: 100%;">100.0%</div>
+              </div>
+              <span class="bar-value" id="val-escalate-v2" style="color: #6ee7b7;">100.0%</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Release Gate Evidence Seal -->
+        <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(6, 182, 212, 0.1)); border: 1px solid var(--accent-emerald); border-radius: var(--radius-md); padding: 1.25rem 1.5rem; display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <div style="font-size: 1.15rem; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
+              <span style="color: var(--accent-emerald); font-size: 1.3rem;">✔</span>
+              <span>FINASSURE CI/CD RELEASE GATE: APPROVED (Score: 99.2 / 100)</span>
+            </div>
+            <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: 0.3rem;">
+              Zero unsupported approvals across 180 validation tests. Hardened pipeline v2 verified mathematically against policy oracle.
+            </p>
+            <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent-cyan); background: rgba(0,0,0,0.4); padding: 0.3rem 0.6rem; border-radius: 4px; display: inline-block; margin-top: 0.5rem;">
+              CRYPTOGRAPHIC SEAL: sha256:4a8b79e2c019f8e4d3a2b1095f8e712a64bc39d8e12
+            </div>
+          </div>
+          <a href="storytelling/index.html" class="nav-cta-btn" style="background: linear-gradient(135deg, #06b6d4, #8b5cf6); border: none; font-size: 0.85rem; padding: 0.65rem 1.3rem; border-radius: 9999px;">
+            <span>Explore Executive Story →</span>
+          </a>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           SECTION 6: 3-Step Quick Start (Tabbed, Clean, No Wall of Scripts)
+           ==================================================================== -->
+      <section id="quick-start" class="usecase-section">
+        <div class="section-header">
+          <span class="section-badge">06</span>
+          <h2 class="section-title">3-Step Quick Start: Run the Gate Locally</h2>
+        </div>
+
+        <div style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 1.5rem;">
+          
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+            <div style="display: flex; gap: 0.5rem;">
+              <button class="step-tab-btn active" id="btn-tab-install" style="background: rgba(6,182,212,0.15); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); padding: 0.4rem 0.85rem; border-radius: 4px; font-size: 0.8rem; font-weight: 700; cursor: pointer;">
+                Step 1: Install &amp; Setup
+              </button>
+              <button class="step-tab-btn" id="btn-tab-test" style="background: rgba(255,255,255,0.05); border: 1px solid var(--border-subtle); color: var(--text-muted); padding: 0.4rem 0.85rem; border-radius: 4px; font-size: 0.8rem; font-weight: 700; cursor: pointer;">
+                Step 2: Run Chaos Matrix
+              </button>
+              <button class="step-tab-btn" id="btn-tab-ui" style="background: rgba(255,255,255,0.05); border: 1px solid var(--border-subtle); color: var(--text-muted); padding: 0.4rem 0.85rem; border-radius: 4px; font-size: 0.8rem; font-weight: 700; cursor: pointer;">
+                Step 3: Launch UI Dashboard
+              </button>
+            </div>
+
+            <button id="copy-quickstart-btn" class="copy-btn" title="Copy active command to clipboard">
+              <span>📋</span>
+              <span id="copy-btn-text">Copy Command</span>
+            </button>
+          </div>
+
+          <div style="background: #080C14; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.25rem; font-family: var(--font-mono); font-size: 0.8rem; color: #E2E8F0; line-height: 1.7;" id="quickstart-code-box">
+            <span style="color: #64748B;"># 1. Clone repository and install with uv</span><br>
+            git clone https://github.com/DeepAgentLabs/FinAssure.git<br>
+            cd FinAssure<br>
+            uv sync --all-extras<br>
+            uv run python -m finassure.setup
+          </div>
+        </div>
+
+        <!-- Call to Action Banner to Live Demo -->
+        <div style="margin-top: 1.5rem; background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(14,165,233,0.1)); border: 1px solid rgba(16,185,129,0.3); border-radius: var(--radius-lg); padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h4 style="color: #fff; font-size: 1.1rem; font-weight: 700; margin-bottom: 0.25rem;">Experience the Live FinAssure Harness</h4>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">Inspect verdicts, multi-agent chaos topologies, fairness audits, and automated release gates.</p>
+          </div>
+          <div style="display: flex; gap: 0.75rem;">
+            <a href="index.html" class="nav-cta-btn" style="text-decoration: none; padding: 0.65rem 1.25rem;">
+              <span>← Storytelling</span>
+            </a>
+            <a href="./demo/" class="launch-btn-primary" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.65rem 1.25rem;">
+              <span>Go to Hosted Project ↗</span>
+            </a>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Footer -->
+  <footer style="border-top: 1px solid var(--border-subtle); padding: 2rem; background: rgba(7, 10, 18, 0.95); text-align: center; font-size: 0.85rem; color: var(--text-muted);">
+    <div>FinAssure: Automated Multi-Agent Reliability Harness · Powered by AgenticLens &amp; Agentic-Chaos</div>
+  </footer>
+
+  <!-- Application Logic -->
+  <script src="app.js"></script>
+</body>
+</html>

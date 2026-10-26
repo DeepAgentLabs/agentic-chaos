@@ -13,6 +13,12 @@ naive version and passes the hardened one.
 | **Time** | ~10 minutes |
 | **Capabilities** | [Tool-call failure](https://deepagentlabs.io/agentic-chaos/docs/features/#tool-call-failure), [Silent degradation](https://deepagentlabs.io/agentic-chaos/docs/features/#silent-degradation), [Handoff corruption](https://deepagentlabs.io/agentic-chaos/docs/features/#handoff-corruption), [AgenticLens integration](https://deepagentlabs.io/agentic-chaos/docs/integrations/#agenticlens) |
 | **Source** | [`examples/finassure`](https://github.com/DeepAgentLabs/agentic-chaos/tree/main/examples/finassure) |
+| **Interactive Demo** | [**Launch Interactive Story & Simulator →**](demo/) · [Live Static Dashboard](demo/dashboard/) |
+
+!!! tip "Interactive Walkthrough & Live Simulator"
+    Explore the interactive visual storytelling guide (with executive and technical views) and the live release-gate simulator directly in your browser:
+
+    👉 **[Launch Interactive Story & Demo →](demo/)** &nbsp;&nbsp;|&nbsp;&nbsp; 🚀 **[Open Live Dashboard →](demo/dashboard/)**
 
 ## The problem
 
@@ -178,8 +184,9 @@ python main.py
 
 Open <http://127.0.0.1:8000>, pick **Loan Underwriting**, and switch between
 **v1** and **v2** to compare gate verdicts, AgenticLens span waterfalls with
-the injected chaos events, and the per-case decision audit. The dashboard needs
-this local API server, so it is not part of the published site.
+the injected chaos events, and the per-case decision audit.
+
+You can also launch the [Live Static Dashboard](demo/dashboard/) directly in your browser without starting the local server.
 
 ## The same harness, other domains
 

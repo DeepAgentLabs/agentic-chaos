@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DeepAgentLabs · The $500,000 Silent Mistake | Executive AI Reliability Guide</title>
+  <meta name="description" content="An executive, plain-English storytelling guide for CFOs and business leaders on how to prevent silent autonomous AI failures, eliminate unverified approvals, and protect your balance sheet with DeepAgentLabs.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="storytelling.css">
+</head>
+<body>
+
+  <!-- Ambient decorative background grid -->
+  <div class="ambient-mesh"></div>
+
+  <!-- Top Navigation Header -->
+  <header class="header-nav">
+    <div class="brand-block">
+      <span class="brand-badge">Executive Briefing</span>
+      <div class="brand-text">
+        <span>DeepAgentLabs</span>
+        <span class="sub">/ AI Reliability for Leadership</span>
+      </div>
+    </div>
+
+    <!-- Audience Mode Switcher (Executive vs Technical + Direct Link to Full Technical Page) -->
+    <div class="mode-toggle-wrap">
+      <button class="mode-btn active" id="btn-mode-exec">
+        <span>👔</span>
+        <span>Executive View</span>
+      </button>
+      <button class="mode-btn" id="btn-mode-tech">
+        <span>⚙️</span>
+        <span>Technical Specs</span>
+      </button>
+      <a href="technical.html" class="mode-btn" style="text-decoration: none; border-left: 1px solid var(--border-color); color: var(--accent-cyan); font-weight: 700;" title="Open Full Technical Architecture and Harness Page">
+        <span>📑 Full Technical Page →</span>
+      </a>
+    </div>
+
+    <!-- Day / Night Theme Mode Toggle -->
+    <button class="theme-toggle-btn" id="btn-theme-toggle" title="Toggle Day / Night Mode">
+      <span id="theme-icon">☀️</span>
+      <span id="theme-text">Day Mode</span>
+    </button>
+
+    <div class="header-links">
+      <a href="../" class="nav-link-btn" style="color: var(--text-muted); font-weight: 600;" title="Return to Documentation Walkthrough">
+        <span>← Documentation</span>
+      </a>
+      <a href="technical.html" class="nav-link-btn" style="border: 1px solid var(--accent-cyan); color: var(--accent-cyan); font-weight: 700; background: rgba(56, 189, 248, 0.1);">
+        <span>Technical Specs →</span>
+      </a>
+      <a href="dashboard/" class="nav-link-btn" style="border: 1px solid var(--accent-gold); color: var(--accent-gold); font-weight: 700; background: rgba(245, 158, 11, 0.1);">
+        <span>Live Simulator ↗</span>
+      </a>
+      <a href="https://github.com/DeepAgentLabs/agentic-chaos" target="_blank" rel="noopener noreferrer" class="nav-link-btn" style="color: var(--text-muted);">
+        <span>GitHub ↗</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- Executive Ticker Strip (Real-Time Capital & Reliability Status) -->
+  <div class="executive-ticker">
+    <div class="ticker-item">
+      <span class="ticker-label">Potential Exposure:</span>
+      <span class="ticker-value red" id="ticker-exposure">$500,000</span>
+    </div>
+    <div class="ticker-item">
+      <span class="ticker-label">Silent System Errors:</span>
+      <span class="ticker-value red" id="ticker-errors">1 (Catastrophic)</span>
+    </div>
+    <div class="ticker-item">
+      <span class="ticker-label">Operational State:</span>
+      <span class="ticker-value red" id="ticker-status">Silent Blindspot</span>
+    </div>
+    <div class="ticker-item">
+      <span class="ticker-label">Target Audit Time:</span>
+      <span class="ticker-value green">5 Minutes (Automated)</span>
+    </div>
+  </div>
+
+  <!-- Hero Section -->
+  <section class="hero-wrapper">
+    <div class="hero-left">
+      <div class="hero-tagline">
+        <span class="pulse-dot"></span>
+        <span>THE 30-SECOND EXECUTIVE EXPLAINER</span>
+      </div>
+
+      <h1 class="hero-title">The $500,000 Silent Mistake</h1>
+
+      <p class="hero-desc">
+        How autonomous AI teams pass bad work without anyone noticing—and how the <strong>DeepAgentLabs ecosystem</strong> safeguards your enterprise balance sheet from invisible automated errors.
+      </p>
+
+      <!-- Primary Next-Step CTAs -->
+      <div style="margin: 1.25rem 0 1.5rem 0; display: flex; gap: 0.85rem; flex-wrap: wrap;">
+        <a href="technical.html" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; background: linear-gradient(135deg, #0284c7, #0ea5e9); color: #fff; font-weight: 800; font-size: 0.9rem; padding: 0.75rem 1.4rem; border-radius: 8px; box-shadow: 0 4px 14px rgba(2, 132, 199, 0.4); transition: transform 0.2s ease;">
+          <span>Explore Technical Description &amp; Harness →</span>
+        </a>
+        <a href="demo/index.html" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: #10b981; font-weight: 700; font-size: 0.9rem; padding: 0.75rem 1.4rem; border-radius: 8px;">
+          <span>Go to Product Demo ↗</span>
+        </a>
+      </div>
+
+      <!-- 30-Second CFO Analogy Box -->
+      <div class="cfo-analogy-box">
+        <div class="analogy-title">
+          <span>💡</span> The Relay Race Analogy in Plain English:
+        </div>
+        <p class="analogy-text">
+          Think of an AI system like a relay team of digital assistants: <strong>Alex</strong> reads the paperwork, <strong>Sam</strong> checks credit, <strong>Jordan</strong> calculates debt, and <strong>Morgan</strong> signs the loan. But if Sam's database freezes for 3 seconds, Sam hands a blank folder to Jordan! Jordan thinks <em>"No debts found!"</em>, and Morgan cuts a <strong>$500,000 check</strong> to a bankrupt company. <strong>No computer crashed. Zero alerts went off. Your company just lost half a million dollars silently.</strong>
+        </p>
+      </div>
+    </div>
+
+    <div class="hero-right">
+      <div class="hero-visual-card">
+        <img src="./assets/relay_workers.jpg" alt="Autonomous Digital Coworkers Assembly Line" id="hero-relay-img">
+        <div class="hero-visual-caption">
+          <span>The Digital Workplace: Specialized AI Workers on an Automated Conveyor</span>
+          <span style="font-weight: 700; color: var(--accent-emerald);">DeepAgentLabs Protected</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interactive Story Stepper Bar -->
+  <section class="stepper-section">
+    <div class="stepper-track">
+      
+      <div class="step-card active" data-act="0">
+        <div class="step-badge-num">1</div>
+        <div class="step-card-text">
+          <span class="step-card-title">1. The Blindspot</span>
+          <span class="step-card-subtitle">$500k Unchecked Approval</span>
+        </div>
+      </div>
+
+      <div class="step-card" data-act="1">
+        <div class="step-badge-num">2</div>
+        <div class="step-card-text">
+          <span class="step-card-title">2. Flight Recorder</span>
+          <span class="step-card-subtitle">AgenticLens Decision Capture</span>
+        </div>
+      </div>
+
+      <div class="step-card" data-act="2">
+        <div class="step-badge-num">3</div>
+        <div class="step-card-text">
+          <span class="step-card-title">3. Safe Simulator</span>
+          <span class="step-card-subtitle">Zero-Risk Replay Sandbox</span>
+        </div>
+      </div>
+
+      <div class="step-card" data-act="3">
+        <div class="step-badge-num">4</div>
+        <div class="step-card-text">
+          <span class="step-card-title">4. Fire Drill</span>
+          <span class="step-card-subtitle">Agentic-Chaos Stress Test</span>
+        </div>
+      </div>
+
+      <div class="step-card" data-act="4">
+        <div class="step-badge-num">5</div>
+        <div class="step-card-text">
+          <span class="step-card-title">5. Circuit Breakers</span>
+          <span class="step-card-subtitle">Agentic-Evals Guardrails</span>
+        </div>
+      </div>
+
+      <div class="step-card" data-act="5">
+        <div class="step-badge-num">6</div>
+        <div class="step-card-text">
+          <span class="step-card-title">6. CFO Gate</span>
+          <span class="step-card-subtitle">Safe Continuous Deployment</span>
+        </div>
+      </div>
+
+      <button class="tour-action-btn" id="btn-tour-toggle">
+        <span>▶</span>
+        <span>Auto Tour</span>
+      </button>
+
+    </div>
+  </section>
+
+  <!-- Main 2-Column Story Stage -->
+  <main class="main-stage">
+
+    <!-- Left Column: Executive Narrative Director -->
+    <div class="narrative-col">
+      
+      <div class="story-card" id="story-card">
+        <div class="story-act-tag" id="story-act-tag">PHASE 1 · THE REALITY CHECK</div>
+        <h2 class="story-heading" id="story-heading">The $500,000 Silent Mistake</h2>
+        
+        <div class="story-financial-impact" id="story-financial-impact">
+          ⚠️ $500,000 Unverified Check Issued · 0 Alarms Raised
+        </div>
+
+        <p class="story-body-text" id="story-body-text">
+          Loading executive briefing...
+        </p>
+
+        <!-- Executive Takeaway Card -->
+        <div class="takeaway-card">
+          <div class="takeaway-title" id="takeaway-title">Why Traditional IT Monitoring Misses This:</div>
+          <div class="takeaway-desc" id="takeaway-desc">
+            Standard IT dashboards only check if a server crashed. They never check if the business decision made any financial sense. You just lost half a million dollars in total silence.
+          </div>
+        </div>
+
+        <!-- Navigation Buttons -->
+        <div class="narrative-nav-bar">
+          <button class="btn-prev-story" id="btn-prev-story" style="display: none;">← Prev</button>
+          <button class="btn-advance-story" id="btn-advance-story">See How DeepAgentLabs Catches This →</button>
+        </div>
+      </div>
+
+      <!-- Spotlight Visual Media Card -->
+      <div class="spotlight-box">
+        <img src="./assets/cfo_risk.jpg" alt="Financial AI Risk Spotlight" id="spotlight-img">
+        <div class="spotlight-meta" id="spotlight-caption">
+          <span>The Executive Blindspot: Systems report green health while bad checks slip out the door.</span>
+          <span style="font-weight: 800; color: var(--accent-cyan);">ACT 1 OF 6</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right Column: The Interactive Digital Conveyor Assembly Line -->
+    <div class="cockpit-col">
+      
+      <div class="cockpit-card">
+        
+        <!-- Cockpit Header -->
+        <div class="cockpit-top-bar">
+          <div class="cockpit-main-title" id="cockpit-main-title">
+            <span>🚨</span> Live Risk Alert: Case #LOAN-9042
+          </div>
+          <span class="cockpit-pill danger" id="cockpit-pill">SILENT FAILURE IN PROGRESS</span>
+        </div>
+
+        <!-- The Animated Conveyor Assembly Line Stage -->
+        <div class="conveyor-stage">
+          <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 800; letter-spacing: 0.05em; margin-bottom: 0.85rem; display: flex; justify-content: space-between;">
+            <span>Digital Worker Assembly Line</span>
+            <span>Click any worker to see their role</span>
+          </div>
+
+          <div class="conveyor-belt-track">
+            
+            <!-- Worker 1: Alex -->
+            <div class="worker-card" id="card-worker-alex">
+              <span class="worker-avatar">📄</span>
+              <div class="worker-name">Alex</div>
+              <div class="worker-job">Document Reader</div>
+              <span class="worker-status-badge">Intake</span>
+              <div class="conveyor-arrow"></div>
+            </div>
+
+            <!-- Worker 2: Sam (Faulted in Act 1) -->
+            <div class="worker-card faulted-worker" id="card-worker-sam">
+              <span class="worker-avatar">🔍</span>
+              <div class="worker-name">Sam ⚠️</div>
+              <div class="worker-job">Credit Investigator</div>
+              <span class="worker-status-badge">API Timed Out</span>
+              <div class="conveyor-arrow"></div>
+            </div>
+
+            <!-- Worker 3: Jordan -->
+            <div class="worker-card" id="card-worker-jordan">
+              <span class="worker-avatar">⚖️</span>
+              <div class="worker-name">Jordan</div>
+              <div class="worker-job">Risk Calculator</div>
+              <span class="worker-status-badge">Assumed Zero Debt</span>
+              <div class="conveyor-arrow"></div>
+            </div>
+
+            <!-- Worker 4: Morgan (Issues Bad Check) -->
+            <div class="worker-card faulted-worker" id="card-worker-morgan">
+              <span class="worker-avatar">✍️</span>
+              <div class="worker-name">Morgan</div>
+              <div class="worker-job">Check Signer</div>
+              <span class="worker-status-badge">Approved $500k</span>
+              <div class="conveyor-arrow"></div>
+            </div>
+
+            <!-- Worker 5: Elena (Human Supervisor Desk) -->
+            <div class="worker-card" id="card-worker-elena" style="border-style: dashed;">
+              <span class="worker-avatar">👩‍💼</span>
+              <div class="worker-name">Elena</div>
+              <div class="worker-job">Human Supervisor</div>
+              <span class="worker-status-badge">Safety Net Desk</span>
+            </div>
+
+          </div>
+
+          <!-- Animated Briefcase Live Status Tracker -->
+          <div class="briefcase-tracker-bar">
+            <div class="briefcase-pulse">
+              <span style="font-size: 1.1rem;">💼</span>
+              <span id="briefcase-text">
+                <span style="color: var(--accent-rose);">🚨 CORRUPTED BRIEFCASE: Missing income proof! Moving directly to Morgan for $500k check approval!</span>
+              </span>
+            </div>
+            <span style="color: var(--text-muted); font-size: 0.72rem; font-family: var(--font-mono);">LIVE TELEMETRY STREAM</span>
+          </div>
+        </div>
+
+        <!-- Dynamic Cockpit Interactive Area -->
+        <div id="cockpit-dynamic-area">
+          <!-- Filled dynamically by storytelling.js based on Act -->
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Interactive ROI & Risk Calculator for CFOs -->
+  <section class="roi-calculator-section">
+    <div class="roi-calculator-card">
+      <div class="roi-calc-left">
+        <h2 class="roi-calc-title">What is Your Silent AI Risk?</h2>
+        <p class="roi-calc-desc">
+          Without automated chaos testing and release gates, industry data shows that <strong>18.4% of automated edge cases fail silently</strong>. Use the slider to see how much capital DeepAgentLabs protects for your organization:
+        </p>
+
+        <div class="slider-container">
+          <div class="slider-header">
+            <span>Automated Decisions per Month:</span>
+            <span id="label-decisions-count" style="color: var(--accent-cyan); font-family: var(--font-mono); font-size: 1.1rem;">10,000</span>
+          </div>
+          <input type="range" min="1000" max="100000" step="1000" value="10000" class="cfo-slider" id="slider-decisions">
+        </div>
+      </div>
+
+      <div class="roi-calc-right">
+        <div class="roi-results-box">
+          <div class="roi-stat-item">
+            <span class="roi-stat-label">Silent Bad Approvals Prevented:</span>
+            <span class="roi-stat-number" style="color: var(--accent-emerald);" id="stat-errors-saved">1,104</span>
+            <span style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px;">per year on automated cases</span>
+          </div>
+
+          <div class="roi-stat-item">
+            <span class="roi-stat-label">Estimated Capital Protected:</span>
+            <span class="roi-stat-number" style="color: var(--accent-gold);" id="stat-dollars-saved">$5.0M</span>
+            <span style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px;">in bad debt &amp; fines avoided</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer-wrap">
+    <div class="footer-inner">
+      <h3>Scale AI Revenue Without Scaling Balance Sheet Risk</h3>
+      <p>
+        DeepAgentLabs transforms complex multi-agent AI systems into predictable, reliable, and auditable corporate assets.
+      </p>
+      <div class="footer-btn-row">
+        <a href="https://deepagentlabs.io/agenticlens/" target="_blank" rel="noopener noreferrer" class="footer-pill-btn">
+          <span>AgenticLens Documentation ↗</span>
+        </a>
+        <a href="https://github.com/DeepAgentLabs/agentic-chaos" target="_blank" rel="noopener noreferrer" class="footer-pill-btn">
+          <span>Agentic-Chaos Repository ↗</span>
+        </a>
+        <a href="technical.html" class="footer-pill-btn" style="border-color: var(--accent-cyan); color: var(--accent-cyan); font-weight: 700;">
+          <span>2. Technical Description &amp; Harness →</span>
+        </a>
+        <a href="demo/index.html" class="footer-pill-btn" style="border-color: var(--accent-gold); color: var(--accent-gold); font-weight: 700;">
+          <span>3. Live Project Demo (FinAssure) ↗</span>
+        </a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Application Logic -->
+  <script src="storytelling.js"></script>
+</body>
+</html>
