@@ -1,4 +1,7 @@
 # FinAssure: 5-Minute Live Demo Script & Walkthrough
+
+> Numbers below are from `python scripts/seed_baseline.py` with the default `--count 10` and no `GEMINI_API_KEY` (offline judge). Latency is wall-clock time and varies slightly between runs.
+
 **Target Audience:** Risk, Compliance, Engineering Leaders, and Evaluators  
 **Estimated Duration:** 5 minutes (300 seconds)  
 **Deliverable:** Proving that multi-agent financial systems can fail silently, catching them with Agentic Chaos & AgenticLens, and blocking unsafe releases with automated gates.
@@ -11,7 +14,7 @@
 * **Action:** Open Dashboard (`http://localhost:8000`), select **Loan Underwriting**, version **v1 (Naive)**, click **Run & Trace Explorer**.
 * **What to show:** Select a clean baseline run for applicant `APP-42-0001`.
 * **Talking point:**
-  > *"At first glance, our naive 5-agent underwriting pipeline looks completely healthy. Intake passes to Document Extraction, Credit Bureau lookup succeeds, Risk Scorer calculates DTI, and Compliance Reviewer generates adverse notices. Spans are clean, tokens are low (~180 tokens), and decisions match the policy oracle. But in financial decisioning, clean-path health is an illusion."*
+  > *"At first glance, our naive 5-agent underwriting pipeline looks completely healthy. Intake passes to Document Extraction, Credit Bureau lookup succeeds, Risk Scorer calculates DTI, and Compliance Reviewer generates adverse notices. Spans are clean, and decisions match the policy oracle. But in financial decisioning, clean-path health is an illusion."*
 
 ---
 
@@ -31,18 +34,18 @@
 * **What to show:**
   - Red **RELEASE GATE: BLOCKED** banner.
   - KPI tiles:
-    - **Unsupported Approvals:** 12 (Hard Fail triggered)
-    - **Silent Failure Rate:** 16.7% (Max allowed: 2.0%)
+    - **Unsupported Approvals:** 29 (Hard Fail triggered)
+    - **Silent Failure Rate:** 38.8% (Max allowed: 2.0%)
     - **Gate Checklist:** Fails on zero unsupported approvals and silent failure rate.
 * **Talking point:**
-  > *"When we run the complete chaos matrix across bureau outages, timeouts, empty payloads, and handoff drops, the release gate immediately blocks release v1. It provides cryptographic evidence: 12 candidates were approved without verified credit bureau files because v1 defaulted missing scores to 680."*
+  > *"When we run the complete chaos matrix across bureau outages, timeouts, empty payloads, and handoff drops, the release gate immediately blocks release v1. Its evidence pack shows 29 candidates were approved without verified credit bureau files because v1 defaulted missing scores to 680."*
 
 ---
 
 ### [02:15 - 03:15] Step 4: The Hardened Pipeline (v2 Passes the Gate)
 * **Action:** Toggle the version dropdown in the top header from **v1 (Naive)** to **v2 (Hardened)**.
 * **What to show:**
-  - Green **RELEASE GATE: PASSED** banner with **99.2% overall score**.
+  - Green **RELEASE GATE: PASSED** banner with **99.3% overall score**.
   - **Unsupported Approvals:** 0.
   - **Safe Degradation Rate:** 100.0% (target ≥ 95%).
   - Open **Decision Audit** tab and inspect `APP-42-0006`:
@@ -57,12 +60,12 @@
 * **Action:** Click the **Compare v1 vs v2** tab.
 * **What to show:**
   - **Reliability Gained:**
-    - Silent failure reduction: **-16.7%**
-    - Safe degradation gain: **+33.3%**
-    - Unsupported approvals eliminated: **12 → 0**
+    - Silent failure rate: **38.8% → 0.0%**
+    - Safe degradation rate: **61.3% → 100.0%**
+    - Unsupported approvals eliminated: **29 → 0**
   - **Operational Overhead:**
     - Compute cost delta: **+$0.0013 / application** ($0.0015 → $0.0028)
-    - Latency delta: **+55 ms** (well below the 4,000 ms SLA)
+    - p95 latency: **about 200 ms → about 450 ms** (well below the 4,000 ms SLA)
 * **Talking point:**
   > *"FinAssure doesn't just judge reliability; it quantifies the engineering trade-off. By adding contract validation, our cost increased by a fraction of a cent per application, while eliminating 100% of catastrophic unsupported approvals."*
 

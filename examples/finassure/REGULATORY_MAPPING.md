@@ -49,7 +49,7 @@ The Equal Credit Opportunity Act (ECOA, 15 U.S.C. 1691 et seq.) and Regulation B
 
 ## 4. Summary of Evidence Packaging for Auditors
 
-FinAssure releases generate a permanent cryptographic audit package containing:
+FinAssure releases generate an audit evidence package (JSON, CSV, HTML and Markdown) containing:
 1. **Scenario Registry:** Hypotheses, fault injection types, targets, and expected unsafe outcomes.
 2. **Execution Traces:** Span-level token consumption, latency, and chaos event intercept markers.
 3. **Deterministic Oracle Alignment:** Ground-truth baseline decision comparisons for all synthetic cases.
