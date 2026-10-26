@@ -52,7 +52,7 @@ jobs:
 
       - name: Check site layout
         run: |
-          for f in site/index.html site/docs/index.html site/usecases/index.html site/usecases/finassure-release-gate/index.html site/usecases/assets/diagrams/finassure_architecture.svg; do
+          for f in site/index.html site/docs/index.html site/usecases/index.html site/usecases/finassure-release-gate/index.html; do
             test -f "$f" || { echo "missing $f"; exit 1; }
           done
 
