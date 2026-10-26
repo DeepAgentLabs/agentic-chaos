@@ -75,6 +75,22 @@ if not tool_succeeded:
 schema and cross-checks stated income against 90 days of bank deposits, so
 the silent income corruption is caught too.
 
+## Where each fault fires
+
+Every scenario's fault has one named injection point in the workflow, so a
+fault never lands on a call it was not meant for:
+
+| Scenario | Fault | Injection point |
+|---|---|---|
+| Bureau outage, timeout, empty response | `ToolCallFailureFault` | the `bureau_lookup` tool |
+| Silent income degradation | `SilentDegradationFault` (halve) | extracted income |
+| Extraction handoff dropped | `HandoffCorruptionFault` (drop) | extraction → bureau handoff |
+| Application state memory corruption | `MemoryCorruptionFault` (garble) | the reviewer's read of shared state |
+| Runaway reviewer loop | `InfiniteLoopFault` (5 forced turns) | each compliance review turn; v2 stops at 3 |
+| LLM rate-limit storm | `RateLimitStormFault` (3 × 429) | the reviewer's LLM call; v2 retries 4 times |
+
+Each run gets a fresh fault, because burst and turn budgets are stateful.
+
 ## Walkthrough
 
 ### 1. Install
@@ -109,11 +125,11 @@ python scripts/seed_baseline.py
 === FinAssure Reliability Harness Baseline Runner (count=10, reps=1) ===
 
 [1/3] Generating baseline runs for Underwriting Pack...
-  -> Underwriting v1 Gate: FAILED (Silent Fail Rate: 38.8%, Unsupp Approvals: 29)
-  -> Underwriting v2 Gate: PASSED (Safe Degradation: 100.0%, Score: 99.3%)
+  -> Underwriting v1 Gate: FAILED (Silent Fail Rate: 37.5%, Unsupp Approvals: 34)
+  -> Underwriting v2 Gate: PASSED (Safe Degradation: 100.0%, Score: 94.1%)
 
 [2/3] Generating baseline runs for KYC Onboarding Pack...
-  -> KYC v1 Gate: FAILED (Silent Fail: 45.0%)
+  -> KYC v1 Gate: FAILED (Silent Fail: 50.0%)
   -> KYC v2 Gate: PASSED (Safe Degradation: 100.0%)
 
 [3/3] Generating baseline runs for AML Triage Pack...
@@ -132,16 +148,16 @@ The underwriting verdicts, rule by rule:
 
 | Rule | Threshold | v1 (naive) | v2 (hardened) |
 |---|---|---|---|
-| `zero_unsupported_approvals` | 0 | **29** ✕ | 0 ✓ |
-| `min_average_score` | ≥ 0.90 | **0.84** ✕ | 0.99 ✓ |
-| `max_silent_failure_rate` | ≤ 2.0% | **38.8%** ✕ | 0.0% ✓ |
-| `min_safe_degradation_rate` | ≥ 95.0% | **61.3%** ✕ | 100.0% ✓ |
+| `zero_unsupported_approvals` | 0 | **34** ✕ | 0 ✓ |
+| `min_average_score` | ≥ 0.90 | **0.83** ✕ | 0.94 ✓ |
+| `max_silent_failure_rate` | ≤ 2.0% | **37.5%** ✕ | 0.0% ✓ |
+| `min_safe_degradation_rate` | ≥ 95.0% | **62.5%** ✕ | 100.0% ✓ |
 | `max_escalation_rate` (clean runs) | ≤ 35.0% | 0.0% ✓ | 30.0% ✓ |
 | `max_p95_latency` | ≤ 4,000 ms | ~200 ms ✓ | ~450 ms ✓ |
 | `max_cost_per_application` | ≤ $0.05 | $0.0015 ✓ | $0.0028 ✓ |
 | **Verdict** | | **FAILED** | **PASSED** |
 
-`v1` fails four rules. The hard failure is the first one: 29 approvals were
+`v1` fails four rules. The hard failure is the first one: 34 approvals were
 made without verified bureau or income data. `v2` costs more latency and
 escalates 30% of clean applications to a human, still inside the 35% cap that
 stops a workflow from passing by escalating everything.
@@ -172,9 +188,9 @@ change to the harness core:
 
 | Pack | Version | Runs | Unsupported approvals | Silent failure | Safe degradation | Verdict |
 |---|---|---|---|---|---|---|
-| KYC onboarding | v1 | 50 | 21 | 45.0% | 55.0% | FAILED |
+| KYC onboarding | v1 | 50 | 30 | 50.0% | 50.0% | FAILED |
 | KYC onboarding | v2 | 50 | 0 | 0.0% | 100.0% | PASSED |
-| AML triage | v1 | 40 | 10 | 33.3% | 66.7% | FAILED |
+| AML triage | v1 | 40 | 17 | 33.3% | 66.7% | FAILED |
 | AML triage | v2 | 40 | 0 | 0.0% | 100.0% | PASSED |
 
 ## Run it in CI

@@ -34,18 +34,18 @@
 * **What to show:**
   - Red **RELEASE GATE: BLOCKED** banner.
   - KPI tiles:
-    - **Unsupported Approvals:** 29 (Hard Fail triggered)
-    - **Silent Failure Rate:** 38.8% (Max allowed: 2.0%)
+    - **Unsupported Approvals:** 34 (Hard Fail triggered)
+    - **Silent Failure Rate:** 37.5% (Max allowed: 2.0%)
     - **Gate Checklist:** Fails on zero unsupported approvals and silent failure rate.
 * **Talking point:**
-  > *"When we run the complete chaos matrix across bureau outages, timeouts, empty payloads, and handoff drops, the release gate immediately blocks release v1. Its evidence pack shows 29 candidates were approved without verified credit bureau files because v1 defaulted missing scores to 680."*
+  > *"When we run the complete chaos matrix across bureau outages, timeouts, empty payloads, and handoff drops, the release gate immediately blocks release v1. Its evidence pack shows 34 candidates were approved without verified data: 27 because v1 defaulted a missing bureau score to 680, and 7 after the extracted income never reached the bureau agent."*
 
 ---
 
 ### [02:15 - 03:15] Step 4: The Hardened Pipeline (v2 Passes the Gate)
 * **Action:** Toggle the version dropdown in the top header from **v1 (Naive)** to **v2 (Hardened)**.
 * **What to show:**
-  - Green **RELEASE GATE: PASSED** banner with **99.3% overall score**.
+  - Green **RELEASE GATE: PASSED** banner with **94.1% overall score**.
   - **Unsupported Approvals:** 0.
   - **Safe Degradation Rate:** 100.0% (target ≥ 95%).
   - Open **Decision Audit** tab and inspect `APP-42-0006`:
@@ -60,9 +60,9 @@
 * **Action:** Click the **Compare v1 vs v2** tab.
 * **What to show:**
   - **Reliability Gained:**
-    - Silent failure rate: **38.8% → 0.0%**
-    - Safe degradation rate: **61.3% → 100.0%**
-    - Unsupported approvals eliminated: **29 → 0**
+    - Silent failure rate: **37.5% → 0.0%**
+    - Safe degradation rate: **62.5% → 100.0%**
+    - Unsupported approvals eliminated: **34 → 0**
   - **Operational Overhead:**
     - Compute cost delta: **+$0.0013 / application** ($0.0015 → $0.0028)
     - p95 latency: **about 200 ms → about 450 ms** (well below the 4,000 ms SLA)

@@ -42,15 +42,30 @@ def test_kyc_sanctions_outage_v1_fails_vs_v2_escalates(monkeypatch):
 
 
 def test_kyc_altered_name_v2_detection():
-    """In v2, altered identity name is caught and escalated."""
+    """The altered_name scenario changes the name at the id-check boundary; v2 escalates."""
+    from finassure.core.scenario import ChaosScenario
     from finassure.packs.kyc.agents import KYCState, run_id_check_agent
 
-    case = generate_kyc_cases(count=1, seed=77)[0]
-    state_v2 = KYCState(case=case, version="v2")
+    from agentic_chaos import chaos_session
 
-    # Manually simulate altered name discrepancy
-    state_v2.case.name = "Original Name"
-    state_v2.verified_name = "Altered Corrupted Name"
-    with agenticlens.profile("kyc:v2:altered_test"):
-        state_v2 = run_id_check_agent(state_v2)
-        assert state_v2.id_verified is True
+    scenario = ChaosScenario(
+        id="altered_name",
+        name="Altered name",
+        pack="kyc",
+        fault_type="silent_degradation",
+        target="id_check_agent.name",
+        params={"corruption": "alter_text"},
+        hypothesis="test",
+    )
+    case = generate_kyc_cases(count=1, seed=77)[0]
+    for version, escalated in (("v1", False), ("v2", True)):
+        state = KYCState(case=case, version=version)
+        with (
+            chaos_session(scenario.instantiate_faults()),
+            agenticlens.profile(f"kyc:{version}:altered_test"),
+        ):
+            state = run_id_check_agent(state)
+        assert state.verified_name != case.name
+        assert state.escalated is escalated
+        if escalated:
+            assert state.escalation_reason == "IDENTITY_NAME_MISMATCH"

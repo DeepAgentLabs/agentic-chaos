@@ -8,7 +8,7 @@ locally from this repository, with no model, API key or network connection.
 
 | Use case | Summary | Difficulty | Capabilities | Verified with |
 |---|---|---|---|---|
-| [Block an unsafe lending release](finassure-release-gate.md) | A naive five-agent loan underwriter approves 29 applications it never verified when the credit bureau fails. The hardened version escalates them instead, and a seven-rule release gate tells the two apart. | Intermediate | [Tool-call failure](https://deepagentlabs.io/agentic-chaos/docs/features/#tool-call-failure), [Silent degradation](https://deepagentlabs.io/agentic-chaos/docs/features/#silent-degradation), [AgenticLens integration](https://deepagentlabs.io/agentic-chaos/docs/integrations/#agenticlens) | agentic-chaos main, agenticlens 0.10.0 |
+| [Block an unsafe lending release](finassure-release-gate.md) | A naive five-agent loan underwriter approves 34 applications it never verified when the credit bureau fails. The hardened version escalates them instead, and a seven-rule release gate tells the two apart. | Intermediate | [Tool-call failure](https://deepagentlabs.io/agentic-chaos/docs/features/#tool-call-failure), [Silent degradation](https://deepagentlabs.io/agentic-chaos/docs/features/#silent-degradation), [AgenticLens integration](https://deepagentlabs.io/agentic-chaos/docs/integrations/#agenticlens) | agentic-chaos main, agenticlens 0.10.0 |
 
 ## Verified versions
 
