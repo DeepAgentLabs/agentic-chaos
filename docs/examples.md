@@ -15,6 +15,7 @@ The repository ships runnable scripts in [`examples/`](https://github.com/DeepAg
 | `chaos_handoff_and_judges_demo.py` | `agentic_chaos` only | Edge-scoped handoff corruption and a manual baseline capture so `fidelity_session()` can score the event. |
 | `drift_detection_demo.py` | `agentic_chaos` only | Creates a drift baseline and a current snapshot, compares them, and writes a drift report JSON. |
 | `chaos_with_agenticlens_demo.py` | `agentic-chaos[agenticlens]` | The optional AgenticLens integration: `attach_events()` and `step_kwargs()`. |
+| `finassure/` | `examples/finassure/requirements.txt` | A multi-agent lending, KYC and AML harness: nine chaos scenarios, a deterministic policy oracle and a seven-rule release gate that blocks the naive workflow. Walkthrough: [Block an unsafe lending release](https://deepagentlabs.io/agentic-chaos/usecases/finassure-release-gate/). |
 
 Run any of them directly:
 

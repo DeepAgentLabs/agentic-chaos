@@ -1,0 +1,14 @@
+site_name: Agentic Chaos Use Cases
+site_url: https://deepagentlabs.io/agentic-chaos/usecases/
+edit_uri: edit/main/usecases/
+docs_dir: usecases
+repo_name: GitHub
+
+extra_javascript:
+  - https://deepagentlabs.io/assets/js/usecase-views.js?v=4
+
+nav:
+  - Overview: index.md
+  - Block an unsafe lending release: finassure-release-gate.md
+  - Back to docs: https://deepagentlabs.io/agentic-chaos/docs/
+  - Back to Agentic Chaos: https://deepagentlabs.io/agentic-chaos/
