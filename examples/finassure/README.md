@@ -49,12 +49,25 @@ FinAssure uses the official Google GenAI SDK (`google-genai`). **No API keys or 
 
 ## 🚀 Quickstart
 
-### 1. Run the Test Suite
+Run everything from `examples/finassure` in an agentic-chaos checkout:
+
 ```bash
-python -m pytest tests -v
+cd examples/finassure
+pip install -e ../.. -r requirements.txt pytest
 ```
 
-### 2. Start the Server & Dashboard
+### 1. Run the Test Suite
+```bash
+python -m pytest -v
+```
+
+### 2. Seed the Release Gate Baseline
+```bash
+python scripts/seed_baseline.py
+```
+This runs every pack's v1 and v2 under the chaos matrix and writes evidence packs to `artifacts/evidence_packs/`.
+
+### 3. Start the Server & Dashboard
 ```bash
 python main.py
 ```
