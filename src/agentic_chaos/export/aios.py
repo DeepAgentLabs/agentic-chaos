@@ -17,8 +17,10 @@ The export only states what the report records. It does not claim recovery,
 retry chains, or step outcomes the native events cannot show: steps carry no
 status, every reliability event is `detected`, and no `follows`/`caused`
 retry edges are invented. Package-specific fields (topology, drift, raw event
-detail) ride in the reverse-domain `io.deepagentlabs.agentic-chaos` extension
-or in `attributes`, which AIOS consumers must preserve.
+detail, v0.9 probe results and the resilience breakdown) ride in the
+reverse-domain `io.deepagentlabs.agentic-chaos` extension or in `attributes`,
+which AIOS consumers must preserve. A computed resilience score is also a
+derived `resilience_score` measurement (0-100).
 """
 
 from __future__ import annotations
@@ -294,6 +296,15 @@ def _measurements(report: ChaosReport) -> list[dict[str, Any]]:
             "kind": "derived",
         }
     )
+    if report.resilience_score is not None:
+        measurements.append(
+            {
+                "name": "resilience_score",
+                "value": report.resilience_score,
+                "unit": "score",
+                "kind": "derived",
+            }
+        )
     return measurements
 
 
@@ -328,6 +339,11 @@ def _extension(report: ChaosReport, producer_version: str | None) -> dict[str, A
         extension["drift_report"] = report.drift_report
     if report.workflow is not None:
         extension["workflow"] = report.workflow
+    # v0.9: probe results and the score breakdown stay producer-specific.
+    if report.probes:
+        extension["probes"] = report.probes
+    if report.resilience is not None:
+        extension["resilience"] = report.resilience
     return extension
 
 
