@@ -6,13 +6,27 @@ from a source checkout.
 ```text
 agentic-chaos
 ├── chaos
-│   ├── run <script> --inject <faults> [--save <file>]
-│   └── list-faults
+│   ├── run <script> --inject <faults> [--save <file>] [--probe ...] [--min-score N]
+│   ├── list-faults
+│   └── workflow run|validate <file>
 ├── agent
-│   └── run <script> --inject <faults> [--save <file>]
-└── drift
-    ├── snapshot --name ... --save ...
-    └── compare <baseline> ...
+│   ├── run <script> --inject <faults> [--save <file>] [--probe ...] [--min-score N]
+│   └── fuzz <script>
+├── contracts
+│   ├── list
+│   └── check <report>
+├── experiment
+│   ├── validate <files>
+│   ├── run <file> [--min-score N] [--history <file>]
+│   └── schedule <file>
+├── score
+│   ├── show <report> [--baseline ...] [--min-score N] [--json]
+│   ├── history [--history <file>]
+│   └── prune [--history <file>] --max-runs N | --max-age-days D
+├── drift
+│   ├── snapshot --name ... --save ...
+│   └── compare <baseline> ...
+└── estimate
 ```
 
 Get help for any command with `--help`, for example
@@ -144,3 +158,30 @@ agentic-chaos drift compare baseline.json \
 | `memory_corruption` | Agent | `agent run` |
 | `infinite_loop` | Agent | `agent run` |
 | `handoff_corruption` | Agent / edge | `agent run` |
+
+## Resilience options (v0.9)
+
+`chaos run`, `agent run`, `experiment run` and `chaos workflow run` print a
+probe table and a resilience report after every run, and accept:
+
+| Option | Description |
+| --- | --- |
+| `--probe SPEC` | `chaos run` and `agent run` only, repeatable. An `http(s)://` URL must answer 200. A `file.py:function` or `module:function` spec must return without raising. Runs before and after the chaos; a failure before it exits 1 without injecting anything. |
+| `--min-score N` | Exit 1 unless the resilience score is at least N (0-100). An inconclusive score fails. |
+| `--history PATH` | Record the score in a run-history file and print the trend. |
+| `--history-max-runs N` | Keep the newest N runs per name in that file. |
+| `--history-max-age-days D` | Drop runs older than D days from that file. |
+| `--baseline PATH` | A fault-free report for the latency and cost components (and the contracts that compare against one). |
+
+## `agentic-chaos score`
+
+```bash
+agentic-chaos score show chaos_run.json [--baseline baseline.json] [--weight recovery=0.5] \
+    [--min-score 70] [--history h.json] [--json] [--save score.json]
+agentic-chaos score history [--history .agentic-chaos/resilience-history.json] [--name NAME] [--json]
+agentic-chaos score prune [--history ...] [--max-runs N] [--max-age-days D]
+```
+
+`score show` recomputes the score from a saved native, merged or workflow
+report, so it works on CI artifacts. See the [v0.9 guide](v0.9.md).
+
