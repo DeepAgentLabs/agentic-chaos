@@ -28,15 +28,13 @@ tools that happen to compose.
 (`v0.3.0`), **Prompt/Model Drift Detector** (`v0.4.0`), and
 **Streaming Faults, Provider Patching & Chaos Profiles** (`v0.5.0`),
 **Safety Rails** (`0.5.2`), the **Pytest Plugin & Contracts** (`0.6.0`),
-**Fault Cascades, Adaptive Intensity & Response Poisoning** (`0.7.0`) and
-**Chaos Workflows, Declarative Experiments & Explosion Radius** (`0.8.0`)
-are available.
+**Fault Cascades, Adaptive Intensity & Response Poisoning** (`0.7.0`),
+**Chaos Workflows, Declarative Experiments & Explosion Radius** (`0.8.0`) and
+**Resilience Probes & Resilience Score** (`0.9.0`) are available.
 See [ROADMAP.md](ROADMAP.md) for the full plan.
 
 ### What's Next
 
-- **Resilience probes & resilience score (v0.9)** — steady-state probes before,
-  during and after chaos, and a 0–100 score usable as a CI gate
 - **ChaosHub (v1.0)** — bundled and community experiment recipes in the v0.8
   experiment format, plus a fault plugin interface
 - **Structured experiment reports** — every chaos run emits a report with
@@ -189,11 +187,94 @@ agentic-chaos experiment schedule experiments/resilience-suite.yaml --format git
 
 # Fuzz the agent graph, weighting placement by node fan-out (v0.8).
 agentic-chaos agent fuzz my_graph.py --n 20 --seed 0 --exclude-step safety_check
+
+# Probe steady state before/after chaos and gate on the resilience score (v0.9).
+agentic-chaos chaos run my_app.py --inject rate_limit_storm --probe http://localhost:8080/health \
+    --min-score 70 --history .agentic-chaos/resilience-history.json --history-max-runs 30
+
+# Recompute a saved report's score offline, and inspect or prune the trend store (v0.9).
+agentic-chaos score show chaos_run.json --baseline baseline.json --min-score 70
+agentic-chaos score history
+agentic-chaos score prune --max-age-days 90
 ```
 
 `agentic-chaos drift compare` exits with code `2` when drift is detected, so
 it can fail a CI job while still writing a JSON report when emission rules
 allow it.
+
+## Resilience Probes & Resilience Score (v0.9.0)
+
+**Probes** are reusable steady-state checks, separate from faults. They run
+before the chaos (`pre`: was the system healthy to begin with?), inside it
+(`during`, with faults still active) and after it (`post`: did it recover?):
+
+```python
+from agentic_chaos import RateLimitStormFault, Scope, chaos_run
+from agentic_chaos.probes import HttpProbe, LatencyProbe, ResponseQualityProbe
+
+probes = [
+    HttpProbe("http://localhost:8080/health", expect_status=200),
+    ResponseQualityProbe(my_agent, "What is 2+2?", expect_contains="4"),
+    LatencyProbe(my_agent, "Hello", max_ms=3000),
+]
+report = chaos_run(my_app, [RateLimitStormFault(burst_count=3, scope=Scope(steps=["llm"]))],
+                   probes=probes, history=".agentic-chaos/resilience-history.json")
+print(report.resilience_score)        # 0-100, or None when inconclusive
+assert report.resilience_score >= 70  # CI gate
+```
+
+If a `pre` probe fails, no fault is injected. Contracts (v0.6) judge what
+happened during a run; probes judge whether the agent **recovered**.
+
+**The resilience score** is a weighted mean of five components. Any component
+the run can't show is left out and the remaining weights are renormalized:
+
+| Component | Weight | Evidence |
+| --- | --- | --- |
+| recovery | 0.35 | each fault is `retried`, a `fallback`, `tolerated`, `judged`, `unrecovered`, `escaped` or `unverified` |
+| probes | 0.25 | `during`/`post` probe pass rate |
+| latency | 0.15 | slowdown against a fault-free baseline report |
+| retry efficiency | 0.15 | injected failures per retry (retry storms score low) |
+| cost | 0.10 | cost overhead against a baseline |
+
+The score is `None` rather than a guess when a `pre` probe failed, for dry
+runs, and when no fault fired. Silent degradation is left out unless a v0.3
+fidelity judge scored it.
+
+```text
+Resilience Report: support-agent
+════════════════════════════════
+  Overall Score: 80/100 (B)
+  Component         Score                 Weight  Detail
+  recovery          ████████████ 100/100    0.35  2/2 injections recovered
+  probes            ████████████ 100/100    0.25  4/4 during/post probe checks passed
+  latency           ░░░░░░░░░░░░   0/100    0.15  826.77x the baseline duration
+  retry efficiency  ············   n/a      0.15  no injected failure to retry
+  cost              ············   n/a       0.1  no baseline with a recorded cost
+  Fault          Score                 Events  Outcome
+  token_timeout  ████████████ 100/100       2  2 tolerated
+  Trend: ↓ -6 from last run (was 86)
+```
+
+**Trends and retention.** `ResilienceHistory` (or `--history`) stores one
+compact entry per run and compares each new score with the last one of the
+same name. `max_runs` (per name) and `max_age_days` keep the file bounded on
+CI machines that run nightly.
+
+The same lifecycle works on `ChaosWorkflow(probes=...)`, on experiment files
+(`probes:` and `resilience: {min_score, weights, history}`) and on
+`@pytest.mark.chaos(probes=[...], min_score=90)`. AIOS exports add a derived
+`resilience_score` measurement.
+
+See the [v0.9 guide](docs/v0.9.md), the
+[offline demo](examples/chaos_resilience_demo.py), the
+[probed experiment](examples/workflows/resilience-probes.yaml), the
+[nightly CI gate](examples/github-actions-resilience.yml) and the
+[demo GIF](docs/assets/v0.9-demo.gif).
+
+Sibling runtimes need no change: the report fields are additive. Agentic
+Sidecar 0.9.1 widens its optional extra to admit 0.9, and MCP 0.4.4 pins
+hosted images to 0.9.0.
 
 ## Chaos Workflows, Experiments & Explosion Radius (v0.8.0)
 
@@ -547,7 +628,9 @@ print(tracker.topology.as_json())  # nodes + edges
 | [`examples/chaos_contracts_demo.py`](examples/chaos_contracts_demo.py) | nothing but `agentic_chaos` | v0.6 contracts on the Python API: a resilient agent passes, a fragile one fails, a skipped reviewer is caught against a dry-run baseline. |
 | [`examples/pytest_chaos/`](examples/pytest_chaos) | `pytest` | v0.6 pytest plugin: run with and without `--chaos`; includes a profile, a baseline comparison and a contract catching a fallback that hides an unrecovered step. |
 | [`examples/chaos_workflow_demo.py`](examples/chaos_workflow_demo.py) | nothing but `agentic_chaos` | v0.8 Python API: a templated, gated, parallel chaos workflow scoped away from a safety check; resume after a suspend; experiment lint; topology fuzzing that finds the unprotected planner node. |
-| [`examples/workflows/`](examples/workflows) | `agentic-chaos[yaml]` | v0.8 declarative experiments: a scheduled single-stage `rate-limit-recovery.yaml` and a multi-stage `resilience-suite.yaml`, both targeting an offline support agent. |
+| [`examples/workflows/`](examples/workflows) | `agentic-chaos[yaml]` | v0.8 declarative experiments: a scheduled single-stage `rate-limit-recovery.yaml` and a multi-stage `resilience-suite.yaml`, both targeting an offline support agent; v0.9 `resilience-probes.yaml` adds probes and a `min_score` gate. |
+| [`examples/chaos_resilience_demo.py`](examples/chaos_resilience_demo.py) | nothing but `agentic_chaos` | v0.9 probes and resilience score: an unscoped storm that escapes, a scoped one that recovers, unverified silent degradation, latency against a baseline, and a trend from a bounded history. |
+| [`examples/github-actions-resilience.yml`](examples/github-actions-resilience.yml) | `agentic-chaos[yaml]` | v0.9 nightly CI gate: `--min-score`, a cached history with retention, and `score history`. |
 | [`examples/chaos_with_agenticlens_demo.py`](examples/chaos_with_agenticlens_demo.py) | `agentic-chaos[agenticlens]` | The optional integration: `attach_events()` + `step_kwargs()` merging chaos events onto a real AgenticLens `Workflow`. |
 
 Run any of them directly (`uv run python examples/...`), or the first two
