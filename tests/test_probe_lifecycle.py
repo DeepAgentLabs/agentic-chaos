@@ -363,3 +363,28 @@ def test_experiment_rejects_duplicate_probe_names(project) -> None:
     )
     messages = [str(issue) for issue in validate_experiment(path).issues]
     assert "probes: duplicate probe name 'handle'; give each probe a 'name'" in messages
+
+
+def test_chaos_run_validates_weights_before_injecting() -> None:
+    ran = {"target": False}
+
+    def target() -> None:
+        ran["target"] = True
+
+    with pytest.raises(ValueError, match="unknown resilience component 'speed'"):
+        chaos_run(target, [storm()], weights={"speed": 1})
+    assert not ran["target"]
+
+
+def test_experiment_http_probes_accept_a_body(project) -> None:
+    path = write(
+        project,
+        {
+            "name": "post",
+            "target": "app.py:handle",
+            "faults": ["rate_limit_storm"],
+            "probes": [{"type": "http", "url": "http://x/h", "method": "POST", "body": "{}"}],
+        },
+    )
+    (probe,) = load_experiment(path).workflow.probes
+    assert probe.method == "POST" and probe.body == b"{}"

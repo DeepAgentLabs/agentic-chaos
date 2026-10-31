@@ -117,7 +117,15 @@ _STRINGS = {
 _CODE_ONLY = {"degrade_fn"}
 _PROBE_COMMON = {"type", "name", "phases", "retries", "retry_delay_seconds", "weight"}
 _PROBE_KEYS = {
-    "http": {"url", "expect_status", "method", "expect_contains", "headers", "timeout_seconds"},
+    "http": {
+        "url",
+        "expect_status",
+        "method",
+        "expect_contains",
+        "headers",
+        "body",
+        "timeout_seconds",
+    },
     "response_quality": {
         "target",
         "query",
