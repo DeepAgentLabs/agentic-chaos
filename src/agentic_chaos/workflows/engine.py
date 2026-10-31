@@ -15,7 +15,8 @@ from agentic_chaos.agents.topology import get_active_tracker, reset_active_track
 from agentic_chaos.chaos.context import get_active_session
 from agentic_chaos.chaos.scope import Scope
 from agentic_chaos.chaos.session import chaos_session
-from agentic_chaos.contracts.base import ReportLike, check_contracts
+from agentic_chaos.contracts.base import check_contracts
+from agentic_chaos.models.report import ReportLike
 from agentic_chaos.probes.base import Probe, ProbeResult
 from agentic_chaos.probes.runner import check_probes, run_probes
 from agentic_chaos.resilience.history import ResilienceHistory
