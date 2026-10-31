@@ -283,7 +283,7 @@ def event_verdicts(report: ChaosReport) -> list[tuple[dict[str, Any], EventVerdi
             else:
                 verdict, value = "unverified", None
         elif outcome == "errored":
-            verdict = _after_failure(by_event.get(event.get("id")), event, calls)
+            verdict = _after_failure(by_event.get(event.get("id")), calls)
             value = 1.0 if verdict in _RECOVERED else 0.0
         else:
             verdict, value = "tolerated", 1.0
@@ -322,9 +322,7 @@ def _step(call: Mapping[str, Any]) -> tuple[Any, str] | None:
     return (call.get("workflow_step"), name)
 
 
-def _after_failure(
-    call: dict[str, Any] | None, event: dict[str, Any], calls: list[dict[str, Any]]
-) -> EventVerdict:
+def _after_failure(call: dict[str, Any] | None, calls: list[dict[str, Any]]) -> EventVerdict:
     step = _step(call) if call is not None else None
     if call is None or step is None:
         return "fallback"
