@@ -39,8 +39,7 @@ from dataclasses import dataclass, field
 from typing import Any, Literal
 
 from agentic_chaos.contracts.analysis import find_retries, injected_failures, ordered_calls
-from agentic_chaos.contracts.base import ReportLike, load_report
-from agentic_chaos.models.report import ChaosReport
+from agentic_chaos.models.report import ChaosReport, ReportLike, load_report
 
 ScoreStatus = Literal["scored", "inconclusive"]
 EventVerdict = Literal[
@@ -323,12 +322,14 @@ def _escaped_event_id(report: ChaosReport) -> str | None:
     return last if isinstance(last, str) else None
 
 
-def _step(call: Mapping[str, Any]) -> tuple[Any, str] | None:
-    """A call's step, scoped to its workflow stage so stages never recover each other."""
+def _step(call: Mapping[str, Any]) -> tuple[Any, Any, str] | None:
+    """A call's step as the contracts define it, ``(kind, name)``, scoped to its
+    workflow stage so stages never recover each other."""
     name = call.get("step_name") or call.get("step_id")
     if not isinstance(name, str) or not name:
         return None
-    return (call.get("workflow_step"), name)
+    kind = call.get("kind")
+    return (call.get("workflow_step"), kind if isinstance(kind, str) else "call", name)
 
 
 def _after_failure(call: dict[str, Any] | None, calls: list[dict[str, Any]]) -> EventVerdict:

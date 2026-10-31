@@ -294,3 +294,8 @@ def test_live_session_scores_a_retrying_app() -> None:
     score = compute_resilience(session.to_report("live"))
     assert score.score == 100
     assert score.component("retry_efficiency").observed == {"retries": 2, "failures": 2}
+
+
+def test_a_different_call_kind_is_not_a_retry_of_the_step() -> None:
+    r = report([event(1)], [call(1, "llm", "error", "e1"), {**call(2, "llm"), "kind": "stream"}])
+    assert verdicts(r) == ["fallback"]
