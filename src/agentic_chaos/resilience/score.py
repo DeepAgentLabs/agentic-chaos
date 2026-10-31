@@ -28,7 +28,9 @@ status is ``inconclusive`` -- never a made-up number.
   overhead scores 1, ``cost_tolerance`` (default 1.0, double the cost) or more
   scores 0.
 
-The score reads the report only, so it can be recomputed from saved JSON.
+A run in which no fault fired is not scored either: there was nothing to be
+resilient to. The score reads the report only, so it can be recomputed from
+saved JSON.
 """
 
 import math
@@ -242,16 +244,22 @@ def compute_resilience(
     if failed_pre:
         names = ", ".join(sorted({str(r.get("probe")) for r in failed_pre}))
         reasons.append(f"pre-chaos probes failed ({names}): no steady state to recover to")
+    fired = bool(chaos_report.chaos_events)
+    if not chaos_report.dry_run and not failed_pre and not fired:
+        reason = "no fault fired, so there was nothing to be resilient to"
+        if chaos_report.unhandled_error:
+            reason += f"; the run raised {chaos_report.unhandled_error.get('type')} first"
+        reasons.append(reason)
     if chaos_report.aborted:
         reasons.append("the circuit breaker aborted the run; the score covers what ran")
 
     scored = [c for c in components if c.score is not None and c.weight > 0]
     score: int | None = None
-    if not chaos_report.dry_run and not failed_pre and scored:
+    if fired and not chaos_report.dry_run and not failed_pre and scored:
         total = sum(c.weight for c in scored)
         score = int(round(100 * math.fsum(c.weight * (c.score or 0.0) for c in scored) / total))
     elif not scored and not reasons:
-        reasons.append("no component could be computed: inject a fault or add probes")
+        reasons.append("no component could be computed: add probes or a fidelity judge")
 
     return ResilienceScore(
         score=score,

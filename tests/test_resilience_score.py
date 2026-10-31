@@ -190,7 +190,8 @@ def test_probe_component_weights_post_over_during() -> None:
         {"probe": "p", "phase": "during", "status": "failed", "weight": 1.0},
         {"probe": "p", "phase": "post", "status": "passed", "weight": 1.0},
     ]
-    score = compute_resilience(report(probes=probes))
+    fired = [event(1, "silent_degradation", "degraded")]  # unverified: recovery n/a
+    score = compute_resilience(report(fired, probes=probes))
     assert score.component("probes").score == pytest.approx(1 / 1.5)
     assert score.score == 67  # probes are the only computable component
 
@@ -202,9 +203,15 @@ def test_failed_pre_probe_and_dry_run_are_inconclusive() -> None:
     assert "no steady state" in unsteady.reasons[0]
     dry = compute_resilience(report([event(1, "token_timeout", "delayed")], dry_run=True))
     assert dry.score is None and dry.reasons == ["dry run: no fault was injected"]
-    empty = compute_resilience(report())
-    assert empty.score is None and "inject a fault or add probes" in empty.reasons[0]
+    empty = compute_resilience(report(probes=[{"phase": "post", "status": "passed"}]))
+    assert empty.score is None and empty.reasons == [
+        "no fault fired, so there was nothing to be resilient to"
+    ]
     assert not empty.meets(0) and empty.grade is None
+    crashed = compute_resilience(report(unhandled_error={"type": "ValueError", "message": ""}))
+    assert crashed.reasons[0].endswith("the run raised ValueError first")
+    unverified = compute_resilience(report([event(1, "silent_degradation", "degraded")]))
+    assert unverified.reasons == ["no component could be computed: add probes or a fidelity judge"]
 
 
 def test_aborted_runs_are_scored_with_a_reason() -> None:
