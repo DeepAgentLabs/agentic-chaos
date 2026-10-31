@@ -17,7 +17,7 @@ import re
 from collections.abc import Callable, Coroutine, Generator, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, NoReturn
 
 import pytest
 
@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     from agentic_chaos.chaos.faults import BaseFault
     from agentic_chaos.contracts import Contract, ContractReport
     from agentic_chaos.models.report import ChaosReport
-    from agentic_chaos.probes import Probe
+    from agentic_chaos.probes import Probe, ProbeResult
     from agentic_chaos.safety import CircuitBreaker
 
 MARKER_HELP = (
@@ -370,8 +370,7 @@ def pytest_pyfunc_call(pyfuncitem: pytest.Function) -> Generator[None, object, o
     probe_results = run_probes(spec.probes, "pre")
     unsteady = [result for result in probe_results if not result.passed]
     if unsteady:
-        details = "; ".join(f"{r.probe}: {r.message}" for r in unsteady)
-        pytest.fail(f"pre-chaos probes failed, no fault injected: {details}", pytrace=False)
+        _fail_unsteady(pyfuncitem, state, handle, probe_results, unsteady)
 
     handle.tracker = None
     tracker_before = get_active_tracker()
@@ -423,6 +422,36 @@ def pytest_pyfunc_call(pyfuncitem: pytest.Function) -> Generator[None, object, o
     if spec.min_score is not None and not score.meets(spec.min_score):
         raise AssertionError(f"{score.summary()}; required at least {spec.min_score:g}")
     return result
+
+
+def _fail_unsteady(
+    item: pytest.Function,
+    state: PluginState,
+    handle: ChaosHandle,
+    probe_results: "Sequence[ProbeResult]",
+    unsteady: "Sequence[ProbeResult]",
+) -> NoReturn:
+    """Record an uninjected, inconclusive report (outcome and artifacts), then fail."""
+    from datetime import datetime, timezone
+
+    from agentic_chaos.models.report import ChaosReport
+    from agentic_chaos.resilience import compute_resilience
+
+    now = datetime.now(timezone.utc)
+    report = ChaosReport(
+        name=item.name,
+        start_time=now,
+        end_time=now,
+        probes=[result.as_json() for result in probe_results],
+    )
+    score = compute_resilience(report)
+    score.reasons.append("chaos was not injected")
+    report.resilience = score.as_json()
+    handle.report = report
+    state.outcomes.append(ChaosOutcome(item.nodeid, report, None))
+    _write_artifacts(state, item.nodeid, report, None, None)
+    details = "; ".join(f"{r.probe}: {r.message}" for r in unsteady)
+    pytest.fail(f"pre-chaos probes failed, no fault injected: {details}", pytrace=False)
 
 
 def _run_baseline(item: pytest.Function, spec: ChaosSpec, handle: ChaosHandle) -> "ChaosReport":

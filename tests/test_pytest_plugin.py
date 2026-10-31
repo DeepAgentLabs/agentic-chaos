@@ -585,6 +585,11 @@ def test_probes_and_min_score_on_the_marker(project: pytest.Pytester) -> None:
     assert "required at least 95" in output
     assert "min_score must be a number between 0 and 100" in output
     assert "resilience scores: lowest" in output
+    unsteady = json.loads(
+        artifact(report_dir, "test_weather.py_test_unsteady", "chaos").read_text()
+    )
+    assert unsteady["chaos_events"] == [] and unsteady["resilience"]["score"] is None
+    assert unsteady["resilience"]["reasons"][-1] == "chaos was not injected"
     saved = json.loads(artifact(report_dir, "test_weather.py_test_recovers", "chaos").read_text())
     assert saved["resilience"]["score"] == 100
     assert [probe["phase"] for probe in saved["probes"]] == ["pre", "post"]
