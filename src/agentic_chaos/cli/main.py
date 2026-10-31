@@ -1131,10 +1131,6 @@ def agent_fuzz(
         raise typer.Exit(code=1)
 
 
-if __name__ == "__main__":
-    app()
-
-
 # ---------------------------------------------------------------------------
 # score subcommands (v0.9)
 # ---------------------------------------------------------------------------
@@ -1274,3 +1270,7 @@ def score_prune(
         console.print(f"[red]{escape(str(exc))}[/red]")
         raise typer.Exit(code=1) from exc
     console.print(f"Removed {removed} entr{'y' if removed == 1 else 'ies'} from {history}.")
+
+
+if __name__ == "__main__":
+    app()

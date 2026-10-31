@@ -290,3 +290,17 @@ def test_experiment_run_option_errors(project) -> None:
     assert run("chaos", "workflow", "run", path, "--min-score", "500").exit_code == 1
     missing = run("experiment", "run", path, "--baseline", "nope.json")
     assert missing.exit_code == 1
+
+
+def test_module_entry_point_includes_the_score_group(project) -> None:
+    import subprocess
+    import sys
+
+    result = subprocess.run(
+        [sys.executable, "-m", "agentic_chaos.cli.main", "score", "--help"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "show" in result.stdout and "prune" in result.stdout
