@@ -27,12 +27,14 @@ if TYPE_CHECKING:
     from agentic_chaos.chaos.faults import BaseFault
     from agentic_chaos.contracts import Contract, ContractReport
     from agentic_chaos.models.report import ChaosReport
+    from agentic_chaos.probes import Probe
     from agentic_chaos.safety import CircuitBreaker
 
 MARKER_HELP = (
     "chaos(faults=None, *, profile=None, profile_file='chaos.toml', contracts=(), "
-    "must_recover=False, baseline=False, breaker=None, dry_run=False): run the test under "
-    "agentic-chaos faults and check contracts. Inactive unless pytest runs with --chaos."
+    "must_recover=False, baseline=False, breaker=None, dry_run=False, probes=(), "
+    "min_score=None): run the test under agentic-chaos faults, check contracts, run "
+    "probes and gate on the resilience score. Inactive unless pytest runs with --chaos."
 )
 
 _MARKER_KWARGS = {
@@ -44,6 +46,8 @@ _MARKER_KWARGS = {
     "baseline",
     "breaker",
     "dry_run",
+    "probes",
+    "min_score",
 }
 
 
@@ -128,6 +132,8 @@ class ChaosSpec:
     baseline: bool = False
     breaker: "CircuitBreaker | None" = None
     dry_run: bool = False
+    probes: "Sequence[Probe]" = ()
+    min_score: float | None = None
 
     @classmethod
     def from_marker(cls, marker: pytest.Mark, global_contracts: Sequence[str]) -> "ChaosSpec":
@@ -157,6 +163,15 @@ class ChaosSpec:
             raise ValueError("give exactly one of faults=[...] or profile='name'")
         if spec.baseline and spec.dry_run:
             raise ValueError("baseline=True compares against a dry run; drop dry_run=True")
+        from agentic_chaos.probes import check_probes
+
+        spec.probes = check_probes(spec.probes)
+        if spec.min_score is not None and (
+            isinstance(spec.min_score, bool)
+            or not isinstance(spec.min_score, (int, float))
+            or not 0 <= spec.min_score <= 100
+        ):
+            raise ValueError("min_score must be a number between 0 and 100")
         spec.fresh_faults()  # validate fault names and profiles before running anything
         return spec
 
@@ -349,6 +364,14 @@ def pytest_pyfunc_call(pyfuncitem: pytest.Function) -> Generator[None, object, o
 
     from agentic_chaos.agents.topology import get_active_tracker
     from agentic_chaos.chaos.session import chaos_session
+    from agentic_chaos.probes import run_probes
+    from agentic_chaos.resilience import compute_resilience
+
+    probe_results = run_probes(spec.probes, "pre")
+    unsteady = [result for result in probe_results if not result.passed]
+    if unsteady:
+        details = "; ".join(f"{r.probe}: {r.message}" for r in unsteady)
+        pytest.fail(f"pre-chaos probes failed, no fault injected: {details}", pytrace=False)
 
     handle.tracker = None
     tracker_before = get_active_tracker()
@@ -362,14 +385,20 @@ def pytest_pyfunc_call(pyfuncitem: pytest.Function) -> Generator[None, object, o
             error = exc
         finally:
             pyfuncitem.stash[_LIVE_SESSION] = None
+        if error is None or not _is_control_flow(error):
+            probe_results.extend(run_probes(spec.probes, "during"))
     if error is not None and _is_control_flow(error):
         raise error
+    probe_results.extend(run_probes(spec.probes, "post"))
 
     report = session.to_report(
         pyfuncitem.name,
         error=error,
         agent_topology=_take_topology(handle, tracker_before),
     )
+    report.probes = [probe_result.as_json() for probe_result in probe_results]
+    score = compute_resilience(report, baseline=baseline)
+    report.resilience = score.as_json()
     contracts = spec.all_contracts()
     contract_report = None
     if contracts:
@@ -385,11 +414,14 @@ def pytest_pyfunc_call(pyfuncitem: pytest.Function) -> Generator[None, object, o
     _write_artifacts(state, pyfuncitem.nodeid, report, baseline, contract_report)
     if contract_report is not None:
         pyfuncitem.add_report_section("call", "chaos contracts", contract_report.summary())
+    pyfuncitem.add_report_section("call", "chaos resilience", score.summary())
 
     if error is not None:
         raise error
     if contract_report is not None:
         contract_report.raise_for_failures()
+    if spec.min_score is not None and not score.meets(spec.min_score):
+        raise AssertionError(f"{score.summary()}; required at least {spec.min_score:g}")
     return result
 
 
@@ -493,6 +525,12 @@ def pytest_terminal_summary(terminalreporter: Any, config: pytest.Config) -> Non
         f"{len(state.outcomes)} chaos test(s), {events} fault event(s), "
         f"{len(checked) - len(failing)}/{len(checked)} passed their contracts"
     )
+    scores = [o.report.resilience_score for o in state.outcomes]
+    scored = [value for value in scores if value is not None]
+    if scored:
+        terminalreporter.write_line(
+            f"resilience scores: lowest {min(scored)}/100, {len(scored)}/{len(scores)} scored"
+        )
     for outcome in failing:
         assert outcome.contracts is not None
         for result in outcome.contracts.failures:
