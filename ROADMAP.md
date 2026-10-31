@@ -1037,7 +1037,6 @@ reference implementation of it.
 | 16 | PyPI release v0.8 (`0.8.0`) ✅ | ongoing |
 | 17 | v0.9 — Resilience Probes & Resilience Score ✅ | 3–5 weeks |
 | 18 | PyPI release v0.9 (`0.9.0`) ✅ | ongoing |
-| 18 | PyPI release v0.9 | ongoing |
 | 19 | v1.0 — ChaosHub (Shared Experiment Registry) | 3–5 weeks |
 | 20 | PyPI release v1.0 | ongoing |
 | 21 | Blog post / talk: "one schema, one chaos toolkit, full AI-infra reliability stack" | after v1.0 ships |
