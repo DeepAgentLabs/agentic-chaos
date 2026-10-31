@@ -110,8 +110,9 @@ def chaos_run(
                 except Exception as exc:
                     crashed = exc
                     break
+            # The run ends with the target: probe time must not count as latency.
+            ended = datetime.now(timezone.utc)
             results.extend(run_probes(configured, "during"))
-        ended = datetime.now(timezone.utc)
         tracker = get_active_tracker()
         topology = tracker.topology.as_json() if tracker and tracker.topology.nodes else None
         reset_active_tracker()

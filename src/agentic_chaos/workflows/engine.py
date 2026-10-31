@@ -389,10 +389,11 @@ class _Run:
                 except Exception as exc:
                     crashed = exc
                     break
+            ended = _now()  # probe time is not part of the step's duration
+            elapsed = time.monotonic() - clock
             during = run_probes(self.workflow.probes, "during", step=step.name)
         with self._probe_lock:
             self.probe_results.extend(during)
-        ended = _now()
         tracker = get_active_tracker()
         topology = tracker.topology.as_json() if tracker and tracker.topology.nodes else None
         reset_active_tracker()
@@ -425,7 +426,7 @@ class _Run:
             message=message,
             started_at=started,
             ended_at=ended,
-            duration_s=time.monotonic() - clock,
+            duration_s=elapsed,
             faults=[fault.name for fault in faults],
             repeat=step.repeat,
             report=report.model_dump(mode="json"),

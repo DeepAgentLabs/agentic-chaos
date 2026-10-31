@@ -177,9 +177,9 @@ def _run_script_with_chaos(
                 crashed = exc
         except Exception as exc:
             crashed = exc
+        ended_at = datetime.now(timezone.utc)  # probe time is not part of the run
         if probes and probe_results is not None:
             probe_results.extend(run_probes(probes, "during"))
-    ended_at = datetime.now(timezone.utc)
     return session, ended_at, crashed
 
 
