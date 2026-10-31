@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Any
 from rich import box
 from rich.console import Console
 from rich.markup import escape
+from rich.padding import Padding
 from rich.table import Table
 
 from agentic_chaos.contracts import ContractReport
@@ -295,7 +296,7 @@ def render_resilience(console: Console, score: "ResilienceScore") -> None:
             f"{component.weight:g}",
             escape(component.detail),
         )
-    console.print(table)
+    console.print(Padding(table, (0, 0, 0, 2)))
 
     if score.faults:
         faults = Table(box=None, show_header=True, pad_edge=False)
@@ -312,7 +313,7 @@ def render_resilience(console: Console, score: "ResilienceScore") -> None:
                 str(fault.events),
                 escape(fault.note),
             )
-        console.print(faults)
+        console.print(Padding(faults, (0, 0, 0, 2)))
 
     trend = score.trend
     if trend and trend.get("delta") is not None:
