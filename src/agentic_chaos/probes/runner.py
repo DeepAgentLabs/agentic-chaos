@@ -19,11 +19,10 @@ from agentic_chaos.agents.topology import get_active_tracker, reset_active_track
 from agentic_chaos.chaos.context import get_active_session
 from agentic_chaos.chaos.faults import BaseFault
 from agentic_chaos.chaos.session import chaos_session
-from agentic_chaos.contracts.base import ReportLike
-from agentic_chaos.models.report import ChaosReport
+from agentic_chaos.models.report import ChaosReport, ReportLike
 from agentic_chaos.probes.base import Phase, Probe, ProbeResult
 from agentic_chaos.resilience.history import ResilienceHistory
-from agentic_chaos.resilience.score import compute_resilience
+from agentic_chaos.resilience.score import compute_resilience, validate_weights
 from agentic_chaos.safety import CircuitBreaker
 
 
@@ -92,6 +91,7 @@ def chaos_run(
     if isinstance(repeat, bool) or not isinstance(repeat, int) or repeat < 1:
         raise ValueError("repeat must be a positive integer")
     configured = check_probes(probes)
+    validate_weights(weights)  # a config typo must fail before any fault is injected
     store = _history(history)
     run_name = name or getattr(target, "__name__", None) or "chaos-run"
 
