@@ -224,9 +224,10 @@ def test_response_quality_contains_and_not_contains() -> None:
 
 def test_response_quality_regex_and_predicate() -> None:
     assert ResponseQualityProbe(agent, "q", expect_regex=r"is \d\.").run("post").passed
-    assert "does not match" in ResponseQualityProbe(agent, "q", expect_regex=r"^\d+$").run(
-        "post"
-    ).message
+    assert (
+        "does not match"
+        in ResponseQualityProbe(agent, "q", expect_regex=r"^\d+$").run("post").message
+    )
     rejected = ResponseQualityProbe(agent, "q", expect=lambda out: len(out) < 5).run("post")
     assert rejected.message == "expect predicate rejected the answer"
 
