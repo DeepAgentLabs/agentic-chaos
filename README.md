@@ -896,6 +896,16 @@ behavior under faults, so retries do not hide absorbed faults. Chaos events
 and contracts remain the resilience evidence. No dependency or release is
 needed. See [the compatibility note](docs/evals-0.9-judge-reliability.md).
 
+## Evals 0.10.0 evaluation evidence
+
+Evals 0.10.0 attaches its scores as AIOS `evaluation` evidence to an existing
+Run, including the one `to_aios_run` derives from a `ChaosReport`. Map Evals
+cases to the generated Step IDs through `attributes.native_step_id`; Evals
+rejects targets missing from the Run. Chaos keeps owning steps, occurrences
+and `reliability_event` evidence, and a passing evaluation is not proof of
+recovery or containment. No dependency or release is needed. See
+[the compatibility note](docs/evals-0.10-aios-evidence.md).
+
 ## MCP 0.4.0 unified release checks
 
 [MCP 0.4.0](https://github.com/DeepAgentLabs/mcp-server/releases/tag/v0.4.0) completes Phase 4 with its unified workflows: `core.compare_runs`, a fail-closed `core.release_check`, `core.incident_summary` and `core.export_report`. MCP judges nothing itself; it composes Lens comparisons, the Evals release gate and Chaos run reports. Malformed or failed-call evidence always blocks readiness, and so does missing evidence of a required kind; all three kinds are required by default and `required_evidence` narrows that.
