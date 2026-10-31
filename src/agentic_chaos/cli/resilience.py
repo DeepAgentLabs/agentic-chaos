@@ -29,6 +29,8 @@ def parse_probe(spec: str, base_dir: Path | None = None) -> Probe:
     text = spec.strip()
     if text.startswith(("http://", "https://")):
         return HttpProbe(text)
+    if "://" in text:
+        raise ValueError(f"probe URL {text!r} must use http:// or https://")
     fn = resolve_target(text, base_dir)
     return FunctionProbe(fn, name=text)
 
