@@ -22,7 +22,8 @@ status is ``inconclusive`` -- never a made-up number.
   scores 1, and ``latency_tolerance`` (default 2.0, i.e. three times slower)
   or worse scores 0.
 - ``retry_efficiency`` -- injected failures per retry: one retry per failure
-  (or fewer) scores 1, a retry storm scores lower.
+  (or fewer) scores 1, a retry storm scores lower. Runs that never retried
+  (fallbacks, or failures that escaped) leave it out.
 - ``cost`` -- cost overhead against a baseline with a recorded cost: no
   overhead scores 1, ``cost_tolerance`` (default 1.0, double the cost) or more
   scores 0.
@@ -411,6 +412,10 @@ def _retry_efficiency(report: ChaosReport, weight: float) -> Component:
     if report.calls_dropped:
         return Component("retry_efficiency", None, weight, "call log was truncated")
     retries = len(find_retries(report))
+    if retries == 0:
+        return Component(
+            "retry_efficiency", None, weight, "no retry observed", {"failures": failures}
+        )
     value = 1.0 if retries <= failures else failures / retries
     return Component(
         "retry_efficiency",
