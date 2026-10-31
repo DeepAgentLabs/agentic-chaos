@@ -50,6 +50,15 @@ from agentic_chaos.drift import DriftReport, DriftSnapshot, compare_snapshots
 from agentic_chaos.experiments import load_experiment, validate_experiment
 from agentic_chaos.integrations.providers import patch_anthropic, patch_google, patch_openai
 from agentic_chaos.judges import DeepEvalJudge, HeuristicJudge, PydanticEvalsJudge, fidelity_session
+from agentic_chaos.probes import (
+    FunctionProbe,
+    HttpProbe,
+    LatencyProbe,
+    Probe,
+    ResponseQualityProbe,
+    chaos_run,
+)
+from agentic_chaos.resilience import ResilienceHistory, ResilienceScore, compute_resilience
 from agentic_chaos.safety import ChaosAbortedError, CircuitBreaker
 from agentic_chaos.workflows import (
     ChaosWorkflow,
@@ -77,6 +86,15 @@ for _fault in (
 __version__ = "0.8.0"
 
 __all__ = [
+    "FunctionProbe",
+    "HttpProbe",
+    "LatencyProbe",
+    "Probe",
+    "ResilienceHistory",
+    "ResilienceScore",
+    "ResponseQualityProbe",
+    "chaos_run",
+    "compute_resilience",
     "ChaosWorkflow",
     "HealthCheck",
     "Parallel",
