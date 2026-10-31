@@ -1,0 +1,43 @@
+# Nightly resilience gate: run probed experiments, fail the job below a minimum
+# resilience score, and keep a bounded score history between runs for trends.
+# Copy to .github/workflows/resilience.yml in your project and adjust paths.
+name: resilience
+
+on:
+  schedule:
+    - cron: "0 2 * * *" # nightly 02:00 UTC
+  workflow_dispatch:
+
+jobs:
+  resilience:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -e . 'agentic-chaos[yaml]>=0.9'
+      # The history file is small (one compact entry per run) and retention
+      # keeps it bounded; restore it from the cache to get run-over-run trends.
+      - uses: actions/cache@v4
+        with:
+          path: .agentic-chaos
+          key: resilience-history-${{ github.run_id }}
+          restore-keys: resilience-history-
+      - run: agentic-chaos experiment validate --strict experiments/*.yaml
+      # Exits 1 when a probe never reaches steady state, a contract fails, or
+      # the score is below --min-score (inconclusive scores fail too).
+      - run: >
+          agentic-chaos experiment run experiments/resilience-probes.yaml
+          --no-input --min-score 80
+          --history .agentic-chaos/resilience-history.json
+          --history-max-runs 30 --history-max-age-days 90
+          --save-report chaos-run.json --save-aios chaos-run.aios.json
+      - if: always()
+        run: agentic-chaos score history --history .agentic-chaos/resilience-history.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: resilience
+          path: |
+            chaos-run.json
+            chaos-run.aios.json

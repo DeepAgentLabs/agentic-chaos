@@ -13,3 +13,4 @@ build/
 site/
 .env
 *.chaos_run.json
+.agentic-chaos/
