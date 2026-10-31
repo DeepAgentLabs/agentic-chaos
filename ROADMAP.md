@@ -1206,6 +1206,16 @@ behavior under faults, so retries do not hide absorbed faults. Chaos events
 and contracts remain the resilience evidence. No dependency or release is
 needed. See [the compatibility note](docs/evals-0.9-judge-reliability.md).
 
+## Evals 0.10.0 evaluation evidence
+
+Evals 0.10.0 attaches its scores as AIOS `evaluation` evidence to an existing
+Run, including the one `to_aios_run` derives from a `ChaosReport`. Map Evals
+cases to the generated Step IDs through `attributes.native_step_id`; Evals
+rejects targets missing from the Run. Chaos keeps owning steps, occurrences
+and `reliability_event` evidence, and a passing evaluation is not proof of
+recovery or containment. No dependency or release is needed. See
+[the compatibility note](docs/evals-0.10-aios-evidence.md).
+
 ## MCP 0.4.0 unified release checks
 
 MCP 0.4.0 gates releases on `chaos.run_experiment` reports (crash or timeout blocks;
