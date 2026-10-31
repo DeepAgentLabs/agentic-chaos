@@ -175,7 +175,10 @@ class LazyTarget:
         self.spec = spec
         self.base_dir = base_dir
         self._resolved: Callable[..., Any] | None = None
-        self.is_script = _is_file(_split(spec)[0]) and _split(spec)[1] is None
+        location, attr = _split(spec)
+        self.is_script = _is_file(location) and attr is None
+        # Names probes and reports without importing the target.
+        self.__name__ = attr or Path(location).stem
 
     def resolve(self) -> Callable[..., Any]:
         if self._resolved is None:
