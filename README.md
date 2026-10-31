@@ -1047,3 +1047,9 @@ See [operator compatibility and ownership](docs/tower-0.8-live-operations.md) fo
 periodic detection, durable alerts, acknowledgements and joined incident console
 views. Existing native contracts and optional dependency ranges remain compatible;
 no runtime or patch release is required here.
+
+## AIOS v0.6.1 provenance and conformance suite
+
+See [AIOS v0.6.1 compatibility](docs/aios-0.6.1.md) for the new `0.6-draft` provenance
+records, portable conformance suite and naming conventions. Exports stay
+`0.4-draft`; no runtime dependency bump or package release is required.
