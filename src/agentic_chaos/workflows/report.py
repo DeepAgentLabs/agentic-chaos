@@ -77,6 +77,16 @@ class WorkflowReport(BaseModel):
     nodes: list[NodeResult] = Field(default_factory=list)
     chaos_events: list[dict[str, Any]] = Field(default_factory=list)
     experiment: dict[str, Any] | None = None
+    # v0.9: workflow-level probe results (pre, during each step, post) and the
+    # resilience score of the merged run.
+    probes: list[dict[str, Any]] = Field(default_factory=list)
+    resilience: dict[str, Any] | None = None
+
+    @property
+    def resilience_score(self) -> int | None:
+        """The 0-100 resilience score of the merged run, or None when inconclusive."""
+        score = (self.resilience or {}).get("score")
+        return score if isinstance(score, int) and not isinstance(score, bool) else None
 
     @property
     def passed(self) -> bool:
@@ -166,6 +176,8 @@ class WorkflowReport(BaseModel):
             calls_dropped=int(totals["calls_dropped"]),
             unhandled_error=unhandled,
             workflow=self.summary(),
+            probes=list(self.probes),
+            resilience=self.resilience,
         )
 
     def save(self, path: str | Path) -> Path:
