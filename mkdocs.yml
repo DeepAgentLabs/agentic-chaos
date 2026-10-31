@@ -74,8 +74,10 @@ nav:
       - Evals report contract: evals-report-contract.md
       - Evals CLI: evals-0.8-cli.md
       - Evals judge reliability: evals-0.9-judge-reliability.md
+      - Evals evaluation evidence: evals-0.10-aios-evidence.md
       - MCP unified workflows: mcp-0.4-unified-workflows.md
       - Lens routing: lens-0.10-routing.md
+      - Lens optimization: lens-0.11-optimization.md
       - Sidecar: sidecar-v0.8.md
   - API reference: api-reference.md
   - CLI reference: cli-reference.md
