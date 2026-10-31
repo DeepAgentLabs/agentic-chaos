@@ -39,3 +39,15 @@ class ChaosReport(BaseModel):
     # v0.8: set when the report merges the steps of a chaos workflow; per-step
     # provenance is also recorded in each event's ``detail.workflow``.
     workflow: dict[str, Any] | None = None
+    # v0.9: steady-state probe results (pre/during/post) and the resilience
+    # score computed from this report; both are absent on older reports.
+    probes: list[dict[str, Any]] = Field(default_factory=list)
+    resilience: dict[str, Any] | None = None
+
+    @property
+    def resilience_score(self) -> int | None:
+        """The 0-100 resilience score, or None when it was not computed or is inconclusive."""
+        if self.resilience is None:
+            return None
+        score = self.resilience.get("score")
+        return score if isinstance(score, int) and not isinstance(score, bool) else None
