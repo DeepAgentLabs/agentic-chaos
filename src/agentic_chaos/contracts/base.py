@@ -10,18 +10,16 @@ baseline, no injected failure, a truncated call log), the result is
 ``inconclusive``, and an inconclusive result does not pass.
 """
 
-import json
 from abc import ABC, abstractmethod
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Any, ClassVar, Literal
 
 from agentic_chaos.models.report import ChaosReport
+from agentic_chaos.models.report import ReportLike as ReportLike  # re-exported
+from agentic_chaos.models.report import load_report as load_report  # re-exported
 
 Status = Literal["passed", "failed", "inconclusive"]
-
-ReportLike = ChaosReport | Mapping[str, Any] | str | Path
 
 
 @dataclass(frozen=True)
@@ -130,15 +128,6 @@ class ContractViolationError(AssertionError):
     def __init__(self, contract_report: ContractReport) -> None:
         super().__init__(contract_report.summary())
         self.contract_report = contract_report
-
-
-def load_report(report: ReportLike) -> ChaosReport:
-    """Accept a `ChaosReport`, its JSON-compatible dict, or a path to saved JSON."""
-    if isinstance(report, ChaosReport):
-        return report
-    if isinstance(report, (str, Path)):
-        return ChaosReport.model_validate(json.loads(Path(report).read_text(encoding="utf-8")))
-    return ChaosReport.model_validate(dict(report))
 
 
 def check_contracts(

@@ -274,6 +274,14 @@ def test_export_validates_against_the_published_v04_schema() -> None:
         ),
         to_aios_run(_report([_event(1)]), status="failed", workflow_id="wf"),
         to_aios_run(_report([_event(1, step_id="report-1"), _event(2, step_name="A B")])),
+        to_aios_run(
+            _live_report().model_copy(
+                update={
+                    "probes": [{"probe": "ping", "phase": "post", "status": "passed"}],
+                    "resilience": {"score": 72, "status": "scored"},
+                }
+            )
+        ),
     ):
         errors = [error.message for error in validator.iter_errors(artifact)]
         assert errors == []
@@ -383,3 +391,26 @@ def test_call_counts_and_unhandled_error_ride_in_the_extension() -> None:
     assert extension["calls"] == {"recorded": 1, "dropped": 0}
     assert extension["unhandled_error"]["type"] == "TokenTimeoutError"
     assert graph_errors(artifact) == []
+
+
+def test_resilience_score_and_probes_are_exported() -> None:
+    from agentic_chaos.resilience import compute_resilience
+
+    report = _live_report()
+    report.probes = [{"probe": "ping", "phase": "post", "status": "passed", "weight": 1.0}]
+    report.resilience = compute_resilience(report).as_json()
+    artifact = to_aios_run(report)
+    measurement = next(m for m in artifact["measurements"] if m["name"] == "resilience_score")
+    assert measurement == {
+        "name": "resilience_score",
+        "value": report.resilience_score,
+        "unit": "score",
+        "kind": "derived",
+    }
+    extension = artifact["extensions"]["io.deepagentlabs.agentic-chaos"]
+    assert extension["probes"] == report.probes
+    assert extension["resilience"]["score"] == report.resilience_score
+    assert graph_errors(artifact) == []
+    unscored = to_aios_run(_live_report())
+    assert all(m["name"] != "resilience_score" for m in unscored["measurements"])
+    assert "resilience" not in unscored["extensions"]["io.deepagentlabs.agentic-chaos"]

@@ -23,6 +23,15 @@ from agentic_chaos.chaos.scope import Scope
 from agentic_chaos.contracts.base import Contract
 from agentic_chaos.contracts.registry import CONTRACT_REGISTRY, describe_contracts
 from agentic_chaos.experiments.cron import CronSchedule
+from agentic_chaos.probes.base import Probe
+from agentic_chaos.probes.builtin import (
+    FunctionProbe,
+    HttpProbe,
+    LatencyProbe,
+    ResponseQualityProbe,
+)
+from agentic_chaos.resilience.history import ResilienceHistory
+from agentic_chaos.resilience.score import validate_weights
 from agentic_chaos.safety import CircuitBreaker
 from agentic_chaos.workflows.engine import ChaosWorkflow
 from agentic_chaos.workflows.nodes import (
@@ -53,6 +62,8 @@ _TOP_LEVEL = {
     "templates",
     "workflow",
     "stop_on_failure",
+    "probes",
+    "resilience",
 }
 _SINGLE_STEP_ONLY = ("faults", "assertions", "repeat")
 _NODE_KEYS = {
@@ -104,6 +115,38 @@ _STRINGS = {
     "to_node",
 }
 _CODE_ONLY = {"degrade_fn"}
+_PROBE_COMMON = {"type", "name", "phases", "retries", "retry_delay_seconds", "weight"}
+_PROBE_KEYS = {
+    "http": {
+        "url",
+        "expect_status",
+        "method",
+        "expect_contains",
+        "headers",
+        "body",
+        "timeout_seconds",
+    },
+    "response_quality": {
+        "target",
+        "query",
+        "expect_contains",
+        "expect_not_contains",
+        "expect_regex",
+        "reference",
+        "min_similarity",
+    },
+    "latency": {"target", "query", "max_ms", "samples", "statistic"},
+    "function": {"target", "query"},
+}
+_NO_TARGET = "has no target and the experiment defines no top-level target"
+_PROBE_CLASSES: dict[str, type[Probe]] = {
+    "http": HttpProbe,
+    "response_quality": ResponseQualityProbe,
+    "latency": LatencyProbe,
+    "function": FunctionProbe,
+}
+_RESILIENCE_KEYS = {"min_score", "weights", "history"}
+_HISTORY_KEYS = {"path", "max_runs", "max_age_days"}
 _PARAM = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}")
 
 
@@ -140,7 +183,10 @@ class LazyTarget:
         self.spec = spec
         self.base_dir = base_dir
         self._resolved: Callable[..., Any] | None = None
-        self.is_script = _is_file(_split(spec)[0]) and _split(spec)[1] is None
+        location, attr = _split(spec)
+        self.is_script = _is_file(location) and attr is None
+        # Names probes and reports without importing the target.
+        self.__name__ = attr or Path(location).stem
 
     def resolve(self) -> Callable[..., Any]:
         if self._resolved is None:
@@ -168,6 +214,8 @@ class Experiment:
     timezone: str = "UTC"
     dry_run: bool = False
     warnings: list[ExperimentIssue] = field(default_factory=list)
+    min_score: float | None = None
+    history: ResilienceHistory | None = None
 
     @property
     def kind(self) -> str:
@@ -184,6 +232,8 @@ class Experiment:
             data["description"] = self.description
         if self.schedule is not None:
             data["schedule"] = {"cron": self.schedule.expression, "timezone": self.timezone}
+        if self.min_score is not None:
+            data["min_score"] = self.min_score
         return data
 
     def run(
@@ -192,13 +242,20 @@ class Experiment:
         dry_run: bool | None = None,
         approve: Any = None,
         resume_from: str | None = None,
+        baseline: Any = None,
+        history: ResilienceHistory | None = None,
     ) -> Any:
-        """Run the compiled workflow (importing targets now) and return its report."""
+        """Run the compiled workflow (importing targets now) and return its report.
+
+        `history` replaces the experiment's own ``resilience.history`` store.
+        """
         return self.workflow.run(
             dry_run=self.dry_run if dry_run is None else dry_run,
             approve=approve,
             resume_from=resume_from,
             experiment=self.metadata(),
+            baseline=baseline,
+            history=history if history is not None else self.history,
         )
 
 
@@ -483,6 +540,113 @@ class _Compiler:
             self.warn(_join(location, "cron"), "this schedule never fires")
         return schedule, zone_name if isinstance(zone_name, str) else "UTC"
 
+    # -- probes and resilience (v0.9) ---------------------------------------
+
+    def probes(self, location: str, value: Any) -> list[Probe]:
+        if value is None:
+            return []
+        if not isinstance(value, list):
+            self.error(location, "must be a list of probes")
+            return []
+        probes: list[Probe] = []
+        for index, entry in enumerate(value):
+            probe = self.probe(f"{location}[{index}]", entry)
+            if probe is not None:
+                probes.append(probe)
+        names = [probe.name for probe in probes]
+        for name in sorted({name for name in names if names.count(name) > 1}):
+            self.error(location, f"duplicate probe name '{name}'; give each probe a 'name'")
+        return probes
+
+    def probe(self, location: str, entry: Any) -> Probe | None:
+        if not isinstance(entry, dict):
+            self.error(location, "must be a mapping with a 'type'")
+            return None
+        kind = entry.get("type")
+        if kind not in _PROBE_KEYS:
+            hint = _suggest(str(kind), set(_PROBE_KEYS)) if isinstance(kind, str) else ""
+            known = ", ".join(_PROBE_KEYS)
+            self.error(_join(location, "type"), f"unknown probe type {kind!r}{hint} ({known})")
+            return None
+        self.unknown_keys(location, entry, _PROBE_COMMON | _PROBE_KEYS[kind])
+        options = {k: v for k, v in entry.items() if k not in ("type", "target")}
+        if "expect_regex" in options:
+            try:
+                re.compile(str(options["expect_regex"]))
+            except re.error as exc:
+                self.error(_join(location, "expect_regex"), f"is not a valid regex: {exc}")
+                return None
+        if kind != "http":
+            target = self.target(_join(location, "target"), entry.get("target"))
+            fn = target if target is not None else self.default_target
+            if fn is None:
+                if "target" not in entry:
+                    self.error(
+                        location, "has no target and the experiment defines no top-level target"
+                    )
+                return None
+            if fn.is_script and ("query" in entry or kind == "response_quality"):
+                self.error(
+                    _join(location, "target"),
+                    "needs a function target ('file.py:function') for a query or an answer",
+                )
+                return None
+            options["fn"] = fn
+        cls = _PROBE_CLASSES[kind]
+        try:
+            return cls(**options)
+        except (TypeError, ValueError) as exc:
+            self.error(location, f"invalid {kind} probe: {exc}")
+            return None
+
+    def resilience(
+        self, location: str, value: Any
+    ) -> tuple[float | None, dict[str, float] | None, ResilienceHistory | None]:
+        if value is None:
+            return None, None, None
+        if not isinstance(value, dict):
+            self.error(location, "must be a mapping (min_score, weights, history)")
+            return None, None, None
+        self.unknown_keys(location, value, _RESILIENCE_KEYS)
+        min_score = value.get("min_score")
+        if min_score is not None and (
+            isinstance(min_score, bool)
+            or not isinstance(min_score, (int, float))
+            or not 0 <= min_score <= 100
+        ):
+            self.error(_join(location, "min_score"), "must be a number between 0 and 100")
+            min_score = None
+        weights = value.get("weights")
+        if weights is not None:
+            try:
+                if not isinstance(weights, dict):
+                    raise ValueError("must be a mapping of component weights")
+                validate_weights(weights)
+            except ValueError as exc:
+                self.error(_join(location, "weights"), str(exc))
+                weights = None
+        return min_score, weights, self.history(_join(location, "history"), value.get("history"))
+
+    def history(self, location: str, value: Any) -> ResilienceHistory | None:
+        if value is None:
+            return None
+        if isinstance(value, str):
+            value = {"path": value}
+        if not isinstance(value, dict):
+            self.error(location, "must be a path or a mapping (path, max_runs, max_age_days)")
+            return None
+        self.unknown_keys(location, value, _HISTORY_KEYS)
+        path = self.string(_join(location, "path"), value.get("path"), required=True)
+        if path is None:
+            return None
+        try:
+            return ResilienceHistory(
+                path, max_runs=value.get("max_runs"), max_age_days=value.get("max_age_days")
+            )
+        except ValueError as exc:
+            self.error(location, str(exc))
+            return None
+
     # -- nodes --------------------------------------------------------------
 
     def nodes(self, location: str, value: Any, stack: tuple[str, ...] = ()) -> list[Any]:
@@ -690,6 +854,8 @@ class _Compiler:
         breaker = self.safety("safety", data.get("safety"))
         scope = self.scope("scope", data.get("scope"))
         schedule, zone = self.schedule("schedule", data.get("schedule"))
+        probes = self.probes("probes", data.get("probes"))
+        min_score, weights, history = self.resilience("resilience", data.get("resilience"))
         self.template_definitions(data.get("templates"))
         nodes: list[Any]
         if "workflow" in data:
@@ -724,6 +890,8 @@ class _Compiler:
                 stop_on_failure=stop,
                 breaker=breaker_for_steps,
                 scope=scope,
+                probes=probes,
+                weights=weights,
             )
         except ValueError as exc:
             self.error("workflow" if "workflow" in data else "<document>", str(exc))
@@ -739,6 +907,8 @@ class _Compiler:
             timezone=zone,
             dry_run=dry_run,
             warnings=[issue for issue in self.issues if issue.severity == "warning"],
+            min_score=min_score,
+            history=history,
         )
 
     def _located(self, prefix: str) -> bool:

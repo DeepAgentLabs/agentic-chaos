@@ -20,9 +20,23 @@ from agentic_chaos.cli.render import (
     render_contract_report,
     render_drift_report,
     render_fuzz_report,
+    render_probe_results,
+    render_resilience,
     render_topology,
     render_validation,
     render_workflow_report,
+)
+from agentic_chaos.cli.resilience import (
+    HISTORY_HELP,
+    MAX_AGE_HELP,
+    MAX_RUNS_HELP,
+    MIN_SCORE_HELP,
+    PROBE_HELP,
+    check_min_score,
+    gate,
+    history_store,
+    parse_probes,
+    score_report,
 )
 from agentic_chaos.contracts import (
     Contract,
@@ -47,6 +61,8 @@ from agentic_chaos.drift import (
 )
 from agentic_chaos.export.aios import to_aios_run
 from agentic_chaos.models.report import ChaosReport
+from agentic_chaos.probes import Probe, ProbeResult, run_probes
+from agentic_chaos.resilience import ResilienceScore
 from agentic_chaos.safety import CircuitBreaker
 
 app = typer.Typer(
@@ -142,10 +158,13 @@ def _run_script_with_chaos(
     include_topology: bool = False,
     dry_run: bool = False,
     breaker: CircuitBreaker | None = None,
+    probes: list[Probe] | None = None,
+    probe_results: list[ProbeResult] | None = None,
 ) -> tuple[Any, datetime, BaseException | None]:
     """Run a script within a chaos_session and return (session, end, crash).
 
-    Shared by `chaos run` and `agent run` to avoid code duplication.
+    Shared by `chaos run` and `agent run` to avoid code duplication. `during`
+    probes run inside the session after the script, into `probe_results`.
     """
     crashed: BaseException | None = None
     with chaos_session(inject, breaker=breaker, dry_run=dry_run) as session:
@@ -158,7 +177,9 @@ def _run_script_with_chaos(
                 crashed = exc
         except Exception as exc:
             crashed = exc
-    ended_at = datetime.now(timezone.utc)
+        ended_at = datetime.now(timezone.utc)  # probe time is not part of the run
+        if probes and probe_results is not None:
+            probe_results.extend(run_probes(probes, "during"))
     return session, ended_at, crashed
 
 
@@ -216,15 +237,46 @@ def _check_contracts(
 
 
 def _finish_run(
-    session: Any, crashed: BaseException | None, contract_report: ContractReport | None
+    session: Any,
+    crashed: BaseException | None,
+    contract_report: ContractReport | None,
+    *,
+    score: ResilienceScore | None = None,
+    min_score: float | None = None,
 ) -> None:
-    """Exit with the script's crash code, then abort, then contract failure."""
+    """Exit with the script's crash code, then abort, contract failure, low score."""
     if crashed is not None:
         raise typer.Exit(code=_exit_code(crashed))
     if session.safety.abort is not None:
         raise typer.Exit(code=1)
     if contract_report is not None and not contract_report.passed:
         raise typer.Exit(code=1)
+    gate(console, score, min_score)
+
+
+def _pre_probes(
+    name: str,
+    probes: list[Probe],
+    *,
+    save: Path | None,
+    save_aios: Path | None,
+) -> list[ProbeResult]:
+    """Run pre-chaos probes; without steady state, save why and exit 1 before any chaos."""
+    results = run_probes(probes, "pre")
+    if all(result.passed for result in results):
+        return results
+    now = datetime.now(timezone.utc)
+    report = ChaosReport(
+        name=name, start_time=now, end_time=now, probes=[r.as_json() for r in results]
+    )
+    score_report(console, report, record=False)
+    console.print(
+        "[red]Pre-chaos probes failed: the system is not in steady state, "
+        "so no fault was injected.[/red]"
+    )
+    unsteady = RuntimeError("pre-chaos probes failed")
+    _save_reports(report, save=save, save_aios=save_aios, crashed=unsteady)
+    raise typer.Exit(code=1)
 
 
 # ---------------------------------------------------------------------------
@@ -282,6 +334,13 @@ def chaos_run(
     save_contracts: Path | None = typer.Option(
         None, "--save-contracts", help="Save contract results as JSON to this file."
     ),
+    probe: list[str] | None = typer.Option(None, "--probe", help=PROBE_HELP),
+    min_score: float | None = typer.Option(None, "--min-score", help=MIN_SCORE_HELP),
+    history: Path | None = typer.Option(None, "--history", help=HISTORY_HELP),
+    history_max_runs: int | None = typer.Option(None, "--history-max-runs", help=MAX_RUNS_HELP),
+    history_max_age_days: float | None = typer.Option(
+        None, "--history-max-age-days", help=MAX_AGE_HELP
+    ),
 ) -> None:
     """Run a script with the requested faults active, then report what happened.
 
@@ -315,13 +374,23 @@ def chaos_run(
             max_duration_seconds=max_duration_seconds,
             max_injections=max_injections,
         )
-    except (ValueError, OSError, pydantic.ValidationError) as exc:
-        console.print(f"[red]{exc}[/red]")
+        probes = parse_probes(probe)
+        check_min_score(min_score)
+        store = history_store(history, history_max_runs, history_max_age_days)
+    except (ValueError, OSError, ImportError, pydantic.ValidationError) as exc:
+        console.print(f"[red]{escape(str(exc))}[/red]")
         raise typer.Exit(code=1) from exc
 
+    probe_results = _pre_probes(script.stem, probes, save=save, save_aios=save_aios)
     session, ended_at, crashed = _run_script_with_chaos(
-        script, configured, dry_run=dry_run, breaker=breaker
+        script,
+        configured,
+        dry_run=dry_run,
+        breaker=breaker,
+        probes=probes,
+        probe_results=probe_results,
     )
+    probe_results.extend(run_probes(probes, "post"))
 
     if crashed is not None:
         console.print(f"[red]Script raised under chaos:[/red] {crashed!r}")
@@ -333,11 +402,13 @@ def chaos_run(
         console.print({"abort_reason": session.safety.abort})
 
     report = session.to_report(script.stem, end_time=ended_at, error=crashed)
+    report.probes = [result.as_json() for result in probe_results]
+    score = score_report(console, report, baseline=baseline, history=store)
     _save_reports(report, save=save, save_aios=save_aios, crashed=crashed)
     contract_report = _check_contracts(
         report, contracts, baseline=baseline, save_contracts=save_contracts
     )
-    _finish_run(session, crashed, contract_report)
+    _finish_run(session, crashed, contract_report, score=score, min_score=min_score)
 
 
 @chaos_app.command("list-faults")
@@ -410,6 +481,13 @@ def agent_run(
     save_contracts: Path | None = typer.Option(
         None, "--save-contracts", help="Save contract results as JSON to this file."
     ),
+    probe: list[str] | None = typer.Option(None, "--probe", help=PROBE_HELP),
+    min_score: float | None = typer.Option(None, "--min-score", help=MIN_SCORE_HELP),
+    history: Path | None = typer.Option(None, "--history", help=HISTORY_HELP),
+    history_max_runs: int | None = typer.Option(None, "--history-max-runs", help=MAX_RUNS_HELP),
+    history_max_age_days: float | None = typer.Option(
+        None, "--history-max-age-days", help=MAX_AGE_HELP
+    ),
 ) -> None:
     """Run an agent script with agent-level faults active, then report what happened.
 
@@ -445,16 +523,26 @@ def agent_run(
             max_duration_seconds=max_duration_seconds,
             max_injections=max_injections,
         )
-    except (ValueError, OSError, pydantic.ValidationError) as exc:
-        console.print(f"[red]{exc}[/red]")
+        probes = parse_probes(probe)
+        check_min_score(min_score)
+        store = history_store(history, history_max_runs, history_max_age_days)
+    except (ValueError, OSError, ImportError, pydantic.ValidationError) as exc:
+        console.print(f"[red]{escape(str(exc))}[/red]")
         raise typer.Exit(code=1) from exc
 
     if framework not in ("generic", "langgraph", "crewai", "autogen"):
         console.print(f"[yellow]Unknown framework '{framework}', using generic.[/yellow]")
 
+    probe_results = _pre_probes(script.stem, probes, save=save, save_aios=save_aios)
     session, ended_at, crashed = _run_script_with_chaos(
-        script, configured, dry_run=dry_run, breaker=breaker
+        script,
+        configured,
+        dry_run=dry_run,
+        breaker=breaker,
+        probes=probes,
+        probe_results=probe_results,
     )
+    probe_results.extend(run_probes(probes, "post"))
 
     if crashed is not None:
         console.print(f"[red]Script raised under chaos:[/red] {crashed!r}")
@@ -477,11 +565,13 @@ def agent_run(
     report = session.to_report(
         script.stem, end_time=ended_at, error=crashed, agent_topology=topology_data
     )
+    report.probes = [result.as_json() for result in probe_results]
+    score = score_report(console, report, baseline=baseline, history=store)
     _save_reports(report, save=save, save_aios=save_aios, crashed=crashed)
     contract_report = _check_contracts(
         report, contracts, baseline=baseline, save_contracts=save_contracts
     )
-    _finish_run(session, crashed, contract_report)
+    _finish_run(session, crashed, contract_report, score=score, min_score=min_score)
 
 
 # ---------------------------------------------------------------------------
@@ -761,6 +851,9 @@ def _run_experiment_file(
     no_input: bool,
     check_targets: bool,
     base_dir: Path | None,
+    min_score: float | None = None,
+    baseline: Path | None = None,
+    history: Any = None,
 ) -> None:
     from agentic_chaos.experiments import validate_experiment
 
@@ -777,11 +870,19 @@ def _run_experiment_file(
             dry_run=True if dry_run else None,
             approve=_approver(approve, approve_all, no_input),
             resume_from=resume_from,
+            baseline=baseline,
+            history=history,
         )
     except ValueError as exc:
         console.print(f"[red]{escape(str(exc))}[/red]")
         raise typer.Exit(code=1) from exc
     render_workflow_report(console, report)
+    render_probe_results(console, report.probes)
+    if report.resilience is not None:
+        render_resilience(console, ResilienceScore.from_json(report.resilience))
+        recorded = history is not None or result.experiment.history is not None
+        if recorded and report.status != "suspended" and report.resilience.get("trend") is None:
+            console.print("  Trend: first recorded run")
     if save is not None:
         report.save(save)
         console.print(f"\nSaved workflow report to {save}")
@@ -797,6 +898,11 @@ def _run_experiment_file(
         raise typer.Exit(code=EXIT_SUSPENDED)
     if report.status != "passed":
         raise typer.Exit(code=1)
+    gate(
+        console,
+        report.resilience,
+        min_score if min_score is not None else result.experiment.min_score,
+    )
 
 
 _FILES_HELP = "Experiment files (.yaml, .yml, .json or .toml)."
@@ -852,12 +958,34 @@ def _run_command(
     ),
     no_target_check: bool = typer.Option(False, "--no-target-check", help=_NO_TARGET_CHECK_HELP),
     base_dir: Path | None = typer.Option(None, "--base-dir", help=_BASE_DIR_HELP),
+    min_score: float | None = typer.Option(
+        None, "--min-score", help=MIN_SCORE_HELP + " Overrides resilience.min_score."
+    ),
+    baseline: Path | None = typer.Option(
+        None, "--baseline", help="Fault-free report for the score's latency and cost parts."
+    ),
+    history: Path | None = typer.Option(
+        None, "--history", help=HISTORY_HELP + " Overrides resilience.history."
+    ),
+    history_max_runs: int | None = typer.Option(None, "--history-max-runs", help=MAX_RUNS_HELP),
+    history_max_age_days: float | None = typer.Option(
+        None, "--history-max-age-days", help=MAX_AGE_HELP
+    ),
 ) -> None:
     """Validate, then run an experiment or workflow and report every stage.
 
     Exits 0 when the workflow passed, 3 when it stopped at an unapproved
-    Suspend gate (re-run with --resume-from), and 1 otherwise.
+    Suspend gate (re-run with --resume-from), and 1 otherwise -- including
+    when the resilience score is below --min-score (or resilience.min_score).
     """
+    try:
+        check_min_score(min_score)
+        store = history_store(history, history_max_runs, history_max_age_days)
+        if baseline is not None:
+            load_report(baseline)
+    except (ValueError, OSError, pydantic.ValidationError) as exc:
+        console.print(f"[red]{escape(str(exc))}[/red]")
+        raise typer.Exit(code=1) from exc
     _run_experiment_file(
         file,
         save=save,
@@ -870,6 +998,9 @@ def _run_command(
         no_input=no_input,
         check_targets=not no_target_check,
         base_dir=base_dir,
+        min_score=min_score,
+        baseline=baseline,
+        history=store,
     )
 
 
@@ -998,6 +1129,147 @@ def agent_fuzz(
         console.print(f"Saved fuzz report to {save}")
     if report.failing_nodes:
         raise typer.Exit(code=1)
+
+
+# ---------------------------------------------------------------------------
+# score subcommands (v0.9)
+# ---------------------------------------------------------------------------
+
+score_app = typer.Typer(
+    help="Resilience scores: recompute from saved reports, inspect and prune run history.",
+    no_args_is_help=True,
+)
+app.add_typer(score_app, name="score")
+
+
+def _load_scorable(path: Path) -> ChaosReport:
+    """A native chaos report, merging the steps of a saved workflow report."""
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if isinstance(data, dict) and data.get("kind") == "chaos_workflow":
+        from agentic_chaos.workflows import WorkflowReport
+
+        return WorkflowReport.model_validate(data).to_chaos_report()
+    return ChaosReport.model_validate(data)
+
+
+@score_app.command("show")
+def score_show(
+    report_file: Path = typer.Argument(..., help="Saved chaos, merged or workflow report JSON."),
+    baseline: Path | None = typer.Option(
+        None, "--baseline", help="Fault-free report for the latency and cost components."
+    ),
+    weight: list[str] | None = typer.Option(
+        None, "--weight", help="Component weight override, e.g. 'recovery=0.5' (repeatable)."
+    ),
+    min_score: float | None = typer.Option(None, "--min-score", help=MIN_SCORE_HELP),
+    history: Path | None = typer.Option(None, "--history", help=HISTORY_HELP),
+    history_max_runs: int | None = typer.Option(None, "--history-max-runs", help=MAX_RUNS_HELP),
+    history_max_age_days: float | None = typer.Option(
+        None, "--history-max-age-days", help=MAX_AGE_HELP
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Print the score as JSON."),
+    save: Path | None = typer.Option(None, "--save", help="Save the score JSON to this file."),
+) -> None:
+    """Recompute the resilience score of a saved report, offline.
+
+    Reads only the JSON, so it works on reports from CI artifacts. Exits 1 when
+    --min-score is set and the score is inconclusive or lower.
+    """
+    from agentic_chaos.resilience import compute_resilience
+
+    try:
+        check_min_score(min_score)
+        weights: dict[str, float] = {}
+        for spec in weight or []:
+            key, sep, value = spec.partition("=")
+            if not sep:
+                raise ValueError(f"--weight must look like 'name=value', got {spec!r}")
+            weights[key.strip()] = float(value)
+        store = history_store(history, history_max_runs, history_max_age_days)
+        report = _load_scorable(report_file)
+        reference = _load_scorable(baseline) if baseline is not None else None
+        score = compute_resilience(report, baseline=reference, weights=weights or None)
+        if store is not None:
+            store.record(score)
+    except (ValueError, OSError, pydantic.ValidationError) as exc:
+        console.print(f"[red]{escape(str(exc))}[/red]")
+        raise typer.Exit(code=1) from exc
+    if save is not None:
+        save.write_text(json.dumps(score.as_json(), indent=2), encoding="utf-8")
+    if json_output:
+        typer.echo(json.dumps(score.as_json(), indent=2))
+    else:
+        render_probe_results(console, report.probes)
+        render_resilience(console, score)
+        if save is not None:
+            console.print(f"Saved resilience score to {save}")
+    gate(console if not json_output else Console(stderr=True), score, min_score)
+
+
+@score_app.command("history")
+def score_history(
+    history: Path = typer.Option(
+        Path(".agentic-chaos/resilience-history.json"), "--history", help="Run-history file."
+    ),
+    name: str | None = typer.Option(None, "--name", help="Only runs with this name."),
+    json_output: bool = typer.Option(False, "--json", help="Print entries as JSON."),
+) -> None:
+    """List recorded resilience scores, oldest first, with run-over-run deltas."""
+    from rich.table import Table
+
+    from agentic_chaos.resilience import ResilienceHistory
+
+    try:
+        entries = ResilienceHistory(history).entries(name)
+    except ValueError as exc:
+        console.print(f"[red]{escape(str(exc))}[/red]")
+        raise typer.Exit(code=1) from exc
+    if json_output:
+        typer.echo(json.dumps(entries, indent=2))
+        return
+    if not entries:
+        console.print(f"No resilience history in {history}.")
+        return
+    table = Table(title=f"Resilience History — {history}")
+    for column in ("Recorded", "Name", "Score", "Grade", "Δ"):
+        table.add_column(column)
+    last: dict[str, int] = {}
+    for entry in entries:
+        key, value = str(entry.get("name")), entry.get("score")
+        delta = ""
+        if isinstance(value, int) and key in last:
+            delta = f"{value - last[key]:+d}"
+        if isinstance(value, int):
+            last[key] = value
+        table.add_row(
+            escape(str(entry.get("recorded_at", ""))[:19]),
+            escape(key),
+            "inconclusive" if value is None else str(value),
+            str(entry.get("grade") or "-"),
+            delta,
+        )
+    console.print(table)
+
+
+@score_app.command("prune")
+def score_prune(
+    history: Path = typer.Option(
+        Path(".agentic-chaos/resilience-history.json"), "--history", help="Run-history file."
+    ),
+    max_runs: int | None = typer.Option(None, "--max-runs", help=MAX_RUNS_HELP),
+    max_age_days: float | None = typer.Option(None, "--max-age-days", help=MAX_AGE_HELP),
+) -> None:
+    """Apply retention to a run-history file now."""
+    from agentic_chaos.resilience import ResilienceHistory
+
+    try:
+        if max_runs is None and max_age_days is None:
+            raise ValueError("pass --max-runs and/or --max-age-days")
+        removed = ResilienceHistory(history, max_runs=max_runs, max_age_days=max_age_days).prune()
+    except ValueError as exc:
+        console.print(f"[red]{escape(str(exc))}[/red]")
+        raise typer.Exit(code=1) from exc
+    console.print(f"Removed {removed} entr{'y' if removed == 1 else 'ies'} from {history}.")
 
 
 if __name__ == "__main__":

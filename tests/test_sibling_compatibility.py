@@ -331,3 +331,70 @@ def test_mcp_exports_v08_workflow_summary(monkeypatch):
     assert extension["workflow"]["name"] == "v0.8"
     assert [node["status"] for node in extension["workflow"]["nodes"]] == ["passed"] * 3
     assert len(artifact["evidence"]) == 3
+
+
+def scored_report():
+    """A v0.9 report: probe results and a resilience score alongside the events."""
+    from agentic_chaos import RateLimitStormFault, chaos_call, chaos_run
+    from agentic_chaos.chaos.faults import RateLimitStormError
+    from agentic_chaos.probes import FunctionProbe
+
+    def app():
+        for _ in range(4):
+            try:
+                return chaos_call(lambda: "ok", step_name="provider")
+            except RateLimitStormError:
+                continue
+        raise RuntimeError("gave up")
+
+    report = chaos_run(
+        app, [RateLimitStormFault(burst_count=2, retry_after=0)], probes=[FunctionProbe(app)]
+    )
+    assert report.resilience_score == 100
+    return report
+
+
+def test_lens_loads_scored_reports():
+    pytest.importorskip("agenticlens")
+    from agenticlens.config.settings import RecommenderConfig
+    from agenticlens.models import Workflow
+    from agenticlens.recommenders.chaos_impact import ChaosImpactRecommender
+
+    workflow = Workflow.model_validate(scored_report().model_dump(mode="json"))
+    assert len(workflow.chaos_events) == 2
+    assert ChaosImpactRecommender().evaluate(workflow, RecommenderConfig())
+
+
+def test_tower_summarizes_scored_reports(monkeypatch):
+    source = Path(__file__).resolve().parents[2] / "agenticops-control-tower" / "src"
+    if not source.exists():
+        pytest.skip("Control Tower sibling checkout unavailable")
+    monkeypatch.syspath_prepend(str(source))
+    from agenticops_control_tower.adapters.evidence import summarize_evidence
+    from agenticops_control_tower.models.evidence import EvidenceLink
+
+    link = EvidenceLink(
+        agent_id="test",
+        source="agentic-chaos",
+        source_version="0.9.0",
+        artifact_type="chaos_report",
+        artifact_ref="report.json",
+        observed_at=datetime.now(timezone.utc),
+    )
+    result = summarize_evidence(link, scored_report().model_dump(mode="json"))
+    assert result.availability == "available"
+    assert result.details["event_count"] == 2
+
+
+def test_mcp_exports_the_resilience_score(monkeypatch):
+    source = Path(__file__).resolve().parents[2] / "mcp-server" / "src"
+    if not source.exists():
+        pytest.skip("MCP sibling checkout unavailable")
+    monkeypatch.syspath_prepend(str(source))
+    from deep_agentic_core_mcp.adapters.agentic_chaos import export_aios_run
+
+    artifact = export_aios_run(scored_report().model_dump(mode="json"))
+    names = {m["name"]: m["value"] for m in artifact["measurements"]}
+    assert names["resilience_score"] == 100
+    extension = artifact["extensions"]["io.deepagentlabs.agentic-chaos"]
+    assert extension["resilience"]["grade"] == "A" and extension["probes"]

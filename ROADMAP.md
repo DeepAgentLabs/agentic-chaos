@@ -11,7 +11,8 @@ unimplemented; their 🚧 Planned markers match an empty search for
 corresponding code. v0.5 has since been implemented with new tests; see
 [the v0.5 guide](docs/v0.5.md). v0.6 followed in `0.6.0`; see
 [the v0.6 guide](docs/v0.6.md). v0.7 followed in `0.7.0` ([guide](docs/v0.7.md))
-and v0.8 in `0.8.0` ([guide](docs/v0.8.md)).
+v0.8 in `0.8.0` ([guide](docs/v0.8.md)) and v0.9 in `0.9.0`
+([guide](docs/v0.9.md)).
 
 ## Release Status
 
@@ -24,7 +25,7 @@ and v0.8 in `0.8.0` ([guide](docs/v0.8.md)).
 - **v0.6** ✅ Complete — Pytest Plugin & Assertions, released as `0.6.0`
 - **v0.7** ✅ Complete — released as `0.7.0`; — Fault Cascades, Adaptive Intensity & Response Poisoning
 - **v0.8** ✅ Complete — released as `0.8.0`; — Chaos Workflows, Declarative Experiments & Explosion Radius
-- **v0.9** 🚧 Planned — Resilience Probes & Resilience Score
+- **v0.9** ✅ Complete — released as `0.9.0`; — Resilience Probes & Resilience Score
 - **v1.0** 🚧 Planned — ChaosHub (Shared Experiment Registry)
 
 ## Cross-Project Dependencies
@@ -139,6 +140,8 @@ The package contains the following modules (shipped and planned):
 | `agentic_chaos.chaos.scope` | ✅ Shipped (0.8.0) | `Scope` explosion-radius control (steps, providers, excludes) on every fault |
 | `agentic_chaos.workflows` | ✅ Shipped (0.8.0) | `ChaosWorkflow`, `Step`, `HealthCheck`, `Parallel`, `Suspend`, `Template`, `WorkflowReport`, `fuzz_topology()` |
 | `agentic_chaos.experiments` | ✅ Shipped (0.8.0) | YAML/JSON/TOML experiment loader, located validation (lint), cron schedules |
+| `agentic_chaos.probes` | ✅ Shipped (0.9.0) | `Probe`, `HttpProbe`, `ResponseQualityProbe`, `LatencyProbe`, `FunctionProbe`; `chaos_run()` pre/during/post lifecycle |
+| `agentic_chaos.resilience` | ✅ Shipped (0.9.0) | 0-100 resilience score from a report, per-fault verdicts, `ResilienceHistory` trends with retention |
 
 ## Package Layout (current)
 
@@ -162,6 +165,8 @@ agentic-chaos/
     chaos/scope.py      # Scope explosion-radius control (v0.8)
     workflows/          # ChaosWorkflow nodes, engine, report, targets, fuzzer (v0.8)
     experiments/        # experiment schema/compiler, loader, cron (v0.8)
+    probes/             # Probe base, built-in probes, chaos_run() lifecycle (v0.9)
+    resilience/         # resilience score and run-history store (v0.9)
     cli/                # CLI entry point
     models/             # ChaosReport, ChaosEvent, schema extensions
   src/pytest_agentic_chaos/
@@ -194,6 +199,14 @@ agentic-chaos chaos workflow run chaos_workflow.yaml --save report.json
 agentic-chaos experiment run experiments/rate-limit-recovery.yaml --approve approve-escalation
 agentic-chaos experiment schedule experiments/rate-limit-recovery.yaml --format github-actions
 agentic-chaos agent fuzz my_graph.py --n 20 --exclude-step safety_check
+
+# Probes, resilience score, trends and CI gating (v0.9)
+agentic-chaos chaos run my_app.py --inject rate_limit_storm --probe http://localhost:8080/health \
+    --min-score 70 --history .agentic-chaos/resilience-history.json --history-max-runs 30
+agentic-chaos experiment run experiments/resilience-probes.yaml --min-score 80
+agentic-chaos score show chaos_run.json --baseline baseline.json --min-score 70
+agentic-chaos score history
+agentic-chaos score prune --max-age-days 90
 ```
 
 ## Optional AgenticLens Integration
@@ -893,14 +906,39 @@ the local history store used for trend comparisons, so `chaos_run.json`
 history doesn't accumulate indefinitely on every CI box that runs it nightly.
 
 **Deliverables:**
-- [ ] `agentic_chaos.probes` module (`Probe`, `HttpProbe`, `ResponseQualityProbe`, `LatencyProbe`)
-- [ ] Pre/during/post probe execution lifecycle
-- [ ] Resilience score computation engine
-- [ ] Score trend tracking (compare against previous runs)
-- [ ] configurable run-history retention (`max_runs` / `max_age_days`) for the local trend store
-- [ ] Rich terminal report with per-fault breakdown + bar chart
-- [ ] `--min-score` CLI flag for CI gating
-- [ ] README section + CI example + demo GIF
+- [x] `agentic_chaos.probes` module (`Probe`, `HttpProbe`, `ResponseQualityProbe`, `LatencyProbe`)
+- [x] Pre/during/post probe execution lifecycle
+- [x] Resilience score computation engine
+- [x] Score trend tracking (compare against previous runs)
+- [x] configurable run-history retention (`max_runs` / `max_age_days`) for the local trend store
+- [x] Rich terminal report with per-fault breakdown + bar chart
+- [x] `--min-score` CLI flag for CI gating
+- [x] README section + CI example + demo GIF
+
+**Shipped in 0.9.0.** Beyond the sketch above, the release adds:
+
+- `FunctionProbe` for any Python check. Every probe takes `phases`,
+  `retries`/`retry_delay_seconds` and a `weight`. Custom probes subclass
+  `Probe`.
+- `chaos_run()`. The pre-chaos probes must pass before any fault is injected
+  (`require_steady_state`). Probe time is kept out of the measured duration.
+- The same lifecycle on `ChaosWorkflow(probes=...)`, in experiment files
+  (`probes:` and `resilience:` with `min_score`, `weights` and `history`) and
+  on `@pytest.mark.chaos(probes=..., min_score=...)`.
+- Per-event verdicts behind the recovery component: `retried`, `fallback`,
+  `tolerated`, `judged`, `unrecovered`, `escaped` and `unverified`. Silent
+  degradation counts only when a fidelity judge scored it.
+- The score never invents a number. It is inconclusive after a failed `pre`
+  probe, for dry runs, and when no fault fired.
+- `agentic-chaos score show|history|prune` work on saved reports and history
+  files.
+- AIOS exports carry a derived `resilience_score` measurement; the probe
+  results and breakdown ride in the producer extension.
+
+The weighted components are recovery, probes, latency, retry efficiency and
+cost. A component the report cannot show is left out and the rest are
+renormalized. Retention keeps the newest `max_runs` per name and drops
+entries older than `max_age_days`. See [the v0.9 guide](docs/v0.9.md).
 
 ### v1.0 — ChaosHub (Shared Experiment Registry)
 
@@ -997,8 +1035,8 @@ reference implementation of it.
 | 14 | PyPI release v0.7 (`0.7.0`) ✅ | ongoing |
 | 15 | v0.8 — Chaos Workflows, Declarative Experiments & Explosion Radius ✅ | 4–6 weeks |
 | 16 | PyPI release v0.8 (`0.8.0`) ✅ | ongoing |
-| 17 | v0.9 — Resilience Probes & Resilience Score | 3–5 weeks |
-| 18 | PyPI release v0.9 | ongoing |
+| 17 | v0.9 — Resilience Probes & Resilience Score ✅ | 3–5 weeks |
+| 18 | PyPI release v0.9 (`0.9.0`) ✅ | ongoing |
 | 19 | v1.0 — ChaosHub (Shared Experiment Registry) | 3–5 weeks |
 | 20 | PyPI release v1.0 | ongoing |
 | 21 | Blog post / talk: "one schema, one chaos toolkit, full AI-infra reliability stack" | after v1.0 ships |
@@ -1219,6 +1257,33 @@ See [the v0.8 guide](docs/v0.8.md).
   capped `<0.8`; Sidecar 0.8.5 widens it to `<0.9`. No runtime change.
 - `agentic-evals`: coordinate with. Workflow statuses and step contracts are
   per-run resilience checks; scoring and release-gate computation stay in
+  Evals. No adapter or dependency is added.
+
+## v0.9 ecosystem validation
+
+Recorded for the `0.9.0` release under the [Definition of Done](#definition-of-done).
+See [the v0.9 guide](docs/v0.9.md).
+
+- `agenticlens`: validated, no change needed. Scored reports, with the new
+  `probes` and `resilience` fields, still load as `Workflow` JSON, and the
+  chaos-impact recommender reads their events as before
+  (`tests/test_sibling_compatibility.py`). The optional `agenticlens>=0.7.0`
+  extra is unchanged.
+- `agenticops-control-tower`: validated, no change needed. The native artifact
+  reader summarizes scored reports, and the `agentic-chaos>=0.5,<1` extra
+  already admits 0.9. The score is producer evidence, not a Tower health
+  signal.
+- `deep-agentic-core-mcp`: validated. `chaos.export_aios_run` passes the
+  resilience measurement and extension through. No new MCP tool. MCP 0.4.4
+  moves the hosted image pins to 0.9.0.
+- `ai-operations-spec`: coordinate with. Scored exports validate against the
+  v0.4 Run schema and semantic checker (`tests/test_export_aios.py`).
+  `resilience_score` is a derived measurement; probes and the breakdown are
+  producer-local extension members. No core schema change.
+- `agentic-sidecar`: depends on a packaging update. The optional extra was
+  capped `<0.9`; Sidecar 0.9.1 widens it to `<0.10`. No runtime change.
+- `agentic-evals`: coordinate with. The resilience score summarizes one chaos
+  run's evidence; scoring of outputs and release-gate computation stay in
   Evals. No adapter or dependency is added.
 
 ## Evals 0.9.0 judge reliability and live resilience

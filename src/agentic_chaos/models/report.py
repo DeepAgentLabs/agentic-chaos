@@ -1,5 +1,8 @@
+import json
 import uuid
+from collections.abc import Mapping
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -39,3 +42,27 @@ class ChaosReport(BaseModel):
     # v0.8: set when the report merges the steps of a chaos workflow; per-step
     # provenance is also recorded in each event's ``detail.workflow``.
     workflow: dict[str, Any] | None = None
+    # v0.9: steady-state probe results (pre/during/post) and the resilience
+    # score computed from this report; both are absent on older reports.
+    probes: list[dict[str, Any]] = Field(default_factory=list)
+    resilience: dict[str, Any] | None = None
+
+    @property
+    def resilience_score(self) -> int | None:
+        """The 0-100 resilience score, or None when it was not computed or is inconclusive."""
+        if self.resilience is None:
+            return None
+        score = self.resilience.get("score")
+        return score if isinstance(score, int) and not isinstance(score, bool) else None
+
+
+ReportLike = ChaosReport | Mapping[str, Any] | str | Path
+
+
+def load_report(report: ReportLike) -> ChaosReport:
+    """Accept a `ChaosReport`, its JSON-compatible dict, or a path to saved JSON."""
+    if isinstance(report, ChaosReport):
+        return report
+    if isinstance(report, (str, Path)):
+        return ChaosReport.model_validate(json.loads(Path(report).read_text(encoding="utf-8")))
+    return ChaosReport.model_validate(dict(report))

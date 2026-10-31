@@ -5,7 +5,7 @@ The Python API for `agentic-chaos`. The core is importable from `agentic_chaos` 
 `agentic_chaos.integrations.agenticlens`.
 
 !!! note
-    The package is alpha. Names and signatures below reflect the v0.4.0 release and may
+    The package is alpha. Names and signatures below reflect the 0.9.0 release and may
     change between minor versions. Run `help(agentic_chaos)` in your environment for the
     authoritative signatures.
 
@@ -26,6 +26,12 @@ from agentic_chaos import (
     chaos_call, chaos_session, fidelity_session,
     HeuristicJudge, SilentDegradationFault, ToolCallFailureFault,
     TopologyTracker, wrap_tool,
+)
+
+# Probes and the resilience score (v0.9)
+from agentic_chaos import (
+    chaos_run, HttpProbe, ResponseQualityProbe, LatencyProbe, FunctionProbe, Probe,
+    compute_resilience, ResilienceScore, ResilienceHistory,
 )
 
 # Optional integration (requires agentic-chaos[agenticlens])
@@ -205,3 +211,26 @@ See [Configuration](configuration.md#fault-parameters) for what each parameter d
 
 The package's standalone report format, shared in shape with AgenticLens's
 `chaos_events` field (schema v1.1). See [Output Formats](output-formats.md).
+
+New in 0.9.0: `probes` (a list of probe results, in run order) and `resilience`
+(the score JSON), plus the read-only `resilience_score` property (an `int`, or
+`None` when the score was not computed or is inconclusive).
+
+## Probes and resilience (v0.9)
+
+See the [v0.9 guide](v0.9.md) for the lifecycle and the scoring method.
+
+| Name | Description |
+| --- | --- |
+| `chaos_run(target, faults, *, probes=(), name=None, repeat=1, breaker=None, dry_run=False, baseline=None, weights=None, history=None, require_steady_state=True)` | One chaos run with the pre/during/post probe lifecycle. Returns a scored `ChaosReport`; never raises for the target's exceptions. |
+| `HttpProbe(url, *, expect_status=200, method="GET", expect_contains=None, headers=None, body=None, timeout_seconds=5.0, ...)` | Checks an HTTP(S) endpoint with the standard library. |
+| `ResponseQualityProbe(fn, query, *, expect_contains=None, expect_not_contains=None, expect_regex=None, expect=None, reference=None, min_similarity=None, judge=None, ...)` | Checks an answer's content and, with a reference, its similarity. |
+| `LatencyProbe(fn, query, *, max_ms, samples=1, statistic="max", ...)` | Checks response time. |
+| `FunctionProbe(fn, query=..., *, expect=None, ...)` | Passes when the call returns (and `expect` accepts it). |
+| `Probe` | Base class: implement `evaluate() -> (message, observed)`, raise when unhealthy. Common options: `name`, `phases`, `retries`, `retry_delay_seconds`, `weight`. |
+| `run_probes(probes, phase, *, step=None)` | Run the probes configured for one phase; returns `ProbeResult`s. |
+| `compute_resilience(report, *, baseline=None, weights=None, latency_tolerance=2.0, cost_tolerance=1.0)` | Score a report, its dict or a JSON path. Returns a `ResilienceScore`. |
+| `ResilienceScore` | `score`, `status`, `grade`, `components`, `faults`, `reasons`, `trend`; `meets(n)`, `component(name)`, `summary()`, `as_json()`, `from_json()`. |
+| `ResilienceHistory(path, *, max_runs=None, max_age_days=None)` | Local trend store: `record(score)`, `trend(name, score)`, `latest(name)`, `entries(name)`, `prune()`. |
+| `ChaosWorkflow(..., probes=(), weights=None)` and `.run(..., baseline=None, history=None)` | Workflow-level probes and scoring; `WorkflowReport.resilience_score`. |
+

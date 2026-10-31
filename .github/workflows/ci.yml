@@ -185,3 +185,14 @@ jobs:
           /tmp/chaos-wheel-smoke/bin/agentic-chaos experiment validate --strict workflows/*.yaml
           /tmp/chaos-wheel-smoke/bin/agentic-chaos experiment run workflows/rate-limit-recovery.yaml --no-input
           /tmp/chaos-wheel-smoke/bin/agentic-chaos chaos workflow run workflows/resilience-suite.yaml --no-input --approve approve-escalation
+      - name: Verify probes and the resilience score gate from the installed wheel
+        run: |
+          cd /tmp/chaos-experiments
+          /tmp/chaos-wheel-smoke/bin/agentic-chaos experiment run workflows/resilience-probes.yaml --no-input --min-score 80 --history h.json --save-report scored.json
+          /tmp/chaos-wheel-smoke/bin/agentic-chaos score show scored.json --min-score 80
+          /tmp/chaos-wheel-smoke/bin/agentic-chaos score history --history h.json
+          # A dry run injects nothing, so its score is inconclusive and fails any gate.
+          # (The dry run itself exits 1: its contracts are inconclusive too.)
+          /tmp/chaos-wheel-smoke/bin/agentic-chaos experiment run workflows/rate-limit-recovery.yaml --no-input --dry-run --save-report dry.json || true
+          test -s dry.json
+          if /tmp/chaos-wheel-smoke/bin/agentic-chaos score show dry.json --min-score 1; then exit 1; fi

@@ -7,13 +7,13 @@ build-backend = "hatchling.build"
 
 [project]
 name = "agentic-chaos"
-version = "0.8.0"
+version = "0.9.0"
 description = "Standalone fault injection toolkit for LLM calls and agentic workflows, with an optional AgenticLens integration."
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.10"
 authors = [{ name = "agentic-chaos Contributors" }]
-keywords = ["llm", "chaos-engineering", "fault-injection", "agents", "resilience", "observability", "pytest", "chaos-workflows"]
+keywords = ["llm", "chaos-engineering", "fault-injection", "agents", "resilience", "observability", "pytest", "chaos-workflows", "resilience-score"]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Framework :: Pytest",

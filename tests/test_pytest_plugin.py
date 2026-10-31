@@ -537,3 +537,59 @@ def test_async_tracker_is_deactivated_in_a_shared_loop_context(
         """
     )
     project.runpytest("--chaos", "-p", "no:randomly").assert_outcomes(passed=2)
+
+
+def test_probes_and_min_score_on_the_marker(project: pytest.Pytester) -> None:
+    project.makepyfile(
+        test_weather="""
+        import pytest
+        from agentic_chaos.probes import FunctionProbe, ResponseQualityProbe
+        from agent import weather_agent
+
+        quality = ResponseQualityProbe(weather_agent, "?", expect_contains="sunny")
+
+        @pytest.mark.chaos(faults=["rate_limit_storm"], probes=[quality], min_score=90)
+        def test_recovers(chaos):
+            assert weather_agent("?") == "sunny"
+
+        def broken():
+            raise ConnectionError("offline")
+
+        @pytest.mark.chaos(faults=["rate_limit_storm"], probes=[FunctionProbe(broken)])
+        def test_unsteady():
+            raise AssertionError("must not run")
+
+        state = {"n": 0}
+
+        def degrades():
+            state["n"] += 1
+            if state["n"] > 1:
+                raise RuntimeError("did not recover")
+
+        @pytest.mark.chaos(
+            faults=["rate_limit_storm"], probes=[FunctionProbe(degrades)], min_score=95
+        )
+        def test_low_score():
+            weather_agent("?")
+
+        @pytest.mark.chaos(faults=["rate_limit_storm"], min_score=101)
+        def test_bad_min_score():
+            pass
+        """
+    )
+    report_dir = project.path / "reports"
+    result = project.runpytest("--chaos", f"--chaos-report-dir={report_dir}")
+    result.assert_outcomes(passed=1, failed=3)
+    output = result.stdout.str()
+    assert "pre-chaos probes failed, no fault injected: broken: raised ConnectionError" in output
+    assert "required at least 95" in output
+    assert "min_score must be a number between 0 and 100" in output
+    assert "resilience scores: lowest" in output
+    unsteady = json.loads(
+        artifact(report_dir, "test_weather.py_test_unsteady", "chaos").read_text()
+    )
+    assert unsteady["chaos_events"] == [] and unsteady["resilience"]["score"] is None
+    assert unsteady["resilience"]["reasons"][-1] == "chaos was not injected"
+    saved = json.loads(artifact(report_dir, "test_weather.py_test_recovers", "chaos").read_text())
+    assert saved["resilience"]["score"] == 100
+    assert [probe["phase"] for probe in saved["probes"]] == ["pre", "post"]

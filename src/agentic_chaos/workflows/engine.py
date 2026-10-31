@@ -1,12 +1,14 @@
 """`ChaosWorkflow`: multi-stage chaos campaigns with gates between stages."""
 
 import contextvars
+import threading
 import time
 import uuid
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 from agentic_chaos.agents.topology import get_active_tracker, reset_active_tracker
@@ -14,6 +16,11 @@ from agentic_chaos.chaos.context import get_active_session
 from agentic_chaos.chaos.scope import Scope
 from agentic_chaos.chaos.session import chaos_session
 from agentic_chaos.contracts.base import check_contracts
+from agentic_chaos.models.report import ReportLike
+from agentic_chaos.probes.base import Probe, ProbeResult
+from agentic_chaos.probes.runner import check_probes, run_probes
+from agentic_chaos.resilience.history import ResilienceHistory
+from agentic_chaos.resilience.score import compute_resilience, validate_weights
 from agentic_chaos.safety import CircuitBreaker
 from agentic_chaos.workflows.nodes import (
     Approver,
@@ -98,6 +105,11 @@ class ChaosWorkflow:
     (`stop_on_failure=False` keeps going); a failing health check halts it.
     `scope` and `breaker` apply to every step that has none of its own
     (scopes intersect; a step breaker replaces the workflow breaker).
+
+    `probes` (v0.9) run ``pre`` before the first node (a failure halts the
+    workflow before any chaos), ``during`` inside every step's session after
+    its target, and ``post`` after the last node. Every run is scored; see
+    `agentic_chaos.resilience`. `weights` overrides the score's component weights.
     """
 
     def __init__(
@@ -109,6 +121,8 @@ class ChaosWorkflow:
         stop_on_failure: bool = True,
         breaker: CircuitBreaker | None = None,
         scope: Scope | None = None,
+        probes: Sequence[Probe] = (),
+        weights: Mapping[str, float] | None = None,
     ) -> None:
         if not isinstance(name, str) or not name.strip():
             raise ValueError("workflow name must be a non-empty string")
@@ -121,6 +135,9 @@ class ChaosWorkflow:
         self.stop_on_failure = stop_on_failure
         self.breaker = breaker
         self.scope = scope
+        self.probes = check_probes(probes)
+        validate_weights(weights)
+        self.weights = dict(weights) if weights is not None else None
         self.nodes = self._named(expand_nodes(list(steps)))
 
     @staticmethod
@@ -162,6 +179,8 @@ class ChaosWorkflow:
         approve: "Approver | Iterable[str] | bool | None" = None,
         resume_from: str | None = None,
         experiment: dict[str, Any] | None = None,
+        baseline: ReportLike | None = None,
+        history: ResilienceHistory | str | Path | None = None,
     ) -> WorkflowReport:
         """Run the workflow and return its report; never raises for chaos outcomes.
 
@@ -171,7 +190,9 @@ class ChaosWorkflow:
         skips everything up to and including the named top-level `Suspend`
         (treating that gate as approved). `dry_run=True` previews every step
         (targets and health checks still execute, as with all Chaos previews)
-        and passes suspends without stopping.
+        and passes suspends without stopping. `baseline` (a fault-free report)
+        enables the score's latency and cost components; `history` records the
+        score of every finished (not suspended) run and adds its trend.
         """
         if get_active_session() is not None:
             raise RuntimeError("ChaosWorkflow.run() cannot run inside an active chaos_session()")
@@ -199,6 +220,8 @@ class ChaosWorkflow:
             dry_run=dry_run,
             approver=_approver_from(approve),
             experiment=experiment,
+            baseline=baseline,
+            history=ResilienceHistory(history) if isinstance(history, (str, Path)) else history,
         )
         return run.execute(start, resume_from)
 
@@ -212,6 +235,8 @@ class _Run:
         dry_run: bool,
         approver: Approver | None,
         experiment: dict[str, Any] | None,
+        baseline: ReportLike | None = None,
+        history: ResilienceHistory | None = None,
     ) -> None:
         self.workflow = workflow
         self.target = target
@@ -221,6 +246,10 @@ class _Run:
         self.id = str(uuid.uuid4())
         self.started = _now()
         self.completed: list[NodeResult] = []
+        self.baseline = baseline
+        self.history = history
+        self.probe_results: list[ProbeResult] = []
+        self._probe_lock = threading.Lock()
 
     def snapshot(self, status: WorkflowStatus, **fields: Any) -> WorkflowReport:
         nodes = list(self.completed)
@@ -245,6 +274,20 @@ class _Run:
         )
 
     def execute(self, start: int, resume_from: str | None) -> WorkflowReport:
+        self.probe_results.extend(run_probes(self.workflow.probes, "pre"))
+        unsteady = sorted({r.probe for r in self.probe_results if not r.passed})
+        if unsteady:
+            for node in self.workflow.nodes:
+                self.completed.append(self.skipped(node, "not run: pre-chaos probes failed"))
+            return self.finish(
+                self.snapshot(
+                    "halted",
+                    end_time=_now(),
+                    resumed_from=resume_from,
+                    message=f"pre-chaos probes failed ({', '.join(unsteady)}); no chaos injected",
+                ),
+                injected=False,
+            )
         for node in self.workflow.nodes[:start]:
             resumed = node.name == resume_from
             self.completed.append(
@@ -276,7 +319,22 @@ class _Run:
                 f"waiting for approval at '{suspended[0].name}'; "
                 f"re-run with resume_from='{suspended[0].name}' once approved"
             )
-        return self.snapshot(status, **fields)
+        else:
+            self.probe_results.extend(run_probes(self.workflow.probes, "post"))
+        return self.finish(self.snapshot(status, **fields))
+
+    def finish(self, report: WorkflowReport, *, injected: bool = True) -> WorkflowReport:
+        """Attach probe results and the resilience score (recorded unless suspended)."""
+        report.probes = [result.as_json() for result in self.probe_results]
+        score = compute_resilience(
+            report.to_chaos_report(), baseline=self.baseline, weights=self.workflow.weights
+        )
+        if not injected:
+            score.reasons.append("chaos was not injected")
+        if self.history is not None and report.status != "suspended":
+            self.history.record(score)
+        report.resilience = score.as_json()
+        return report
 
     def sequence(self, nodes: Sequence[Any], results: list[NodeResult]) -> WorkflowStatus | None:
         """Run nodes in order into `results`; return a terminal status when stopping early."""
@@ -332,7 +390,11 @@ class _Run:
                 except Exception as exc:
                     crashed = exc
                     break
-        ended = _now()
+            ended = _now()  # probe time is not part of the step's duration
+            elapsed = time.monotonic() - clock
+            during = run_probes(self.workflow.probes, "during", step=step.name)
+        with self._probe_lock:
+            self.probe_results.extend(during)
         tracker = get_active_tracker()
         topology = tracker.topology.as_json() if tracker and tracker.topology.nodes else None
         reset_active_tracker()
@@ -365,7 +427,7 @@ class _Run:
             message=message,
             started_at=started,
             ended_at=ended,
-            duration_s=time.monotonic() - clock,
+            duration_s=elapsed,
             faults=[fault.name for fault in faults],
             repeat=step.repeat,
             report=report.model_dump(mode="json"),

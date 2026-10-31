@@ -53,8 +53,9 @@ v0.5.x safety rails ship in 0.5.2. The v0.6 pytest plugin and contracts ship
 in 0.6.0. v0.7 fault cascades, adaptive intensity, response poisoning and explicit cost
 estimates ship in 0.7.0 with event provenance and synthetic resilience scenarios.
 v0.8 chaos workflows, declarative experiments, `Scope` explosion-radius control
-and the topology fuzzer ship in 0.8.0. The next milestone is v0.9 resilience
-probes and the resilience score. Changes in this repo should move the package
+and the topology fuzzer ship in 0.8.0. v0.9 resilience probes, the 0-100
+resilience score, run-history trends with retention and the `--min-score` CI
+gate ship in 0.9.0. The next milestone is v1.0 ChaosHub. Changes in this repo should move the package
 toward reproducible resilience evidence, not just ad hoc fault injection.
 
 ### Before You Build Here
@@ -100,6 +101,9 @@ toward reproducible resilience evidence, not just ad hoc fault injection.
 | `src/agentic_chaos/chaos/scope.py` | `Scope` explosion-radius control, checked before probability sampling (v0.8) |
 | `src/agentic_chaos/workflows/` | `ChaosWorkflow` nodes/engine/report, target resolution, `fuzz_topology()` (v0.8) |
 | `src/agentic_chaos/experiments/` | Experiment schema compiler with located issues, YAML/JSON/TOML loader, cron (v0.8) |
+| `src/agentic_chaos/probes/` | `Probe` base, `HttpProbe`/`ResponseQualityProbe`/`LatencyProbe`/`FunctionProbe`, `chaos_run()` pre/during/post lifecycle (v0.9) |
+| `src/agentic_chaos/resilience/` | `compute_resilience()` score from a report, per-event verdicts, `ResilienceHistory` trends and retention (v0.9) |
+| `src/agentic_chaos/cli/resilience.py` | CLI probe parsing, history and `--min-score` gate helpers (v0.9) |
 | `src/pytest_agentic_chaos/` | pytest plugin (`pytest11` entry point): `@pytest.mark.chaos`, `--chaos`, `chaos` fixture (v0.6) |
 | `src/agentic_chaos/cli/` | CLI entry point and subcommands |
 | `src/agentic_chaos/models/` | `ChaosReport`, `ChaosEvent`, schema extensions |
@@ -114,6 +118,8 @@ toward reproducible resilience evidence, not just ad hoc fault injection.
 - Contracts API: `from agentic_chaos.contracts import check_contracts, assert_contracts`
 - Workflows API: `from agentic_chaos.workflows import ChaosWorkflow, Step, HealthCheck, fuzz_topology`
 - Experiments API: `from agentic_chaos.experiments import load_experiment, validate_experiment`
+- Probes API: `from agentic_chaos.probes import HttpProbe, ResponseQualityProbe, LatencyProbe, chaos_run`
+- Resilience API: `from agentic_chaos.resilience import compute_resilience, ResilienceHistory`
 - pytest plugin: `pytest_agentic_chaos.plugin` via the `pytest11` entry point
   (`pytest --chaos`). It must import nothing from `agentic_chaos` at module load
 
@@ -131,6 +137,12 @@ toward reproducible resilience evidence, not just ad hoc fault injection.
   validating. `chaos/` must not import either
 - `agents/` imports from `chaos/` (base classes, registry, `chaos_call`) but
   `chaos/` must not import from `agents/`
+- `resilience/` reads `models/` and `contracts/analysis` only, so a score can
+  be recomputed from saved JSON. `probes/` composes `chaos/` and
+  `resilience/`. `workflows/` and `experiments/` may use both; `chaos/`,
+  `contracts/` and `models/` import neither
+- The resilience score never invents a number: when the evidence is missing it
+  is `None` (inconclusive) with a reason, and gates treat that as a failure
 - All faults inherit from a common base in their respective module
 
 ## Adding a New Fault

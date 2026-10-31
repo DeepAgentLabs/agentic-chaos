@@ -47,6 +47,20 @@ Agentic Chaos is early-stage software. This page lists what it does not do today
 - The standalone `ChaosReport` records what happened, but experiment reports with hypothesis, provenance and verdict are not yet available (see the [Roadmap](roadmap.md)).
 - There are no built-in HTML dashboards. Use the JSON report, or AgenticLens for analysis.
 
+## Resilience score
+
+- The score summarizes evidence in the report. It is not a guarantee: a run
+  that never exercised a failure path cannot show how that path recovers.
+- Recovery is inferred from the call log. A failure counts as recovered when
+  a later call to the same step succeeded, or when nothing escaped and the
+  step was not retried. Instrument the steps you care about with `step_name`.
+- Silent degradation counts only when a fidelity judge scored it. Otherwise it
+  is reported as `unverified` and left out.
+- Latency and cost need a baseline report, and latency compares wall-clock
+  run durations, which are noisy for very short runs.
+- The run history is a local JSON file with no locking. Give concurrent jobs
+  separate files.
+
 ## Integrations
 
 - The AgenticLens extra is currently resolved from a sibling checkout in the source repository until a compatible AgenticLens release is published.

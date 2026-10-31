@@ -1,0 +1,40 @@
+# v0.9: probes around a scoped rate-limit storm, gated on the resilience score.
+#   agentic-chaos experiment validate examples/workflows/resilience-probes.yaml
+#   agentic-chaos experiment run examples/workflows/resilience-probes.yaml --history .agentic-chaos/history.json
+name: resilience-probes
+description: The support agent is healthy before, survives a model 429 storm, and recovers after.
+target: support_agent.py:handle # relative to this file
+faults:
+  - type: rate_limit_storm
+    burst_count: 3
+    retry_after: 0
+    scope:
+      steps: [llm]
+assertions:
+  - recovered_after_failure: true
+  - no_unhandled_error
+probes:
+  # Steady-state checks, defined once. Default phases: pre and post.
+  - type: function
+    name: ping
+    target: support_agent.py:ping
+  - type: response_quality
+    name: answers
+    query: How do I reset my password?
+    expect_contains: "Answer:"
+    expect_not_contains: "a human agent will follow up"
+    phases: [pre, during, post]
+  - type: latency
+    name: fast
+    query: hello
+    max_ms: 1000
+    samples: 3
+resilience:
+  min_score: 80 # `experiment run` exits 1 below this (or when inconclusive)
+  history:
+    path: .agentic-chaos/resilience-history.json # relative to the working directory
+    max_runs: 30
+    max_age_days: 90
+schedule:
+  cron: "0 2 * * *"
+  timezone: UTC

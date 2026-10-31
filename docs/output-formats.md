@@ -93,6 +93,31 @@ python -m json.tool chaos_run.json
 jq '.chaos_events[] | {fault_type, outcome}' chaos_run.json
 ```
 
+### Probes and resilience (0.9.0)
+
+Reports also carry the steady-state probe results and the resilience score:
+
+```json
+{
+  "probes": [
+    {"probe": "answers", "kind": "response_quality", "phase": "post", "status": "passed",
+     "message": "answer meets every quality check", "attempts": 1, "duration_ms": 0.4,
+     "weight": 1.0, "started_at": "2026-10-31T02:00:01+00:00", "observed": {"output": "'Answer: ...'"}}
+  ],
+  "resilience": {
+    "version": "1.0", "score": 92, "status": "scored", "grade": "A",
+    "components": [{"name": "recovery", "score": 1.0, "weight": 0.35,
+                    "detail": "3/3 injections recovered", "observed": {"retried": 3}}],
+    "faults": [{"fault_type": "rate_limit_storm", "events": 3, "score": 100,
+                "verdicts": {"retried": 3}, "note": "3 retried"}],
+    "reasons": [], "trend": {"previous": 84, "delta": 8, "direction": "up"}
+  }
+}
+```
+
+`resilience.score` is `null` (status `inconclusive`) when it cannot be computed;
+`reasons` says why. Both fields are absent from, and optional on, older reports.
+
 ### Agent runs
 
 `agentic-chaos agent run ... --save report.json` writes the same style of report for agent-level faults (`tool_failure`, `memory_corruption`, `infinite_loop`, `handoff_corruption`).

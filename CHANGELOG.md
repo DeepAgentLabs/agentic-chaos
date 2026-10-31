@@ -4,6 +4,87 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-10-31
+
+### Added
+
+- `agentic_chaos.probes`: reusable steady-state probes, separate from faults.
+  - `HttpProbe` checks an endpoint's status and body using only the standard
+    library.
+  - `ResponseQualityProbe` checks an answer: `expect_contains`,
+    `expect_not_contains`, `expect_regex`, an `expect` predicate, and a
+    `reference` with `min_similarity` scored by `HeuristicJudge` or any v0.3
+    judge.
+  - `LatencyProbe` checks the max or median of `samples` calls against
+    `max_ms`.
+  - `FunctionProbe` runs any Python check.
+  - The `Probe` base class is for custom probes.
+  - Every probe takes `phases` (`pre`, `during`, `post`), `retries`,
+    `retry_delay_seconds` and a `weight`. Running a probe never raises for an
+    unhealthy system.
+- `chaos_run()` runs the pre/during/post lifecycle:
+  - Pre-chaos probes must pass before any fault is injected
+    (`require_steady_state`).
+  - `during` probes run with faults still active.
+  - `post` probes check recovery.
+  - Probe time is kept out of the measured run duration.
+- `agentic_chaos.resilience`:
+  - `compute_resilience()` gives a 0-100 score (graded A-F) from five
+    weighted components: recovery, probes, latency, retry efficiency and
+    cost. A component the run cannot show is left out and the weights are
+    renormalized.
+  - Per-event verdicts: `retried`, `fallback`, `tolerated`, `judged`,
+    `unrecovered`, `escaped` and `unverified`, with a per-fault breakdown.
+  - The score is inconclusive (`None`) after a failed pre-chaos probe, for
+    dry runs, when no fault fired and when nothing can be computed.
+  - It reads the report only, so saved reports can be rescored.
+- `ResilienceHistory`: a local JSON trend store holding one compact entry per
+  run.
+  - Trends compare against the latest scored run with the same name.
+  - Retention: `max_runs` per name and `max_age_days`.
+  - Writes are atomic.
+- `ChaosWorkflow(probes=..., weights=...)` and
+  `run(baseline=..., history=...)`:
+  - Pre-chaos probes gate the whole workflow.
+  - `during` probes run in every step and are tagged with the step name.
+  - `post` probes are skipped for suspended runs.
+  - Every run is scored.
+- Experiment files gain `probes:` (`http`, `response_quality`, `latency`,
+  `function`) and `resilience:` (`min_score`, `weights`, `history`).
+  Validation is located, with did-you-mean suggestions, and never executes
+  targets.
+- `@pytest.mark.chaos(probes=[...], min_score=N)`. Every chaos test is scored
+  and the terminal summary shows the lowest score.
+- CLI:
+  - `--probe`, `--min-score`, `--history`, `--history-max-runs` and
+    `--history-max-age-days` on `chaos run` and `agent run`.
+  - `--min-score`, `--baseline` and the history options on `experiment run`
+    and `chaos workflow run`.
+  - Every run prints a probe table and a Rich resilience report with
+    per-component and per-fault bars and the trend.
+  - The new `score show` (offline rescoring, `--weight`, `--json`), `score
+    history` and `score prune` commands.
+- Supporting material:
+  - the v0.9 guide
+  - an offline resilience demo
+  - a probed experiment gated on the score
+  - a nightly GitHub Actions resilience gate
+  - a reproducible demo GIF
+  - Lens/Tower/MCP compatibility tests for scored reports
+
+### Changed
+
+- Package version is `0.9.0`; v0.9 is complete.
+- `ChaosReport` and `WorkflowReport` gain the optional `probes` and
+  `resilience` fields and a `resilience_score` property. Older reports still
+  load.
+- AIOS exports add a derived `resilience_score` measurement when a score was
+  computed. Probe results and the breakdown ride in the producer extension.
+  Native event shapes and IDs are unchanged.
+- Sibling runtimes need no change. Agentic Sidecar 0.9.1 widens its optional
+  `agentic-chaos` extra to admit 0.9, and MCP 0.4.4 pins hosted images to
+  0.9.0.
+
 ## [0.8.0] - 2026-10-18
 
 ### Added
