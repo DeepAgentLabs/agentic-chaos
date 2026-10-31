@@ -213,14 +213,14 @@ class ResponseQualityProbe(Probe):
                 raise ValueError("min_similarity needs a reference answer")
         if judge is not None and not callable(getattr(judge, "score", None)):
             raise ValueError("judge must have a score(baseline=..., observed=...) method")
-        checks = (
-            self.expect_contains,
-            self.expect_not_contains,
-            self.pattern,
-            expect,
-            min_similarity,
+        has_check = (
+            bool(self.expect_contains)
+            or bool(self.expect_not_contains)
+            or self.pattern is not None
+            or expect is not None
+            or min_similarity is not None
         )
-        if not any(check for check in checks if check is not None):
+        if not has_check:
             raise ValueError(
                 "ResponseQualityProbe needs at least one check: expect_contains, "
                 "expect_not_contains, expect_regex, expect or reference + min_similarity"
