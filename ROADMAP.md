@@ -1336,3 +1336,9 @@ and incident console views. Chaos reports retain native event counts and resilie
 
 See [compatibility and operator example](docs/tower-0.8-live-operations.md).
 No sibling runtime change or patch release is required.
+
+## AIOS v0.6.1 provenance and conformance suite
+
+See [AIOS v0.6.1 compatibility](docs/aios-0.6.1.md) for the new `0.6-draft` provenance
+records, portable conformance suite and naming conventions. Exports stay
+`0.4-draft`; no runtime dependency bump or package release is required.

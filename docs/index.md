@@ -110,3 +110,8 @@ MIT. See the [LICENSE](https://github.com/DeepAgentLabs/agentic-chaos/blob/main/
 
 See [canonical examples and extension guidance](aios-v0.6.md) for draft
 artifact validation and unchanged dependency boundaries.
+
+## AIOS v0.6.1 compatibility
+
+See [provenance records and the portable conformance suite](aios-0.6.1.md);
+Chaos exports stay `0.4-draft` and dependency boundaries are unchanged.
