@@ -314,19 +314,22 @@ def _escaped_event_id(report: ChaosReport) -> str | None:
     return last if isinstance(last, str) else None
 
 
-def _name(record: Mapping[str, Any]) -> str | None:
-    name = record.get("step_name") or record.get("step_id")
-    return name if isinstance(name, str) and name else None
+def _step(call: Mapping[str, Any]) -> tuple[Any, str] | None:
+    """A call's step, scoped to its workflow stage so stages never recover each other."""
+    name = call.get("step_name") or call.get("step_id")
+    if not isinstance(name, str) or not name:
+        return None
+    return (call.get("workflow_step"), name)
 
 
 def _after_failure(
     call: dict[str, Any] | None, event: dict[str, Any], calls: list[dict[str, Any]]
 ) -> EventVerdict:
-    step = _name(call) if call is not None else _name(event)
+    step = _step(call) if call is not None else None
     if call is None or step is None:
         return "fallback"
     sequence = call.get("sequence", 0)
-    later = [c for c in calls if c.get("sequence", 0) > sequence and _name(c) == step]
+    later = [c for c in calls if c.get("sequence", 0) > sequence and _step(c) == step]
     if not later:
         return "fallback"
     return "retried" if any(c.get("status") == "ok" for c in later) else "unrecovered"
