@@ -880,6 +880,9 @@ def _run_experiment_file(
     render_probe_results(console, report.probes)
     if report.resilience is not None:
         render_resilience(console, ResilienceScore.from_json(report.resilience))
+        recorded = history is not None or result.experiment.history is not None
+        if recorded and report.status != "suspended" and report.resilience.get("trend") is None:
+            console.print("  Trend: first recorded run")
     if save is not None:
         report.save(save)
         console.print(f"\nSaved workflow report to {save}")
