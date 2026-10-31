@@ -93,9 +93,12 @@ adopted on its own.
 
 ## Current status
 
-`agentic-chaos` is **early-stage (alpha) software**. The LLM Chaos Toolkit (v0.1), Agent
-Failure Injector (v0.2), Fidelity Judges & Handoff Chaos (v0.3.0) and Prompt/Model
-Drift Detector (v0.4.0) are available. APIs may change between minor versions. See the
+`agentic-chaos` is **early-stage (alpha) software**. Every milestone through
+v0.9 has shipped. The latest is 0.9.0, which adds
+[resilience probes and the resilience score](v0.9.md). Earlier milestones
+added fault injection, agent faults, fidelity judges, drift detection,
+streaming faults, safety rails, contracts, cascades, workflows and
+experiments. APIs may change between minor versions. See the
 [Roadmap](roadmap.md) and the
 [changelog](https://github.com/DeepAgentLabs/agentic-chaos/blob/main/CHANGELOG.md).
 
