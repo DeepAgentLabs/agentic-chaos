@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from rich import box
 from rich.console import Console
@@ -12,6 +12,7 @@ from agentic_chaos.models.chaos_event import ChaosEvent
 
 if TYPE_CHECKING:
     from agentic_chaos.experiments import ValidationResult
+    from agentic_chaos.resilience import ResilienceScore
     from agentic_chaos.workflows import FuzzReport, NodeResult, WorkflowReport
 
 _OUTCOME_STYLES = {
@@ -220,3 +221,104 @@ def render_fuzz_report(console: Console, report: "FuzzReport") -> None:
         console.print(f"[red]Failing nodes:[/red] {escape(', '.join(report.failing_nodes))}")
     else:
         console.print("[green]Every reached trial recovered.[/green]")
+
+
+_BAR_WIDTH = 12
+_PROBE_STYLES = {"passed": "green", "failed": "red"}
+
+
+def bar(value: float | None, width: int = _BAR_WIDTH) -> str:
+    """A text bar for a 0-1 value: ``██████████░░``; dots when there is no value."""
+    if value is None:
+        return "·" * width
+    filled = round(max(0.0, min(1.0, value)) * width)
+    return "█" * filled + "░" * (width - filled)
+
+
+def _score_style(score: int | None) -> str:
+    if score is None:
+        return "yellow"
+    return "green" if score >= 75 else "yellow" if score >= 50 else "red"
+
+
+def render_probe_results(console: Console, probes: list[dict[str, Any]]) -> None:
+    """Render probe results in run order: phase, probe, status and message."""
+    if not probes:
+        return
+    table = Table(title="Resilience Probes", box=box.SIMPLE_HEAVY)
+    table.add_column("Phase")
+    table.add_column("Probe")
+    table.add_column("Status")
+    table.add_column("ms", justify="right")
+    table.add_column("Message")
+    for result in probes:
+        status = str(result.get("status"))
+        style = _PROBE_STYLES.get(status, "white")
+        phase = str(result.get("phase"))
+        if result.get("step"):
+            phase += f" ({result['step']})"
+        table.add_row(
+            escape(phase),
+            escape(str(result.get("probe"))),
+            f"[{style}]{status}[/{style}]",
+            f"{float(result.get('duration_ms') or 0):.0f}",
+            escape(str(result.get("message", ""))),
+        )
+    console.print(table)
+
+
+def render_resilience(console: Console, score: "ResilienceScore") -> None:
+    """Render the resilience score: overall, components, per-fault bars and trend."""
+    style = _score_style(score.score)
+    title = escape(score.report_name)
+    console.print(f"\n[bold]Resilience Report: {title}[/bold]")
+    console.print("═" * (len("Resilience Report: ") + len(score.report_name)))
+    if score.score is None:
+        console.print(f"  Overall Score: [{style}]inconclusive[/{style}]")
+    else:
+        console.print(
+            f"  Overall Score: [{style}][bold]{score.score}/100[/bold][/{style}] ({score.grade})"
+        )
+    for reason in score.reasons:
+        console.print(f"  [yellow]•[/yellow] {escape(reason)}")
+
+    table = Table(box=None, show_header=True, pad_edge=False)
+    table.add_column("Component")
+    table.add_column("Score", no_wrap=True)
+    table.add_column("Weight", justify="right")
+    table.add_column("Detail")
+    for component in score.components:
+        value = "  n/a" if component.score is None else f"{round(100 * component.score):>3}/100"
+        table.add_row(
+            component.name.replace("_", " "),
+            f"{bar(component.score)} {value}",
+            f"{component.weight:g}",
+            escape(component.detail),
+        )
+    console.print(table)
+
+    if score.faults:
+        faults = Table(box=None, show_header=True, pad_edge=False)
+        faults.add_column("Fault")
+        faults.add_column("Score", no_wrap=True)
+        faults.add_column("Events", justify="right")
+        faults.add_column("Outcome")
+        for fault in score.faults:
+            ratio = None if fault.score is None else fault.score / 100
+            shown = "  n/a" if fault.score is None else f"{fault.score:>3}/100"
+            faults.add_row(
+                escape(fault.fault_type),
+                f"{bar(ratio)} {shown}",
+                str(fault.events),
+                escape(fault.note),
+            )
+        console.print(faults)
+
+    trend = score.trend
+    if trend and trend.get("delta") is not None:
+        arrow = {"up": "↑", "down": "↓"}.get(str(trend.get("direction")), "→")
+        trend_style = {"up": "green", "down": "red"}.get(str(trend.get("direction")), "white")
+        console.print(
+            f"  Trend: [{trend_style}]{arrow} {trend['delta']:+d}[/{trend_style}] "
+            f"from last run (was {trend['previous']})"
+        )
