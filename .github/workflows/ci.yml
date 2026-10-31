@@ -129,7 +129,7 @@ jobs:
           uv run --no-project --python 3.12 --with ../.. --with-requirements requirements.txt python scripts/seed_baseline.py
       - name: Upload evidence packs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: finassure-evidence-packs
           path: examples/finassure/artifacts/evidence_packs/
