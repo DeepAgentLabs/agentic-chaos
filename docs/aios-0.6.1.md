@@ -16,7 +16,7 @@ Consumers that do not check `0.6-draft` must reject provenance records under
 
 ## Agentic Chaos
 
-Chaos Run exports stay `0.4-draft` and keep their `io.deepagentlabs.agentic-chaos` extension. A provenance record written by another tool may cite a Chaos `reliability_event` or the derived `resilience_score` Run as an `aios_object` source; Chaos itself does not emit provenance records, and citing a score does not make it an Evals result or a containment guarantee.
+Chaos Run exports stay `0.4-draft` and keep their `io.deepagentlabs.agentic-chaos` extension. A provenance record written by another tool may cite a Chaos `reliability_event` as an `aios_object` source. The derived `resilience_score` is a Run measurement with no object identity, so a record that relies on it cites the whole exported Run as an `artifact` source; Chaos itself does not emit provenance records, and citing a score does not make it an Evals result or a containment guarantee.
 
 ## Dependencies
 
