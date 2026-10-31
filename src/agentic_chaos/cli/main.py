@@ -1130,3 +1130,144 @@ def agent_fuzz(
 
 if __name__ == "__main__":
     app()
+
+
+# ---------------------------------------------------------------------------
+# score subcommands (v0.9)
+# ---------------------------------------------------------------------------
+
+score_app = typer.Typer(
+    help="Resilience scores: recompute from saved reports, inspect and prune run history.",
+    no_args_is_help=True,
+)
+app.add_typer(score_app, name="score")
+
+
+def _load_scorable(path: Path) -> ChaosReport:
+    """A native chaos report, merging the steps of a saved workflow report."""
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if isinstance(data, dict) and data.get("kind") == "chaos_workflow":
+        from agentic_chaos.workflows import WorkflowReport
+
+        return WorkflowReport.model_validate(data).to_chaos_report()
+    return ChaosReport.model_validate(data)
+
+
+@score_app.command("show")
+def score_show(
+    report_file: Path = typer.Argument(..., help="Saved chaos, merged or workflow report JSON."),
+    baseline: Path | None = typer.Option(
+        None, "--baseline", help="Fault-free report for the latency and cost components."
+    ),
+    weight: list[str] | None = typer.Option(
+        None, "--weight", help="Component weight override, e.g. 'recovery=0.5' (repeatable)."
+    ),
+    min_score: float | None = typer.Option(None, "--min-score", help=MIN_SCORE_HELP),
+    history: Path | None = typer.Option(None, "--history", help=HISTORY_HELP),
+    history_max_runs: int | None = typer.Option(None, "--history-max-runs", help=MAX_RUNS_HELP),
+    history_max_age_days: float | None = typer.Option(
+        None, "--history-max-age-days", help=MAX_AGE_HELP
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Print the score as JSON."),
+    save: Path | None = typer.Option(None, "--save", help="Save the score JSON to this file."),
+) -> None:
+    """Recompute the resilience score of a saved report, offline.
+
+    Reads only the JSON, so it works on reports from CI artifacts. Exits 1 when
+    --min-score is set and the score is inconclusive or lower.
+    """
+    from agentic_chaos.resilience import compute_resilience
+
+    try:
+        check_min_score(min_score)
+        weights: dict[str, float] = {}
+        for spec in weight or []:
+            key, sep, value = spec.partition("=")
+            if not sep:
+                raise ValueError(f"--weight must look like 'name=value', got {spec!r}")
+            weights[key.strip()] = float(value)
+        store = history_store(history, history_max_runs, history_max_age_days)
+        report = _load_scorable(report_file)
+        reference = _load_scorable(baseline) if baseline is not None else None
+        score = compute_resilience(report, baseline=reference, weights=weights or None)
+        if store is not None:
+            store.record(score)
+    except (ValueError, OSError, pydantic.ValidationError) as exc:
+        console.print(f"[red]{escape(str(exc))}[/red]")
+        raise typer.Exit(code=1) from exc
+    if save is not None:
+        save.write_text(json.dumps(score.as_json(), indent=2), encoding="utf-8")
+    if json_output:
+        typer.echo(json.dumps(score.as_json(), indent=2))
+    else:
+        render_probe_results(console, report.probes)
+        render_resilience(console, score)
+        if save is not None:
+            console.print(f"Saved resilience score to {save}")
+    gate(console if not json_output else Console(stderr=True), score, min_score)
+
+
+@score_app.command("history")
+def score_history(
+    history: Path = typer.Option(
+        Path(".agentic-chaos/resilience-history.json"), "--history", help="Run-history file."
+    ),
+    name: str | None = typer.Option(None, "--name", help="Only runs with this name."),
+    json_output: bool = typer.Option(False, "--json", help="Print entries as JSON."),
+) -> None:
+    """List recorded resilience scores, oldest first, with run-over-run deltas."""
+    from rich.table import Table
+
+    from agentic_chaos.resilience import ResilienceHistory
+
+    try:
+        entries = ResilienceHistory(history).entries(name)
+    except ValueError as exc:
+        console.print(f"[red]{escape(str(exc))}[/red]")
+        raise typer.Exit(code=1) from exc
+    if json_output:
+        typer.echo(json.dumps(entries, indent=2))
+        return
+    if not entries:
+        console.print(f"No resilience history in {history}.")
+        return
+    table = Table(title=f"Resilience History — {history}")
+    for column in ("Recorded", "Name", "Score", "Grade", "Δ"):
+        table.add_column(column)
+    last: dict[str, int] = {}
+    for entry in entries:
+        key, value = str(entry.get("name")), entry.get("score")
+        delta = ""
+        if isinstance(value, int) and key in last:
+            delta = f"{value - last[key]:+d}"
+        if isinstance(value, int):
+            last[key] = value
+        table.add_row(
+            escape(str(entry.get("recorded_at", ""))[:19]),
+            escape(key),
+            "inconclusive" if value is None else str(value),
+            str(entry.get("grade") or "-"),
+            delta,
+        )
+    console.print(table)
+
+
+@score_app.command("prune")
+def score_prune(
+    history: Path = typer.Option(
+        Path(".agentic-chaos/resilience-history.json"), "--history", help="Run-history file."
+    ),
+    max_runs: int | None = typer.Option(None, "--max-runs", help=MAX_RUNS_HELP),
+    max_age_days: float | None = typer.Option(None, "--max-age-days", help=MAX_AGE_HELP),
+) -> None:
+    """Apply retention to a run-history file now."""
+    from agentic_chaos.resilience import ResilienceHistory
+
+    try:
+        if max_runs is None and max_age_days is None:
+            raise ValueError("pass --max-runs and/or --max-age-days")
+        removed = ResilienceHistory(history, max_runs=max_runs, max_age_days=max_age_days).prune()
+    except ValueError as exc:
+        console.print(f"[red]{escape(str(exc))}[/red]")
+        raise typer.Exit(code=1) from exc
+    console.print(f"Removed {removed} entr{'y' if removed == 1 else 'ies'} from {history}.")
