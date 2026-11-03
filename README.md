@@ -30,18 +30,12 @@ tools that happen to compose.
 **Safety Rails** (`0.5.2`), the **Pytest Plugin & Contracts** (`0.6.0`),
 **Fault Cascades, Adaptive Intensity & Response Poisoning** (`0.7.0`),
 **Chaos Workflows, Declarative Experiments & Explosion Radius** (`0.8.0`) and
-**Resilience Probes & Resilience Score** (`0.9.0`) are available.
+**Resilience Probes & Resilience Score** (`0.9.0`) and
+**Authenticated Containment Assertions** (`0.10.0`) are available.
 See [ROADMAP.md](ROADMAP.md) for the full plan.
 
 ### What's Next
 
-- **MCP Phase 6 coordinated sibling release** — reproducible containment tests
-  ship with the MCP Sidecar stop/revoke bridge. Assert zero forbidden dispatches
-  after effective acknowledgement, covering queues, retries and existing sessions,
-  with a deliberately bypassed negative control that fails. Target a Chaos 0.9.x
-  patch for validation-only changes, or 0.10.0 if public APIs change. See the
-  [paired-release acceptance criteria](ROADMAP.md#required-paired-release-acceptance).
-  Evals v0.11 containment scoring follows this delivery.
 - **ChaosHub (v1.0)** — bundled and community experiment recipes in the v0.8
   experiment format, plus a fault plugin interface
 - **Structured experiment reports** — every chaos run emits a report with
@@ -1072,3 +1066,9 @@ See [operator compatibility and ownership](docs/tower-0.9-runbooks.md) for versi
 exact-digest approval, bounded steps, compensation, cancellation and verified
 recovery. Existing native contracts and optional dependency ranges remain
 compatible; no runtime or patch release is required here.
+
+## MCP Phase 6 coordinated containment
+
+Compatibility, ownership, dependency ranges and reproducible containment acceptance
+for MCP 0.6.0 / Chaos 0.10.0 / Sidecar 0.9.2 are documented in the
+[Phase 6 guide](docs/phase6-containment.md).

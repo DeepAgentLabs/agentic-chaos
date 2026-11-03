@@ -234,3 +234,20 @@ See the [v0.9 guide](v0.9.md) for the lifecycle and the scoring method.
 | `ResilienceHistory(path, *, max_runs=None, max_age_days=None)` | Local trend store: `record(score)`, `trend(name, score)`, `latest(name)`, `entries(name)`, `prune()`. |
 | `ChaosWorkflow(..., probes=(), weights=None)` and `.run(..., baseline=None, history=None)` | Workflow-level probes and scoring; `WorkflowReport.resilience_score`. |
 
+
+## Authenticated containment assertions (0.10.0)
+
+Install `agentic-chaos[containment]` for the Lens adapter.
+`agentic_chaos.containment.assert_contained(records, manifest=..., trusted_keys=...,
+expected_stream_id=..., acknowledgement_id=..., subject=..., task_id=...,
+attempted_call_ids=...)` verifies one detached ordered JSON snapshot before
+checking required attempts, acknowledgements and forbidden dispatch reservations.
+The host supplies trusted keys and expected scope; they never come from evidence.
+Operational kinds are `dispatched`, `completed`, `denied`,
+`stop_acknowledged` and `revocation_acknowledged`; `scenario` carries metadata.
+Each operational row requires subject/task scope; dispatch/completion/denial also
+require a nonempty call correlation. Native producer records must be normalized
+explicitly; the API does not guess that a verdict or native event was a dispatch.
+Unknown kinds, malformed records, orphan completions and failed/unknown/incomplete
+Lens verification raise. Coverage remains producer-declared.
+See [the guide](phase6-containment.md) and `examples/containment_demo.py`.

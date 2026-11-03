@@ -5,19 +5,11 @@ This page lists **planned** capabilities only. Everything that works today is do
 !!! warning "Planned means not implemented"
     Nothing on this page is available in the current release. Do not rely on it in tests or pipelines.
 
-## Next: MCP Phase 6 coordinated containment release
+## MCP Phase 6 candidate
 
-Chaos containment scenarios and assertions will ship as a sibling release with
-MCP Phase 6's Sidecar stop/revoke bridge, before ChaosHub. Test actual forbidden
-dispatches after effective acknowledgement across queues, retries, existing
-sessions and revoked/delegated credentials. Report in-flight effects separately.
-A bypassed negative control must fail, and missing or unverified evidence cannot
-pass. CI must exercise the real adapters on isolated synthetic targets.
-
-Target a Chaos 0.9.x validation patch, or 0.10.0 if public APIs change, paired with
-MCP 0.6.0; finalize versions during packaging. Evals v0.11 containment scoring
-comes next. See the
-[canonical acceptance criteria](https://github.com/DeepAgentLabs/agentic-chaos/blob/main/ROADMAP.md#required-paired-release-acceptance).
+Containment assertions are implemented in the 0.10.0 candidate. See the
+[paired release guide](phase6-containment.md) and the repository roadmap for
+release acceptance. ChaosHub remains next after the paired wheels publish.
 
 ## Planned capabilities
 
