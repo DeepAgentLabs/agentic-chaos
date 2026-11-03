@@ -1,5 +1,14 @@
 # agentic-chaos — Roadmap & Architecture
 
+## Release sequencing
+
+The final package-local roadmap phase uses **v0.11**, followed by further
+minor releases as needed. **v1.0 is reserved for one coordinated DeepAgentLabs
+ecosystem release**, after the shared readiness and compatibility gates pass.
+Completing this minor milestone does not independently declare stable APIs or
+AIOS conformance. Existing acceptance criteria remain required. See the
+[ecosystem release policy](https://github.com/DeepAgentLabs/.github/blob/main/profile/RELEASE_POLICY.md).
+
 ## Implementation Audit
 
 The [2026-09-11 implementation audit](ROADMAP_AUDIT.md) maps this roadmap to
@@ -27,7 +36,7 @@ v0.8 in `0.8.0` ([guide](docs/v0.8.md)) and v0.9 in `0.9.0`
 - **v0.8** ✅ Complete — released as `0.8.0`; — Chaos Workflows, Declarative Experiments & Explosion Radius
 - **v0.9** ✅ Complete — released as `0.9.0`; — Resilience Probes & Resilience Score
 - **v0.10.0 / MCP Phase 6** — Implemented in 0.10.0: Lens-authenticated native containment assertions and paired acceptance
-- **v1.0** 🚧 Planned — ChaosHub (Shared Experiment Registry), after the coordinated containment-validation delivery
+- **v0.11** 🚧 Planned — ChaosHub (Shared Experiment Registry), after the coordinated containment-validation delivery
 
 ## Cross-Project Dependencies
 
@@ -941,7 +950,7 @@ cost. A component the report cannot show is left out and the rest are
 renormalized. Retention keeps the newest `max_runs` per name and drops
 entries older than `max_age_days`. See [the v0.9 guide](docs/v0.9.md).
 
-### v1.0 — ChaosHub (Shared Experiment Registry)
+### v0.11 — ChaosHub (Shared Experiment Registry)
 
 A community-contributed library of pre-built fault recipes for common agent
 patterns — lowers the "what should I even test?" barrier.
@@ -1038,9 +1047,9 @@ reference implementation of it.
 | 16 | PyPI release v0.8 (`0.8.0`) ✅ | ongoing |
 | 17 | v0.9 — Resilience Probes & Resilience Score ✅ | 3–5 weeks |
 | 18 | PyPI release v0.9 (`0.9.0`) ✅ | ongoing |
-| 19 | v1.0 — ChaosHub (Shared Experiment Registry) | 3–5 weeks |
-| 20 | PyPI release v1.0 | ongoing |
-| 21 | Blog post / talk: "one schema, one chaos toolkit, full AI-infra reliability stack" | after v1.0 ships |
+| 19 | v0.11 — ChaosHub (Shared Experiment Registry) | 3–5 weeks |
+| 20 | PyPI release v0.11 | ongoing |
+| 21 | Blog post / talk: "one schema, one chaos toolkit, full AI-infra reliability stack" | after v0.11 ships |
 
 ## Adversarial containment validation
 
@@ -1111,8 +1120,8 @@ widens its optional `agentic-chaos` extra to accept 0.6.
 Sidecar 0.8 provides Shared/Exclusive context-only, guardrails-only or combined
 configuration, explicit host context delivery and mandatory guardrail composition.
 Exclusive rules cannot weaken shared restrictions. Cross-framework privacy,
-revocation and delegated authority remain v0.9 validation; stable schemas remain
-v1.0. Native correlated Lens readback requires Lens 0.7.1. All sibling packages
+revocation and delegated authority remain v0.9 validation; contract readiness continues in v0.10; the stable freeze is reserved for
+the coordinated ecosystem v1.0 release. Native correlated Lens readback requires Lens 0.7.1. All sibling packages
 stay optional; no dependency floor is increased without a runtime requirement.
 See the [Sidecar integration contract](https://github.com/DeepAgentLabs/agentic-sidecar/blob/main/docs/integrations.md).
 
