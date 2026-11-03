@@ -4,6 +4,19 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-11-02
+
+### Added
+
+- `agentic_chaos.containment.assert_contained`: Lens-authenticated native scenario
+  assertions over exact ordered observations, effective acknowledgements, required
+  denied attempts and forbidden dispatches, with separate in-flight completions.
+- Optional `containment` extra (Lens >=0.12.0), offline Sidecar example and negative
+  controls. MCP 0.6.0 CI requires the real adapter tests from candidate wheels.
+- Coordinated compatibility with Sidecar 0.9.2. No Evals containment score or
+  hosted arbitrary execution is introduced; producer-declared coverage is explicit.
+
+
 ## [0.9.0] - 2026-10-31
 
 ### Added

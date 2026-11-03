@@ -12,7 +12,7 @@ resolution-markers = [
 
 [[package]]
 name = "agentic-chaos"
-version = "0.9.0"
+version = "0.10.0"
 source = { editable = "." }
 dependencies = [
     { name = "pydantic" },
@@ -23,6 +23,9 @@ dependencies = [
 
 [package.optional-dependencies]
 agenticlens = [
+    { name = "agenticlens" },
+]
+containment = [
     { name = "agenticlens" },
 ]
 dev = [
@@ -54,6 +57,7 @@ yaml = [
 [package.metadata]
 requires-dist = [
     { name = "agenticlens", marker = "extra == 'agenticlens'", editable = "../agenticlens" },
+    { name = "agenticlens", marker = "extra == 'containment'", editable = "../agenticlens" },
     { name = "anthropic", marker = "extra == 'providers'", specifier = ">=0.40" },
     { name = "build", marker = "extra == 'dev'", specifier = ">=1.2" },
     { name = "google-genai", marker = "extra == 'providers'", specifier = ">=1.0" },
@@ -74,7 +78,7 @@ requires-dist = [
     { name = "typer", specifier = ">=0.12" },
     { name = "types-pyyaml", marker = "extra == 'dev'", specifier = ">=6.0" },
 ]
-provides-extras = ["providers", "yaml", "pytest", "agenticlens", "docs", "dev"]
+provides-extras = ["containment", "providers", "yaml", "pytest", "agenticlens", "docs", "dev"]
 
 [[package]]
 name = "agentic-evals"
