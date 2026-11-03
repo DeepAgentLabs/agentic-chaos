@@ -26,7 +26,7 @@ v0.8 in `0.8.0` ([guide](docs/v0.8.md)) and v0.9 in `0.9.0`
 - **v0.7** ✅ Complete — released as `0.7.0`; — Fault Cascades, Adaptive Intensity & Response Poisoning
 - **v0.8** ✅ Complete — released as `0.8.0`; — Chaos Workflows, Declarative Experiments & Explosion Radius
 - **v0.9** ✅ Complete — released as `0.9.0`; — Resilience Probes & Resilience Score
-- **v0.9.x / MCP Phase 6** 🚧 Planned — Coordinated containment-validation sibling release; use v0.10.0 if new public APIs are needed
+- **v0.10.0 / MCP Phase 6** — Implemented candidate: Lens-authenticated native containment assertions and paired acceptance
 - **v1.0** 🚧 Planned — ChaosHub (Shared Experiment Registry), after the coordinated containment-validation delivery
 
 ## Cross-Project Dependencies
@@ -1045,7 +1045,7 @@ reference implementation of it.
 ## Adversarial containment validation
 
 Added 2026-10-11. Existing fault injection is implemented; integrated attack and
-containment validation remains planned. This work is now part of the **MCP
+containment validation is implemented in the 0.10.0 candidate. This work is now part of the **MCP
 Phase 6 coordinated release**, delivered as a Chaos sibling release alongside
 the authenticated Sidecar stop/revoke bridge, before ChaosHub. It is not a
 separate follow-up after MCP Phase 6.
@@ -1393,3 +1393,11 @@ recovery. Tower can record a completed native Chaos report, together with a pass
 
 See [compatibility and operator example](docs/tower-0.9-runbooks.md).
 No sibling runtime change or patch release is required.
+
+## MCP Phase 6 coordinated delivery — 2026-11-02
+
+The MCP 0.6.0 / Chaos 0.10.0 / Sidecar 0.9.2 candidate includes live task-scoped
+stop/revoke, hosted Tower user bindings and authenticated native assertions.
+See the [tested matrix, limitations and commands](docs/phase6-containment.md).
+Release acceptance requires CI and publication of the paired wheels. Evals
+v0.11 reusable containment scoring remains the following milestone.

@@ -1072,3 +1072,9 @@ See [operator compatibility and ownership](docs/tower-0.9-runbooks.md) for versi
 exact-digest approval, bounded steps, compensation, cancellation and verified
 recovery. Existing native contracts and optional dependency ranges remain
 compatible; no runtime or patch release is required here.
+
+## MCP Phase 6 coordinated containment
+
+Compatibility, ownership, dependency ranges and reproducible containment acceptance
+for MCP 0.6.0 / Chaos 0.10.0 / Sidecar 0.9.2 are documented in the
+[Phase 6 guide](docs/phase6-containment.md).
