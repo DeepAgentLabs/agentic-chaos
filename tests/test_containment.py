@@ -59,3 +59,16 @@ def test_negative_controls(mutation):
         records[-1]["event_id"] = "1"
     with pytest.raises(AssertionError):
         check(records)
+
+
+@pytest.mark.parametrize("change", ["kind", "subject", "task_id", "correlation_id", "orphan"])
+def test_malformed_observations_never_pass(change):
+    rows = observations()
+    if change == "kind":
+        rows[0]["kind"] = "executed-but-unknown"
+    elif change == "orphan":
+        rows[0]["kind"] = "denied"
+    else:
+        rows[0].pop(change)
+    with pytest.raises(AssertionError):
+        check(rows)

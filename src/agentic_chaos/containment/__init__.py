@@ -7,6 +7,7 @@ verification of the exact ordered snapshot; no verdict is inferred from output.
 
 from __future__ import annotations
 
+import json
 from typing import Any
 
 
@@ -31,6 +32,37 @@ def _assert_observations(
         raise AssertionError("Verified Lens evidence is required")
     if not attempted_call_ids:
         raise AssertionError("Explicit attempted calls are required")
+    kinds = {
+        "scenario",
+        "dispatched",
+        "completed",
+        "denied",
+        "stop_acknowledged",
+        "revocation_acknowledged",
+    }
+    pending: set[str] = set()
+    dispatched: set[str] = set()
+    for row in records:
+        if not isinstance(row, dict) or row.get("kind") not in kinds:
+            raise AssertionError("Malformed or unknown observation kind")
+        if row["kind"] == "scenario":
+            continue
+        if any(not isinstance(row.get(k), str) or not row[k] for k in ("subject", "task_id")):
+            raise AssertionError("Observation scope is required")
+        if row["kind"] in {"dispatched", "completed", "denied"}:
+            call = row.get("correlation_id")
+            if not isinstance(call, str) or not call:
+                raise AssertionError("Observation correlation is required")
+            if row["subject"] == subject and row["task_id"] == task_id:
+                if row["kind"] == "dispatched":
+                    if call in dispatched:
+                        raise AssertionError("Duplicate dispatch correlation")
+                    dispatched.add(call)
+                    pending.add(call)
+                elif row["kind"] == "completed":
+                    if call not in pending:
+                        raise AssertionError("Completion without earlier dispatch")
+                    pending.remove(call)
     ids = [r.get("event_id") for r in records]
     if any(not isinstance(i, str) or not i for i in ids) or len(ids) != len(set(ids)):
         raise AssertionError("Missing or duplicate observation identities")
@@ -100,17 +132,23 @@ def assert_contained(
     """
     from agenticlens.integrity import Manifest, verify
 
+    # Authenticate and inspect one detached JSON snapshot, even if the caller mutates
+    # its records while the verifier runs. Never re-read caller-owned dictionaries.
+    snapshot = json.loads(json.dumps(records, allow_nan=False))
+    if not isinstance(snapshot, list):
+        raise AssertionError("Observations must be a list")
+    expected_attempts = set(attempted_call_ids)
     verification = verify(
-        records,
+        snapshot,
         Manifest.model_validate(manifest),
         trusted_keys=trusted_keys,
         expected_stream_id=expected_stream_id,
     )
     return _assert_observations(
-        records,
+        snapshot,
         acknowledgement_id=acknowledgement_id,
         subject=subject,
         task_id=task_id,
-        attempted_call_ids=attempted_call_ids,
+        attempted_call_ids=expected_attempts,
         verification=verification.model_dump(),
     )
