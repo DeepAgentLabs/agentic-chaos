@@ -55,6 +55,7 @@ plugins:
 
 nav:
   - MCP Phase 6 Containment: phase6-containment.md
+  - Evals 0.11 Containment Scoring: evals-0.11-containment.md
   - Sidecar 0.9 authority and privacy: sidecar-0.9.md
   - Home: index.md
   - Getting started: getting-started.md

@@ -1072,3 +1072,8 @@ compatible; no runtime or patch release is required here.
 Compatibility, ownership, dependency ranges and reproducible containment acceptance
 for MCP 0.6.0 / Chaos 0.10.0 / Sidecar 0.9.2 are documented in the
 [Phase 6 guide](docs/phase6-containment.md).
+
+## Evals 0.11 containment scoring
+
+Chaos native assertions and resilience scores remain producer evidence. Evals owns standalone scoring and release gates. Pass observed records to Evals explicitly; no automatic conversion of a Chaos score into containment is introduced.
+See [the compatibility matrix and operator example](docs/evals-0.11-containment.md).
