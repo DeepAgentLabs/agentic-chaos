@@ -1407,3 +1407,10 @@ v0.11 reusable containment scoring now ships in 0.11.0; see
 
 Chaos native assertions and resilience scores remain producer evidence. Evals owns standalone scoring and release gates. Pass observed records to Evals explicitly; no automatic conversion of a Chaos score into containment is introduced.
 See [the compatibility matrix and operator example](docs/evals-0.11-containment.md).
+
+## AIOS v0.6.2 implementation guidance
+
+AIOS v0.6.2 publishes cumulative-layer migration guidance, a non-normative
+OpenTelemetry companion profile and a strict documentation site build.
+Existing draft markers, native evidence and runtime dependencies are unchanged;
+no package patch release is needed. See [compatibility and offline example](docs/aios-0.6.2.md).
