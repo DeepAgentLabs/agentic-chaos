@@ -26,7 +26,8 @@ v0.8 in `0.8.0` ([guide](docs/v0.8.md)) and v0.9 in `0.9.0`
 - **v0.7** ✅ Complete — released as `0.7.0`; — Fault Cascades, Adaptive Intensity & Response Poisoning
 - **v0.8** ✅ Complete — released as `0.8.0`; — Chaos Workflows, Declarative Experiments & Explosion Radius
 - **v0.9** ✅ Complete — released as `0.9.0`; — Resilience Probes & Resilience Score
-- **v1.0** 🚧 Planned — ChaosHub (Shared Experiment Registry)
+- **v0.9.x / MCP Phase 6** 🚧 Planned — Coordinated containment-validation sibling release; use v0.10.0 if new public APIs are needed
+- **v1.0** 🚧 Planned — ChaosHub (Shared Experiment Registry), after the coordinated containment-validation delivery
 
 ## Cross-Project Dependencies
 
@@ -1044,7 +1045,43 @@ reference implementation of it.
 ## Adversarial containment validation
 
 Added 2026-10-11. Existing fault injection is implemented; integrated attack and
-containment validation remains planned within these existing milestones.
+containment validation remains planned. This work is now part of the **MCP
+Phase 6 coordinated release**, delivered as a Chaos sibling release alongside
+the authenticated Sidecar stop/revoke bridge, before ChaosHub. It is not a
+separate follow-up after MCP Phase 6.
+
+Target a Chaos 0.9.x validation patch if public APIs stay unchanged, or 0.10.0
+if implementation adds public APIs, paired with MCP 0.6.0. Finalize versions
+when packaging. The shared release gate is maintained in the
+[MCP roadmap](https://github.com/DeepAgentLabs/mcp-server/blob/main/ROADMAP.md#coordinated-mcp-and-chaos-release-planned).
+
+### Required paired-release acceptance
+
+- [ ] Drive the real enforcing MCP/Sidecar paths on isolated targets with
+      synthetic credentials. Exercise denied tools, stopped tasks, revoked or
+      expired credentials, narrowed/revoked delegation, queues, retries, existing
+      sessions and concurrent dispatch around acknowledgement.
+- [ ] Observe actual dispatch/completion events and require zero forbidden
+      dispatches after effective stop/revocation acknowledgement. Report
+      in-flight calls and completed side effects separately; a requested stop,
+      BLOCK verdict or safe-sounding output is insufficient.
+- [ ] Inject instruction/policy bypasses and failures in gate, approval and
+      evidence paths. Reject unauthorized and cross-task/cross-user controls.
+- [ ] Publish deterministic seeds, payloads, package/policy/configuration versions,
+      expected outcomes, acknowledgements and observed execution evidence.
+      A deliberately bypassed-enforcement negative control must fail assertions.
+- [ ] Keep missing observations and failed/unknown/incomplete Lens verification
+      from passing containment assertions. Validate the candidate wheels together
+      in CI with required adapters installed; publish the tested version matrix
+      and commands. Hosted arbitrary chaos execution remains disabled.
+
+Chaos supplies scenarios and native assertions; Sidecar/MCP enforce access,
+Lens authenticates recorded evidence and Tower presents it. Evals v0.11 consumes
+this evidence in the following milestone for reusable scoring and release gates.
+Neither the Chaos resilience score nor a passed recovery check is a containment
+score. Patch other siblings only if actual compatibility changes require it.
+
+### Existing milestone work folded into the paired release
 
 - [x] v0.5.x safety rails: bound time/cost/intensity; prove abort prevents further
       injections and report already-running work separately.
