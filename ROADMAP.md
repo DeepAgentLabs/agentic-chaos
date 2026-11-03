@@ -1401,3 +1401,8 @@ stop/revoke, hosted Tower user bindings and authenticated native assertions.
 See the [tested matrix, limitations and commands](docs/phase6-containment.md).
 Release acceptance requires CI and publication of the paired wheels. Evals
 v0.11 reusable containment scoring remains the following milestone.
+
+## Evals 0.11 containment scoring
+
+Chaos native assertions and resilience scores remain producer evidence. Evals owns standalone scoring and release gates. Pass observed records to Evals explicitly; no automatic conversion of a Chaos score into containment is introduced.
+See [the compatibility matrix and operator example](docs/evals-0.11-containment.md).
