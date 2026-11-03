@@ -35,6 +35,13 @@ See [ROADMAP.md](ROADMAP.md) for the full plan.
 
 ### What's Next
 
+- **MCP Phase 6 coordinated sibling release** — reproducible containment tests
+  ship with the MCP Sidecar stop/revoke bridge. Assert zero forbidden dispatches
+  after effective acknowledgement, covering queues, retries and existing sessions,
+  with a deliberately bypassed negative control that fails. Target a Chaos 0.9.x
+  patch for validation-only changes, or 0.10.0 if public APIs change. See the
+  [paired-release acceptance criteria](ROADMAP.md#required-paired-release-acceptance).
+  Evals v0.11 containment scoring follows this delivery.
 - **ChaosHub (v1.0)** — bundled and community experiment recipes in the v0.8
   experiment format, plus a fault plugin interface
 - **Structured experiment reports** — every chaos run emits a report with
