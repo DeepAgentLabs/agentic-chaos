@@ -29,6 +29,7 @@ and expected scope belong to the host, never the evaluated sample.
 
 Native report/gate schema 1.0 is unchanged. Existing optional ranges remain
 sufficient except MCP's exact pin, which requires its 0.6.1 patch release.
-Documentation alignment alone requires no other package release.
+Lens 0.12.1 raises its Evals floor to 0.11.0 for the synchronized embedded schema.
+Lens 0.12.1 also refreshes embedded Evals schemas/examples and preserves failed live-target trials. Other documentation alignment needs no package release.
 
 Chaos native assertions and resilience scores remain producer evidence. Evals owns standalone scoring and release gates. Pass observed records to Evals explicitly; no automatic conversion of a Chaos score into containment is introduced.
