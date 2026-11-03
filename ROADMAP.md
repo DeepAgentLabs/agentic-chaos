@@ -26,7 +26,7 @@ v0.8 in `0.8.0` ([guide](docs/v0.8.md)) and v0.9 in `0.9.0`
 - **v0.7** ✅ Complete — released as `0.7.0`; — Fault Cascades, Adaptive Intensity & Response Poisoning
 - **v0.8** ✅ Complete — released as `0.8.0`; — Chaos Workflows, Declarative Experiments & Explosion Radius
 - **v0.9** ✅ Complete — released as `0.9.0`; — Resilience Probes & Resilience Score
-- **v0.10.0 / MCP Phase 6** — Implemented candidate: Lens-authenticated native containment assertions and paired acceptance
+- **v0.10.0 / MCP Phase 6** — Implemented in 0.10.0: Lens-authenticated native containment assertions and paired acceptance
 - **v1.0** 🚧 Planned — ChaosHub (Shared Experiment Registry), after the coordinated containment-validation delivery
 
 ## Cross-Project Dependencies
@@ -1045,7 +1045,7 @@ reference implementation of it.
 ## Adversarial containment validation
 
 Added 2026-10-11. Existing fault injection is implemented; integrated attack and
-containment validation is implemented in the 0.10.0 candidate. This work is now part of the **MCP
+containment validation is implemented in 0.10.0. This work is now part of the **MCP
 Phase 6 coordinated release**, delivered as a Chaos sibling release alongside
 the authenticated Sidecar stop/revoke bridge, before ChaosHub. It is not a
 separate follow-up after MCP Phase 6.
@@ -1057,20 +1057,20 @@ when packaging. The shared release gate is maintained in the
 
 ### Required paired-release acceptance
 
-- [ ] Drive the real enforcing MCP/Sidecar paths on isolated targets with
+- [x] Drive the real enforcing MCP/Sidecar paths on isolated targets with
       synthetic credentials. Exercise denied tools, stopped tasks, revoked or
       expired credentials, narrowed/revoked delegation, queues, retries, existing
       sessions and concurrent dispatch around acknowledgement.
-- [ ] Observe actual dispatch/completion events and require zero forbidden
+- [x] Observe actual dispatch/completion events and require zero forbidden
       dispatches after effective stop/revocation acknowledgement. Report
       in-flight calls and completed side effects separately; a requested stop,
       BLOCK verdict or safe-sounding output is insufficient.
-- [ ] Inject instruction/policy bypasses and failures in gate, approval and
+- [x] Inject instruction/policy bypasses and failures in gate, approval and
       evidence paths. Reject unauthorized and cross-task/cross-user controls.
-- [ ] Publish deterministic seeds, payloads, package/policy/configuration versions,
+- [x] Publish deterministic seeds, payloads, package/policy/configuration versions,
       expected outcomes, acknowledgements and observed execution evidence.
       A deliberately bypassed-enforcement negative control must fail assertions.
-- [ ] Keep missing observations and failed/unknown/incomplete Lens verification
+- [x] Keep missing observations and failed/unknown/incomplete Lens verification
       from passing containment assertions. Validate the candidate wheels together
       in CI with required adapters installed; publish the tested version matrix
       and commands. Hosted arbitrary chaos execution remains disabled.
@@ -1396,7 +1396,7 @@ No sibling runtime change or patch release is required.
 
 ## MCP Phase 6 coordinated delivery — 2026-11-02
 
-The MCP 0.6.0 / Chaos 0.10.0 / Sidecar 0.9.2 candidate includes live task-scoped
+The MCP 0.6.0 / Chaos 0.10.0 / Sidecar 0.9.2 release includes live task-scoped
 stop/revoke, hosted Tower user bindings and authenticated native assertions.
 See the [tested matrix, limitations and commands](docs/phase6-containment.md).
 Release acceptance requires CI and publication of the paired wheels. Evals
