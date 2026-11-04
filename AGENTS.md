@@ -55,7 +55,7 @@ estimates ship in 0.7.0 with event provenance and synthetic resilience scenarios
 v0.8 chaos workflows, declarative experiments, `Scope` explosion-radius control
 and the topology fuzzer ship in 0.8.0. v0.9 resilience probes, the 0-100
 resilience score, run-history trends with retention and the `--min-score` CI
-gate ship in 0.9.0. The next milestone is v0.11 ChaosHub; v1.0 is reserved for the coordinated ecosystem release. Changes in this repo should move the package
+gate ship in 0.9.0. v0.11 ChaosHub ships in 0.11.0 (see docs/v0.11.md); v1.0 is reserved for the coordinated ecosystem release. Changes in this repo should move the package
 toward reproducible resilience evidence, not just ad hoc fault injection.
 
 ### Before You Build Here

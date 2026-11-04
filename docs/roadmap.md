@@ -9,7 +9,7 @@ This page lists **planned** capabilities only. Everything that works today is do
 
 Containment assertions are implemented in the 0.10.0 candidate. See the
 [paired release guide](phase6-containment.md) and the repository roadmap for
-release acceptance. ChaosHub remains next after the paired wheels publish.
+release acceptance. ChaosHub is implemented in 0.11.0; see [the guide](v0.11.md) for delivered scope.
 
 ## Planned capabilities
 
