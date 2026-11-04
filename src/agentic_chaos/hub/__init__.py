@@ -87,3 +87,33 @@ def push(source: Path, checkout: Path) -> Path:
     directory = checkout / "hub" / "recipes"
     directory.mkdir(parents=True, exist_ok=True)
     return _write(data, directory / (_name(data["name"]) + ".json"))
+
+
+def remote_recipes(repository: str, ref: str, query: str = "") -> list[dict[str, str]]:
+    """Read a pinned remote catalog, explicitly opting in to GitHub access."""
+    if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository):
+        raise ValueError("Expected GitHub owner/repository")
+    if not re.fullmatch(r"[0-9a-f]{40}", ref):
+        raise ValueError("Remote catalog requires a full lowercase commit SHA")
+    url = f"https://raw.githubusercontent.com/{repository}/{ref}/hub/index.json"
+    with urlopen(url, timeout=15) as response:
+        payload = response.read(1_048_577)
+    if len(payload) > 1_048_576:
+        raise ValueError("Catalog exceeds 1 MiB")
+    data = json.loads(payload)
+    if not isinstance(data, list):
+        raise ValueError("Catalog must be a list")
+    rows = []
+    seen: set[str] = set()
+    for item in data:
+        if not isinstance(item, dict) or set(item) != {"name", "description"}:
+            raise ValueError("Catalog entries require name and description")
+        if not isinstance(item["name"], str) or not isinstance(item["description"], str):
+            raise ValueError("Catalog names and descriptions must be strings")
+        name = _name(item["name"])
+        if name in seen:
+            raise ValueError(f"Duplicate recipe: {name}")
+        seen.add(name)
+        if query.casefold() in (name + item["description"]).casefold():
+            rows.append({**item, "source": f"github:{repository}@{ref}"})
+    return sorted(rows, key=lambda row: row["name"])

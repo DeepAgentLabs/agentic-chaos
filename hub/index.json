@@ -1,0 +1,26 @@
+[
+  {
+    "name": "api-cascade-storm",
+    "description": "Tool API rate limit outage simulation; bind an instrumented target explicitly."
+  },
+  {
+    "name": "multi-agent-coordinator-down",
+    "description": "Multi-agent coordinator timeout simulation; bind an instrumented target explicitly."
+  },
+  {
+    "name": "rag-context-poisoning",
+    "description": "RAG contradictory context simulation; bind an instrumented target explicitly."
+  },
+  {
+    "name": "rag-retriever-failure",
+    "description": "RAG retriever timeout simulation; bind an instrumented target explicitly."
+  },
+  {
+    "name": "react-loop-resilience",
+    "description": "ReAct tool failure simulation; bind an instrumented target explicitly."
+  },
+  {
+    "name": "support-escalation-failure",
+    "description": "Support escalation memory corruption simulation; bind an instrumented target explicitly."
+  }
+]

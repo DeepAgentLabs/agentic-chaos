@@ -138,3 +138,38 @@ def test_cli_and_recipe_script_binding(tmp_path: Path) -> None:
         ],
     )
     assert result.exit_code != 0
+
+
+def test_registry_catalog_matches_valid_documents() -> None:
+    registry = Path(__file__).resolve().parents[1] / "hub"
+    catalog = json.loads((registry / "index.json").read_text())
+    assert len({row["name"] for row in catalog}) == len(catalog)
+    assert {source.stem for source in (registry / "recipes").glob("*.json")} == {
+        row["name"] for row in catalog
+    }
+    for row in catalog:
+        document = json.loads((registry / "recipes" / (row["name"] + ".json")).read_text())
+        assert document["name"] == row["name"]
+        assert document["description"] == row["description"]
+        assert validate_experiment(document, check_targets=False).ok
+        if row["name"] in {item["name"] for item in list_recipes()}:
+            assert document == recipe(row["name"])
+
+
+def test_remote_catalog_and_download(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    from agentic_chaos import hub
+
+    network = MagicMock()
+    monkeypatch.setattr(hub, "urlopen", network)
+    response = network.return_value.__enter__.return_value
+    row = {"name": "react-loop-resilience", "description": "ReAct tools"}
+    response.read.return_value = json.dumps([row]).encode()
+    assert hub.remote_recipes("owner/repo", "a" * 40, "tools")[0]["source"].startswith("github:")
+    assert hub.remote_recipes("owner/repo", "a" * 40, "absent") == []
+    response.read.return_value = json.dumps([row, row]).encode()
+    with pytest.raises(ValueError, match="Duplicate"):
+        hub.remote_recipes("owner/repo", "a" * 40)
+    response.read.return_value = json.dumps(recipe(row["name"])).encode()
+    assert pull(
+        row["name"], tmp_path / "remote.json", repository="owner/repo", ref="a" * 40
+    ).exists()
