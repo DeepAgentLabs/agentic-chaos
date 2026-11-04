@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "name": "multi-agent-coordinator-down",
+  "description": "Multi-agent coordinator timeout simulation; bind an instrumented target explicitly.",
+  "target": "app.py:main",
+  "faults": [
+    {
+      "type": "token_timeout"
+    }
+  ],
+  "assertions": [
+    "no_unhandled_error"
+  ],
+  "safety": {
+    "max_injections": 10
+  }
+}

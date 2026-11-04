@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "name": "rag-context-poisoning",
+  "description": "RAG contradictory context simulation; bind an instrumented target explicitly.",
+  "target": "app.py:main",
+  "faults": [
+    {
+      "type": "poisoned_response"
+    }
+  ],
+  "assertions": [
+    "no_unhandled_error"
+  ],
+  "safety": {
+    "max_injections": 10
+  }
+}
