@@ -1127,3 +1127,11 @@ See [compatibility, boundaries and offline operator example](docs/lens-0.13.md).
 ## Tower 0.10 capability contract readiness
 
 See [compatibility, operator example and dependency boundaries](docs/tower-0.10-compatibility.md). Tower publishes the local candidate `tower.capabilities.v1` with Python/Node HTTP validation. Chaos owns injection and resilience results. A resilience verdict is not deployment health. Existing optional dependencies remain sufficient; no package release or stable ecosystem claim is introduced.
+
+
+## MCP 0.7 integration readiness
+
+The MCP 0.7 candidate baseline includes this project's released integration.
+Its read-only compatibility observations remain separate from runtime readiness
+and native producer verdicts. See [the matrix, example and boundaries](docs/mcp-0.7-readiness.md).
+No runtime dependency or native schema changes are required here.
