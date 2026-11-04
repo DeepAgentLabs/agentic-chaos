@@ -54,6 +54,7 @@ plugins:
   - search
 
 nav:
+  - ChaosHub 0.11: v0.11.md
   - Tower 0.10 contract readiness: tower-0.10-compatibility.md
   - Lens 0.13 readiness: lens-0.13.md
   - Sidecar 0.10 contracts: sidecar-0.10.md
