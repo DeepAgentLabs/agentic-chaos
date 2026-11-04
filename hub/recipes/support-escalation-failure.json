@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "name": "support-escalation-failure",
+  "description": "Support escalation memory corruption simulation; bind an instrumented target explicitly.",
+  "target": "app.py:main",
+  "faults": [
+    {
+      "type": "memory_corruption"
+    }
+  ],
+  "assertions": [
+    "no_unhandled_error"
+  ],
+  "safety": {
+    "max_injections": 10
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "name": "api-cascade-storm",
+  "description": "Tool API rate limit outage simulation; bind an instrumented target explicitly.",
+  "target": "app.py:main",
+  "faults": [
+    {
+      "type": "rate_limit_storm"
+    }
+  ],
+  "assertions": [
+    "no_unhandled_error"
+  ],
+  "safety": {
+    "max_injections": 10
+  }
+}

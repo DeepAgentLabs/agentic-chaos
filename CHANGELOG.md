@@ -4,6 +4,25 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-11-04
+
+### Added
+
+- ChaosHub offline list/search/pull and six bundled instrumented-call recipes.
+- Opt-in immutable GitHub catalog/downloads, size/time bounds, validated contribution
+  staging and catalog CI through the ordinary pull-request workflow.
+- BaseFault entry-point metadata discovery and explicit atomic plugin registration;
+  `chaos run --experiment` preserves bundled fault settings and assertions.
+- Quickstart, offline app, terminal GIF and sibling compatibility matrix. JSON
+  recipes also parse as YAML without requiring the YAML extra for hub commands.
+
+### Compatibility
+
+- Native Chaos reports and AIOS Run exports are unchanged. Sidecar 0.10.1 widens
+  optional dependency caps; MCP 0.6.6 updates hosted image pins. No hosted hub
+  execution or automatic plugin imports are introduced. Ecosystem v1.0 remains open.
+
+
 ## [0.10.0] - 2026-11-02
 
 ### Added

@@ -115,3 +115,7 @@ artifact validation and unchanged dependency boundaries.
 
 See [provenance records and the portable conformance suite](aios-0.6.1.md);
 Chaos exports stay `0.4-draft` and dependency boundaries are unchanged.
+
+## ChaosHub 0.11
+
+[Discover offline recipes, exchange pinned GitHub experiments and load fault plugins](v0.11.md).

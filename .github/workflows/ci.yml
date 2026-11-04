@@ -196,3 +196,10 @@ jobs:
           /tmp/chaos-wheel-smoke/bin/agentic-chaos experiment run workflows/rate-limit-recovery.yaml --no-input --dry-run --save-report dry.json || true
           test -s dry.json
           if /tmp/chaos-wheel-smoke/bin/agentic-chaos score show dry.json --min-score 1; then exit 1; fi
+
+      - name: Verify offline hub recipes from the installed wheel
+        run: |
+          cd /tmp/chaos-experiments
+          /tmp/chaos-wheel-smoke/bin/agentic-chaos hub list
+          /tmp/chaos-wheel-smoke/bin/agentic-chaos hub pull rag-context-poisoning hub-recipe.json
+          /tmp/chaos-wheel-smoke/bin/python -c "from agentic_chaos.hub import list_recipes; assert len(list_recipes()) >= 6"

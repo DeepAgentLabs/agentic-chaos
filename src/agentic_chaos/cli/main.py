@@ -1,3 +1,4 @@
+import hashlib
 import json
 import runpy
 import sys
@@ -15,6 +16,7 @@ from agentic_chaos.agents.topology import get_active_tracker, reset_active_track
 from agentic_chaos.chaos.faults import FAULT_REGISTRY, BaseFault, resolve_faults
 from agentic_chaos.chaos.profiles import load_profile
 from agentic_chaos.chaos.session import chaos_session
+from agentic_chaos.cli.hub import app as hub_app
 from agentic_chaos.cli.render import (
     render_chaos_events,
     render_contract_report,
@@ -100,6 +102,7 @@ workflow_app = typer.Typer(
     no_args_is_help=True,
 )
 chaos_app.add_typer(workflow_app, name="workflow")
+app.add_typer(hub_app, name="hub")
 console = Console()
 
 
@@ -296,6 +299,8 @@ def chaos_run(
         "--inject",
         help="Comma-separated fault names to enable, e.g. 'token_timeout,rate_limit_storm'.",
     ),
+    experiment: str | None = typer.Option(None, "--experiment", help="Bundled hub recipe."),
+    plugins: bool = typer.Option(False, "--plugins", help="Load installed fault plugin code."),
     profile: str | None = typer.Option(None, "--profile", help="Named chaos.toml profile."),
     profile_file: Path = typer.Option(
         Path("chaos.toml"), "--profile-file", help="TOML profile file."
@@ -354,16 +359,35 @@ def chaos_run(
         raise typer.Exit(code=1)
 
     try:
-        if (inject is None) == (profile is None):
-            raise ValueError("Provide exactly one of --inject or --profile")
-        configured = (
-            load_profile(profile, profile_file)
-            if profile is not None
-            else resolve_faults(inject or "")
-        )
+        if sum(value is not None for value in (inject, profile, experiment)) != 1:
+            raise ValueError("Provide exactly one of --inject, --profile or --experiment")
+        if plugins:
+            from agentic_chaos.hub.plugins import load_plugins
+
+            load_plugins()
+        if experiment is not None:
+            from agentic_chaos.experiments import load_experiment
+            from agentic_chaos.hub import recipe
+            from agentic_chaos.workflows import Step
+
+            compiled = load_experiment(recipe(experiment), check_targets=False)
+            node = compiled.workflow.nodes[0]
+            if not isinstance(node, Step):
+                raise ValueError("Direct script binding requires a single-step recipe")
+            configured = resolve_faults(node.faults)
+            if max_injections is None:
+                max_injections = 10
+        else:
+            configured = (
+                load_profile(profile, profile_file)
+                if profile is not None
+                else resolve_faults(inject or "")
+            )
         if not configured:
             raise ValueError("At least one fault is required")
         contracts = _parse_contracts(contract)
+        if experiment is not None:
+            contracts = [*node.contracts, *contracts]
         if baseline is not None:
             load_report(baseline)  # fail before running the script on a bad baseline
         breaker = CircuitBreaker(
@@ -403,6 +427,16 @@ def chaos_run(
 
     report = session.to_report(script.stem, end_time=ended_at, error=crashed)
     report.probes = [result.as_json() for result in probe_results]
+    if experiment is not None:
+        digest = hashlib.sha256(
+            json.dumps(compiled.document, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+        for event in [*report.chaos_events, *report.planned_events]:
+            event.setdefault("detail", {})["hub"] = {
+                "name": experiment,
+                "source": "bundled",
+                "sha256": digest,
+            }
     score = score_report(console, report, baseline=baseline, history=store)
     _save_reports(report, save=save, save_aios=save_aios, crashed=crashed)
     contract_report = _check_contracts(

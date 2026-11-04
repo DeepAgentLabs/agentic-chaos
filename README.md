@@ -43,10 +43,24 @@ tools that happen to compose.
 **Authenticated Containment Assertions** (`0.10.0`) are available.
 See [ROADMAP.md](ROADMAP.md) for the full plan.
 
+### ChaosHub (0.11.0)
+
+Six offline recipes, opt-in commit-pinned GitHub exchange and explicitly loaded
+fault plugins are implemented. See [the 30-second guide](docs/v0.11.md).
+
+```bash
+agentic-chaos hub list
+agentic-chaos hub search rag
+agentic-chaos hub pull rag-context-poisoning recipe.json
+agentic-chaos chaos run examples/chaoshub_app.py --experiment rag-context-poisoning --save hub-report.json
+```
+
+Recipes are generic instrumented-call scenarios; add quality/recovery assertions
+for your app. Downloading never executes target code. JSON recipes need no YAML
+extra; remote recipes require review before execution.
+
 ### What's Next
 
-- **ChaosHub (v0.11)** — bundled and community experiment recipes in the v0.8
-  experiment format, plus a fault plugin interface
 - **Structured experiment reports** — every chaos run emits a report with
   hypothesis, injection point provenance, observed behavior, and verdict
 

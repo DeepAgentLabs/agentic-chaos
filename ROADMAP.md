@@ -36,7 +36,7 @@ v0.8 in `0.8.0` ([guide](docs/v0.8.md)) and v0.9 in `0.9.0`
 - **v0.8** ✅ Complete — released as `0.8.0`; — Chaos Workflows, Declarative Experiments & Explosion Radius
 - **v0.9** ✅ Complete — released as `0.9.0`; — Resilience Probes & Resilience Score
 - **v0.10.0 / MCP Phase 6** — Implemented in 0.10.0: Lens-authenticated native containment assertions and paired acceptance
-- **v0.11** 🚧 Planned — ChaosHub (Shared Experiment Registry), after the coordinated containment-validation delivery
+- **v0.11** ✅ Implemented in 0.11.0 — ChaosHub (Shared Experiment Registry); [scope and guide](docs/v0.11.md)
 
 ## Cross-Project Dependencies
 
@@ -962,35 +962,35 @@ agentic-chaos hub list
 agentic-chaos hub search "rag"
 
 # Pull a community experiment
-agentic-chaos hub pull rag-retriever-failure
-agentic-chaos hub pull react-loop-resilience
+agentic-chaos hub pull rag-retriever-failure retriever.json
+agentic-chaos hub pull react-loop-resilience react.json
 
 # Run it against your app
 agentic-chaos chaos run my_app.py --experiment rag-retriever-failure
 
 # Contribute your own
-agentic-chaos hub push my_experiment.yaml
+agentic-chaos hub push my_experiment.json /path/to/registry-checkout
 ```
 
 **Bundled experiment recipes (ships with the package):**
 
 | Recipe | Pattern | Faults injected |
 |---|---|---|
-| `rag-retriever-failure` | RAG agents | Embedding timeout, vector DB empty results, retriever returns stale data |
-| `rag-context-poisoning` | RAG agents | Retrieved context contains contradictory or hallucinated information |
-| `react-loop-resilience` | ReAct agents | Tool chain failure mid-reasoning, observation corruption |
-| `multi-agent-coordinator-down` | Multi-agent | Coordinator agent timeout, inter-agent message loss |
-| `support-escalation-failure` | Customer support | Escalation path failure, knowledge base corruption |
-| `api-cascade-storm` | Tool-heavy agents | Multiple tools fail in sequence, simulating downstream outage |
+| `rag-retriever-failure` | RAG agents | Retriever timeout at an instrumented call |
+| `rag-context-poisoning` | RAG agents | Synthetic confidently wrong response |
+| `react-loop-resilience` | ReAct agents | Tool call failure |
+| `multi-agent-coordinator-down` | Multi-agent | Coordinator timeout |
+| `support-escalation-failure` | Customer support | Memory corruption at an instrumented call |
+| `api-cascade-storm` | Tool-heavy agents | Rate-limit storm at an instrumented API boundary |
 
 **Architecture:**
-- **Local hub**: Bundled YAML experiments shipped with the package (works offline)
+- **Local hub**: Bundled JSON (YAML-compatible) experiments shipped with the package (works offline)
 - **Remote hub**: GitHub-hosted registry for community contributions (opt-in,
   requires network)
-- Experiments are standard YAML files (same format as v0.8 declarative experiments)
+- Experiments are standard JSON documents (also valid YAML) (same format as v0.8 declarative experiments)
 - **Plugin interface**: a `BaseFault` ABC discovered via Python entry points
   (`pip install agentic-chaos-plugin-x` registers under an
-  `agentic_chaos.plugins` entry-point group and shows up automatically) —
+  `agentic_chaos.plugins` entry-point group and is listed automatically; loading code requires `--plugins`) —
   code-level fault packages, distinct from the YAML recipes above. Chaos
   Mesh's own roadmap admits it has no plugin SDK; every fault type there is
   in-tree and hand-maintained by the core team. `agentic-chaos` is already
@@ -999,14 +999,24 @@ agentic-chaos hub push my_experiment.yaml
   recipe list.
 
 **Deliverables:**
-- [ ] `agentic_chaos.hub` module (list, search, pull, push)
-- [ ] `agentic-chaos hub` CLI subcommand group
-- [ ] `BaseFault` plugin interface + `agentic_chaos.plugins` entry-point discovery
-- [ ] `agentic-chaos hub list` distinguishes bundled/remote YAML recipes from installed plugin packages
-- [ ] 6+ bundled experiment recipes (RAG, ReAct, multi-agent, support)
-- [ ] GitHub-hosted remote registry with contribution workflow
-- [ ] `--experiment` flag on `chaos run` to use hub recipes directly
-- [ ] README section + "getting started in 30 seconds" guide + demo GIF
+- [x] `agentic_chaos.hub` module (list, search, pull, push)
+- [x] `agentic-chaos hub` CLI subcommand group
+- [x] `BaseFault` plugin interface + `agentic_chaos.plugins` entry-point discovery
+- [x] `agentic-chaos hub list` distinguishes bundled/remote recipes from installed plugin packages
+- [x] 6+ bundled experiment recipes (RAG, ReAct, multi-agent, support)
+- [x] GitHub-hosted remote registry with contribution workflow
+- [x] `--experiment` flag on `chaos run` to use hub recipes directly
+- [x] README section + "getting started in 30 seconds" guide + demo GIF
+
+
+Implemented scope: [v0.11 guide](docs/v0.11.md), six framework-neutral starter
+recipes and a GitHub registry in this repository. `hub push` stages a validated
+contribution for an ordinary PR; it does not publish or authenticate. Remote
+list/search/pull require an explicit repository and full commit SHA. Plugin
+names are discovered without imports, and trusted code loads explicitly. The
+recipes simulate the named boundary with existing primitives, not specialized
+embedding/vector DB or framework adapters. The bundled script flag preserves
+fault parameters and assertions; edit downloaded recipes for full workflows.
 
 ---
 
