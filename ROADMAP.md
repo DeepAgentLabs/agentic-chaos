@@ -1429,3 +1429,8 @@ no package patch release is needed. See [compatibility and offline example](docs
 See [the candidate API, unchanged native schema and support matrix](docs/evals-0.12.md).
 Existing compatible dependency ranges remain sufficient; coordinated ecosystem
 v1.0 acceptance remains open.
+
+## Sidecar 0.10 compatibility — 2026-11-04
+
+Chaos retains native fault IDs, recovery proposals and resilience scoring; contract wrappers do not prove attack containment.
+See [candidate contracts, migration and operator example](docs/sidecar-0.10.md).
