@@ -1104,3 +1104,8 @@ v1.0 acceptance remains open.
 
 Chaos retains native fault IDs, recovery proposals and resilience scoring; contract wrappers do not prove attack containment.
 See [candidate contracts, migration and operator example](docs/sidecar-0.10.md).
+
+## Lens 0.13 readiness compatibility — 2026-11-04
+
+Lens analysis `>=0.7.0` and containment `>=0.12.0,<1` already admit 0.13.0. Chaos native reports, probes and resilience scores remain unchanged; enterprise gate/audit artifacts do not replace them.
+See [compatibility, boundaries and offline operator example](docs/lens-0.13.md).
