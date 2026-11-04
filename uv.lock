@@ -82,7 +82,7 @@ provides-extras = ["containment", "providers", "yaml", "pytest", "agenticlens", 
 
 [[package]]
 name = "agentic-evals"
-version = "0.7.1"
+version = "0.12.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jsonschema" },
@@ -90,14 +90,14 @@ dependencies = [
     { name = "pyyaml" },
     { name = "referencing" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/de/c4/8904c6f55178a79b67d3b564968c92c3d912b8f26d6255e52e9e5413a40b/agentic_evals-0.7.1.tar.gz", hash = "sha256:c78b16d51977fd61678fa7a115fa2871eef5376ff2337b65e086dde25467323c", size = 283028, upload-time = "2026-10-12T20:44:09.331Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/9b/c5/04a88a66f38166f4da6beeee8e60a92bb65012f3e919ad6f2944e82abb13/agentic_evals-0.12.0.tar.gz", hash = "sha256:feaff8ee040f6ae1998d296723e808d079b1656fa8668bceb3849c5eae6b0c96", size = 468059, upload-time = "2026-11-04T06:24:42.994Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/5b/b7/ad6d5678a10d5ae060b9ce292d188c92e67a6029987570175a6fa78c9d17/agentic_evals-0.7.1-py3-none-any.whl", hash = "sha256:e41e4b6b4f7cb50b9845afc4217f5e2516556edc107ffef431fad75044dc8fc5", size = 76781, upload-time = "2026-10-12T20:44:07.976Z" },
+    { url = "https://files.pythonhosted.org/packages/95/0c/efcf38195c9d59a650727dfc28fd9d2d94276ed9cea1a9b9ddbba9a54d1d/agentic_evals-0.12.0-py3-none-any.whl", hash = "sha256:008590c100243fc22c2826f4838b16840bfb4f1ba9ddf1b3c555f9caa7be8062", size = 124132, upload-time = "2026-11-04T06:24:41.515Z" },
 ]
 
 [[package]]
 name = "agenticlens"
-version = "0.12.0"
+version = "0.13.0"
 source = { editable = "../agenticlens" }
 dependencies = [
     { name = "agentic-evals" },
@@ -111,7 +111,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "agentic-evals", specifier = ">=0.7.1,<1" },
+    { name = "agentic-evals", specifier = ">=0.11.0,<1" },
     { name = "build", marker = "extra == 'dev'", specifier = ">=1.2" },
     { name = "fastapi", marker = "extra == 'api'", specifier = ">=0.115,<1" },
     { name = "fastapi", marker = "extra == 'dev'", specifier = ">=0.115,<1" },
