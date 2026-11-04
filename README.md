@@ -1109,3 +1109,7 @@ See [candidate contracts, migration and operator example](docs/sidecar-0.10.md).
 
 Lens analysis `>=0.7.0` and containment `>=0.12.0,<1` already admit 0.13.0. Chaos native reports, probes and resilience scores remain unchanged; enterprise gate/audit artifacts do not replace them.
 See [compatibility, boundaries and offline operator example](docs/lens-0.13.md).
+
+## Tower 0.10 capability contract readiness
+
+See [compatibility, operator example and dependency boundaries](docs/tower-0.10-compatibility.md). Tower publishes the local candidate `tower.capabilities.v1` with Python/Node HTTP validation. Chaos owns injection and resilience results. A resilience verdict is not deployment health. Existing optional dependencies remain sufficient; no package release or stable ecosystem claim is introduced.
