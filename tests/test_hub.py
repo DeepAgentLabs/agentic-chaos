@@ -125,6 +125,8 @@ def test_cli_and_recipe_script_binding(tmp_path: Path) -> None:
     assert result.exit_code == 0, result.output
     data = json.loads(report.read_text())
     assert data["chaos_events"]
+    assert data["chaos_events"][0]["detail"]["hub"]["name"] == "rag-context-poisoning"
+    assert len(data["chaos_events"][0]["detail"]["hub"]["sha256"]) == 64
     result = runner.invoke(
         app,
         [
@@ -173,3 +175,24 @@ def test_remote_catalog_and_download(monkeypatch: pytest.MonkeyPatch, tmp_path: 
     assert pull(
         row["name"], tmp_path / "remote.json", repository="owner/repo", ref="a" * 40
     ).exists()
+
+
+def test_binding_preserves_fault_options_and_ignores_placeholder_target(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    from agentic_chaos import hub
+
+    data = recipe("rag-context-poisoning")
+    data["faults"][0]["payload"] = "CUSTOM_SYNTHETIC_VALUE"
+    data["target"] = "never_import_this_module:main"
+    monkeypatch.setattr(hub, "recipe", lambda name: data)
+    script = tmp_path / "app.py"
+    script.write_text(
+        "from agentic_chaos import chaos_call\nprint(chaos_call(lambda: 'original'))\n"
+    )
+    result = CliRunner().invoke(
+        app, ["chaos", "run", str(script), "--experiment", "rag-context-poisoning"]
+    )
+    assert result.exit_code == 0, result.output
+    assert "CUSTOM_SYNTHETIC_VALUE" in result.output
+    assert "1/1 contracts passed" in result.output

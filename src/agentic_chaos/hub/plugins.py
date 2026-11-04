@@ -20,8 +20,14 @@ def load_plugins() -> list[str]:
         fault = point.load()
         if not isinstance(fault, type) or not issubclass(fault, BaseFault):
             raise ValueError(f"Plugin {point.name} must export a BaseFault subclass")
-        if inspect.isabstract(fault) or fault.name != point.name:
+        if inspect.isabstract(fault) or getattr(fault, "name", None) != point.name:
             raise ValueError(f"Plugin {point.name} must be concrete and have a matching name")
+        try:
+            inspect.signature(fault).bind()
+        except TypeError as exc:
+            raise ValueError(
+                f"Plugin {point.name} must support a zero-argument constructor"
+            ) from exc
         pending[point.name] = fault
     FAULT_REGISTRY.update(pending)
     return sorted(pending)

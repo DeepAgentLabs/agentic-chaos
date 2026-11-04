@@ -63,6 +63,8 @@ def pull(
     """
     _name(name)
     if repository is None:
+        if ref is not None:
+            raise ValueError("A commit ref requires a repository")
         data = recipe(name)
     else:
         if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository):

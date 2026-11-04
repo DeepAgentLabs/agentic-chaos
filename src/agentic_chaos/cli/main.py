@@ -1,3 +1,4 @@
+import hashlib
 import json
 import runpy
 import sys
@@ -426,6 +427,16 @@ def chaos_run(
 
     report = session.to_report(script.stem, end_time=ended_at, error=crashed)
     report.probes = [result.as_json() for result in probe_results]
+    if experiment is not None:
+        digest = hashlib.sha256(
+            json.dumps(compiled.document, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+        for event in [*report.chaos_events, *report.planned_events]:
+            event.setdefault("detail", {})["hub"] = {
+                "name": experiment,
+                "source": "bundled",
+                "sha256": digest,
+            }
     score = score_report(console, report, baseline=baseline, history=store)
     _save_reports(report, save=save, save_aios=save_aios, crashed=crashed)
     contract_report = _check_contracts(
