@@ -969,7 +969,7 @@ agentic-chaos hub pull react-loop-resilience react.json
 agentic-chaos chaos run my_app.py --experiment rag-retriever-failure
 
 # Contribute your own
-agentic-chaos hub push my_experiment.yaml /path/to/registry-checkout
+agentic-chaos hub push my_experiment.json /path/to/registry-checkout
 ```
 
 **Bundled experiment recipes (ships with the package):**

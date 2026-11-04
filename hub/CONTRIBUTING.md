@@ -1,7 +1,7 @@
 # Contributing a recipe
 
 Fork DeepAgentLabs/agentic-chaos, and create a branch. Run
-`agentic-chaos hub push recipe.yaml /path/to/your/checkout` to validate without
+`agentic-chaos hub push recipe.json /path/to/your/checkout` to validate without
 importing targets and stage `hub/recipes/NAME.json`. JSON is a YAML subset;
 contributions use JSON so downloads work without the optional YAML extra.
 Add its name and description to `hub/index.json`, include an offline test and
