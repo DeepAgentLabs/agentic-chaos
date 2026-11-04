@@ -54,6 +54,7 @@ plugins:
   - search
 
 nav:
+  - Evals 0.12 compatibility: evals-0.12.md
   - MCP Phase 6 Containment: phase6-containment.md
   - Evals 0.11 Containment Scoring: evals-0.11-containment.md
   - Sidecar 0.9 authority and privacy: sidecar-0.9.md
