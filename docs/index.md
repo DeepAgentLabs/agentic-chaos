@@ -6,7 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/DeepAgentLabs/agentic-chaos/blob/main/LICENSE)
 [![Python](https://img.shields.io/pypi/pyversions/agentic-chaos.svg)](https://pypi.org/project/agentic-chaos/)
 
-**Current version: 0.4.0**
+**Current version: 0.11.0**
 
 `agentic-chaos` deliberately breaks your app, with hung completions, provider
 rate-limit storms and silently corrupted output, and reports what happened. It is
