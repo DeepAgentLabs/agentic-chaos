@@ -119,3 +119,7 @@ Chaos exports stay `0.4-draft` and dependency boundaries are unchanged.
 ## ChaosHub 0.11
 
 [Discover offline recipes, exchange pinned GitHub experiments and load fault plugins](v0.11.md).
+
+## AIOS 0.8 operational artifacts
+
+See [optional operational artifact adoption](aios-0.8-operational-artifacts.md) for verification signals, audit events and investigation reports. Native contracts and supported markers remain unchanged.
