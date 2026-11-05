@@ -7,8 +7,10 @@ companion exporters/validators without moving fault execution or resilience
 scoring into those packages. Optional existing ranges remain sufficient; no
 Chaos runtime change or patch release is required.
 
-See the organization repository's release/candidate.json and isolated-wheel
-acceptance runner for exact source pins and validation. These internal runs do
+See the organization repository's [candidate matrix](https://github.com/DeepAgentLabs/.github/blob/feat/coordinated-v1-readiness/release/candidate.json)
+and revision-pinned [isolated-wheel acceptance runner](https://github.com/DeepAgentLabs/.github/blob/81343e3/scripts/accept_ecosystem.py)
+for source pins and validation. [Organization PR 67](https://github.com/DeepAgentLabs/.github/pull/67)
+introduces these artifacts; the matrix branch tracks the reviewed source pins. These internal runs do
 not establish independent AIOS acceptance, production deployment safety or
 exhaustive capture of behavior.
 
