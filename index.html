@@ -25,6 +25,16 @@
   <link rel="stylesheet" href="https://deepagentlabs.github.io/assets/css/beam.css">
   <link rel="stylesheet" href="https://deepagentlabs.github.io/assets/css/product-uniform.css">
   <link rel="stylesheet" href="https://deepagentlabs.github.io/assets/css/simulations.css">
+  <!-- Line icons in the top-menu style (nav.css .mega-icon) and left-aligned fault headers.
+       Belongs in the shared product-uniform.css; move it there when that file is updated. -->
+  <style>
+    .product-content :is(.feature-icon,.fault-emoji){flex:0 0 38px;width:38px;height:38px;display:grid;place-items:center;border:1px solid var(--ink,#07110e);background:#fff;font-size:0}
+    .product-content :is(.feature-icon,.fault-emoji) svg{width:19px;height:19px;fill:none;stroke:var(--ink,#07110e);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+    .product-content .fault-header{justify-content:flex-start;gap:12px}
+    .product-content .fault-header :is(.fault-emoji,.fault-name){margin-bottom:0}
+    .product-content .fault-header .fault-emoji{flex-basis:32px;width:32px;height:32px}
+    .product-content .fault-header .fault-badge{margin-left:auto}
+  </style>
   <script src="https://deepagentlabs.github.io/assets/js/site.js" defer></script>
   <script src="https://deepagentlabs.github.io/assets/js/usecases-data.js" defer></script>
   <script src="https://deepagentlabs.github.io/assets/js/usecases.js" defer></script>
@@ -174,7 +184,7 @@
     <!-- product-simulation:end -->
     <div class="product-content">
 <section>
-        <h2>Why Chaos Testing for Agents?</h2>
+        <h2>Why chaos testing <span class="hl">for agents?</span></h2>
         <p class="section-subtitle">
             Agentic AI systems are brittle. Your agent works fine in the lab, but what happens when the LLM times out,
             a tool fails, or shared memory gets corrupted? Most teams don't know until production breaks.
@@ -182,144 +192,58 @@
 
         <div class="feature-list">
             <div class="feature">
-                <div class="feature-icon">🤐</div>
-                <h3>Silent Failures Invisible to Monitoring</h3>
+                <div class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18A9 9 0 0 0 12 3zm0 5v4m0 4h.01"/></svg></div>
+                <h3>Silent failures invisible to monitoring</h3>
                 <p>Your LLM returns garbage, but latency and tokens look normal. No alert fires. Chaos testing catches this.</p>
             </div>
             <div class="feature">
-                <div class="feature-icon">⛓️</div>
-                <h3>Cascade Failures in Multi-Agent Systems</h3>
+                <div class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>
+                <h3>Cascade failures in multi-agent systems</h3>
                 <p>One tool fails → Agent A fails → Agent B cascades. Without topology tracking, you miss the link.</p>
             </div>
             <div class="feature">
-                <div class="feature-icon">🔄</div>
-                <h3>No Recovery Testing</h3>
+                <div class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.37"/></svg></div>
+                <h3>No recovery testing</h3>
                 <p>Your retry logic might fail under rate limits. Your turn limits might not prevent infinite loops. Prove it works.</p>
             </div>
             <div class="feature">
-                <div class="feature-icon">📊</div>
-                <h3>Resilience Unproven</h3>
-                <p>Observability shows cost/latency. Chaos shows recovery. Together, they prove your agent is production-ready.</p>
-            </div>
-            <div class="feature">
-                <div class="feature-icon">🚀</div>
-                <h3>Framework-Agnostic</h3>
-                <p>Works with any Python callable. LLM frameworks, agent frameworks, your custom code—no lock-in.</p>
-            </div>
-            <div class="feature">
-                <div class="feature-icon">⚡</div>
-                <h3>Zero Setup Overhead</h3>
-                <p>pip install agentic-chaos. Wrap your calls. Run under chaos. No framework modifications needed.</p>
+                <div class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg></div>
+                <h3>Resilience unproven</h3>
+                <p>Observability shows cost/latency. Chaos shows recovery. Together, they show whether your agent actually recovers.</p>
             </div>
         </div>
     </section>
 <section id="features">
-        <h2>How It Works</h2>
-        <p class="section-subtitle">agentic-chaos operates in two layers: LLM calls and agent workflows.</p>
-
-        <h3 style="font-size: 24px; margin-top: 48px; margin-bottom: 24px;">Three-Layer Testing</h3>
+        <h2>How it <span class="hl">works.</span></h2>
+        <p class="section-subtitle">Agentic Chaos operates across three layers: LLM calls, agent workflows, and handoff edges.</p>
 
         <div class="feature-list">
             <div class="feature">
-                <div class="feature-icon">🔌</div>
-                <h3>LLM Layer (v0.1)</h3>
+                <div class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7V3M15 7V3M7 7h10v4a5 5 0 0 1-10 0V7zM12 16v5"/></svg></div>
+                <h3>LLM layer</h3>
                 <p><strong>Test individual LLM calls</strong> — timeouts, rate limits, silent degradation. Works against any LLM, any provider.</p>
             </div>
             <div class="feature">
-                <div class="feature-icon">🤖</div>
-                <h3>Agent Layer (v0.2)</h3>
+                <div class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><line x1="12" y1="11" x2="12" y2="16"/></svg></div>
+                <h3>Agent layer</h3>
                 <p><strong>Test multi-agent workflows</strong> — tool failures, memory corruption, infinite loops. Tracks topology and cascades.</p>
             </div>
             <div class="feature">
-                <div class="feature-icon">⚖️</div>
-                <h3>Fidelity &amp; Handoff Layer (v0.3)</h3>
+                <div class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M3 9l9-6 9 6M4 20h16"/></svg></div>
+                <h3>Fidelity and handoff layer</h3>
                 <p><strong>Score whether corruption actually mattered</strong> and break the edge between two agents — LLM-as-judge fidelity scoring plus edge-scoped handoff corruption/drop/delay.</p>
             </div>
         </div>
-
-        <h3 style="font-size: 24px; margin-top: 48px; margin-bottom: 24px;">Architecture &amp; Fault Injection Flow</h3>
-        <div style=" padding: 32px 24px; margin-bottom: 32px; overflow-x: auto;">
-            <div style="display: flex; align-items: center; justify-content: space-between; min-width: 720px; gap: 16px;">
-                <div style="flex: 1; padding: 16px; text-align: center;">
-                    <div style="font-size: 24px; margin-bottom: 8px;">🤖</div>
-                    <div style="font-weight: 600; font-size: 14px;">Your Agent Code</div>
-                    <div style="font-size: 12px; margin-top: 4px;"><code>chaos_call(fn)</code></div>
-                </div>
-                <div style="font-size: 20px;">➔</div>
-                <div style="flex: 1; padding: 16px; text-align: center;">
-                    <div style="font-size: 24px; margin-bottom: 8px;">🌪️</div>
-                    <div style="font-weight: 600; font-size: 14px;">Chaos Session</div>
-                    <div style="font-size: 12px; margin-top: 4px;">Active context check</div>
-                </div>
-                <div style="font-size: 20px;">➔</div>
-                <div style="flex: 1; padding: 16px; text-align: center;">
-                    <div style="font-size: 24px; margin-bottom: 8px;">⚡</div>
-                    <div style="font-weight: 600; font-size: 14px;">Fault Injection</div>
-                    <div style="font-size: 12px; margin-top: 4px;">Timeout / Storm / Degradation</div>
-                </div>
-                <div style="font-size: 20px;">➔</div>
-                <div style="flex: 1; padding: 16px; text-align: center;">
-                    <div style="font-size: 24px; margin-bottom: 8px;">📋</div>
-                    <div style="font-weight: 600; font-size: 14px;">Resilience Evidence</div>
-                    <div style="font-size: 12px; margin-top: 4px;"><code>ChaosReport</code> JSON</div>
-                </div>
-            </div>
-        </div>
-
-        <h3 style="font-size: 24px; margin-top: 48px; margin-bottom: 24px;">Zero-Dependency Design</h3>
-
-        <div class="code-example">
-            <span class="code-tab">Python</span>
-            <pre>
-from agentic_chaos.chaos import chaos_call, chaos_session
-
-# Outside a session, this is a transparent pass-through
-result = llm.complete("What is AI?")
-
-# Inside a session, faults inject
-with chaos_session(["token_timeout", "silent_degradation"]):
-    try:
-        result = chaos_call(llm.complete, "What is AI?", faults=["token_timeout"])
-    except TokenTimeoutError:
-        # Handle timeout, then retry without the fault
-        result = llm.complete("What is AI?")
-
-# That's it. No instrumentation. No framework lock-in.</pre>
-        </div>
-
-        <h3 style="font-size: 24px; margin-top: 48px; margin-bottom: 24px;">Composition with Observability</h3>
-
-        <p style="font-size: 14px; margin-bottom: 24px; line-height: 1.8;">
-            Optional AgenticLens integration: merge chaos events straight into workflow reports so observability and resilience testing are one.
-        </p>
-
-        <div class="code-example">
-            <span class="code-tab">Python</span>
-            <pre>
-from agenticlens import profile, step
-from agentic_chaos.chaos import chaos_call, chaos_session
-
-with chaos_session(["token_timeout"]) as session:
-    with profile("Support Agent") as workflow:
-        with step("Retriever"):
-            chunks = chaos_call(retriever.search, query, faults=["token_timeout"])
-
-# Merge chaos events into workflow
-attach_events(session, workflow)
-
-# agenticlens analyze workflow.json
-# → Shows cost/latency + chaos impact together</pre>
-        </div>
     </section>
 <section id="faults">
-        <h2>All Fault &amp; Drift Types</h2>
-        <p class="section-subtitle">8 resilience &amp; drift primitives across LLM, agent, handoff, and drift layers. Extensible—add your own.</p>
+        <h2>All fault and <span class="hl">drift types.</span></h2>
+        <p class="section-subtitle">Eight resilience and drift primitives across LLM, agent, handoff, and drift layers. Bring your own fault class or pull a recipe from <a href="docs/v0.11/">ChaosHub</a>.</p>
 
         <div class="faults-grid">
             <!-- LLM Faults -->
             <div class="fault-card">
                 <div class="fault-header">
-                    <span class="fault-emoji">⏱️</span>
+                    <span class="fault-emoji"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
                     <span class="fault-name">TokenTimeout</span>
                     <span class="fault-badge badge-llm">LLM</span>
                 </div>
@@ -338,7 +262,7 @@ attach_events(session, workflow)
 
             <div class="fault-card">
                 <div class="fault-header">
-                    <span class="fault-emoji">🌪️</span>
+                    <span class="fault-emoji"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 10 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"/></svg></span>
                     <span class="fault-name">RateLimitStorm</span>
                     <span class="fault-badge badge-llm">LLM</span>
                 </div>
@@ -357,7 +281,7 @@ attach_events(session, workflow)
 
             <div class="fault-card">
                 <div class="fault-header">
-                    <span class="fault-emoji">🤐</span>
+                    <span class="fault-emoji"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18A9 9 0 0 0 12 3zm0 5v4m0 4h.01"/></svg></span>
                     <span class="fault-name">SilentDegradation</span>
                     <span class="fault-badge badge-llm">LLM</span>
                 </div>
@@ -376,7 +300,7 @@ attach_events(session, workflow)
 
             <div class="fault-card">
                 <div class="fault-header">
-                    <span class="fault-emoji">🔧</span>
+                    <span class="fault-emoji"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span>
                     <span class="fault-name">ToolCallFailure</span>
                     <span class="fault-badge badge-agent">Agent</span>
                 </div>
@@ -395,7 +319,7 @@ attach_events(session, workflow)
 
             <div class="fault-card">
                 <div class="fault-header">
-                    <span class="fault-emoji">💾</span>
+                    <span class="fault-emoji"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h14a2 2 0 0 1 2 2v3H3V5a2 2 0 0 1 2-2zm-2 6h18v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9zm5 4h4"/></svg></span>
                     <span class="fault-name">MemoryCorruption</span>
                     <span class="fault-badge badge-agent">Agent</span>
                 </div>
@@ -414,7 +338,7 @@ attach_events(session, workflow)
 
             <div class="fault-card">
                 <div class="fault-header">
-                    <span class="fault-emoji">♻️</span>
+                    <span class="fault-emoji"><svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.37"/></svg></span>
                     <span class="fault-name">InfiniteLoop</span>
                     <span class="fault-badge badge-agent">Agent</span>
                 </div>
@@ -433,7 +357,7 @@ attach_events(session, workflow)
 
             <div class="fault-card">
                 <div class="fault-header">
-                    <span class="fault-emoji">🔗</span>
+                    <span class="fault-emoji"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></span>
                     <span class="fault-name">HandoffCorruption</span>
                     <span class="fault-badge badge-agent">Agent</span>
                 </div>
@@ -452,9 +376,9 @@ attach_events(session, workflow)
 
             <div class="fault-card">
                 <div class="fault-header">
-                    <span class="fault-emoji">🧭</span>
+                    <span class="fault-emoji"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg></span>
                     <span class="fault-name">DriftDetector</span>
-                    <span class="fault-badge badge-llm" style="">v0.4.0</span>
+                    <span class="fault-badge badge-drift">Drift</span>
                 </div>
                 <p class="fault-description">Snapshot and compare prompts, models, outputs &amp; retrieval sets. Detects silent changes and fails CI (exit code 2).</p>
                 <div class="fault-meta">
@@ -468,10 +392,29 @@ attach_events(session, workflow)
                     </div>
                 </div>
             </div>
+
+            <div class="fault-card">
+                <div class="fault-header">
+                    <span class="fault-emoji"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span>
+                    <span class="fault-name">Your own fault</span>
+                    <span class="fault-badge badge-plugin">Plugin</span>
+                </div>
+                <p class="fault-description">Extend the catalog with a custom fault class or pull a ready-made recipe from ChaosHub, the shared experiment registry.</p>
+                <div class="fault-meta">
+                    <div class="meta-item">
+                        <div class="meta-label">Docs</div>
+                        <div class="meta-value"><a href="docs/v0.11/#fault-plugins">Writing a fault →</a></div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">Hub</div>
+                        <div class="meta-value"><a href="docs/v0.11/">ChaosHub →</a></div>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
 <section id="quickstart">
-        <h2>Quick Start (5 minutes)</h2>
+        <h2>Quick <span class="hl">start.</span></h2>
         <p class="section-subtitle">Install, wrap your calls, run under chaos.</p>
 
         <h3 style="font-size: 20px; margin-top: 32px; margin-bottom: 16px;">1. Install</h3>
@@ -480,7 +423,7 @@ attach_events(session, workflow)
             <pre>pip install agentic-chaos</pre>
         </div>
 
-        <h3 style="font-size: 20px; margin-top: 32px; margin-bottom: 16px;">2. Wrap Your LLM Calls</h3>
+        <h3 style="font-size: 20px; margin-top: 32px; margin-bottom: 16px;">2. Wrap a call</h3>
         <div class="code-example">
             <span class="code-tab">Python</span>
             <pre>
@@ -497,7 +440,7 @@ with chaos_session(["token_timeout"]):
         print("LLM timed out—handled gracefully")</pre>
         </div>
 
-        <h3 style="font-size: 20px; margin-top: 32px; margin-bottom: 16px;">3. Run from CLI</h3>
+        <h3 style="font-size: 20px; margin-top: 32px; margin-bottom: 16px;">3. Run from the CLI</h3>
         <div class="code-example">
             <span class="code-tab">bash</span>
             <pre>
@@ -514,178 +457,20 @@ agentic-chaos chaos run my_app.py \
 
 # Saved chaos report to chaos_report.json</pre>
         </div>
-
-        <h3 style="font-size: 20px; margin-top: 32px; margin-bottom: 16px;">4. View Reports</h3>
-        <p style="font-size: 14px; margin-bottom: 16px;">
-            The report is standalone JSON — load it, analyze it, integrate with your observability stack.
-        </p>
-
-        <div class="code-example">
-            <span class="code-tab">JSON</span>
-            <pre>
-{
-  "chaos_events": [
-    {
-      "fault_type": "token_timeout",
-      "step_name": "Retriever",
-      "outcome": "errored",
-      "message": "call hung for 2.0s then timed out"
-    }
-  ]
-}</pre>
-        </div>
-
-        <div class="cta-section">
-            <h2>Ready to Test Your Agent's Resilience?</h2>
-            <p>Clone the repo, run a quickstart example, or check out the full documentation.</p>
-            <div class="hero-cta">
-                <a href="https://github.com/DeepAgentLabs/agentic-chaos" target="_blank" class="btn-large" style="">Star on GitHub</a>
-                <a href="https://github.com/DeepAgentLabs/agentic-chaos/tree/main/examples" target="_blank" class="btn-large" style="">View Examples</a>
-            </div>
-        </div>
-    </section>
-<section id="roadmap">
-        <h2>Roadmap</h2>
-        <p class="section-subtitle">From v0.1 shipped to v1.0 (ChaosHub community registry).</p>
-
-        <div class="roadmap-grid">
-            <div class="roadmap-item">
-                <div class="roadmap-version">v0.1</div>
-                <span class="roadmap-status status-shipped">✓ Shipped</span>
-                <div class="roadmap-description">LLM Chaos Toolkit (3 faults, CLI, AgenticLens adapter)</div>
-            </div>
-
-            <div class="roadmap-item">
-                <div class="roadmap-version">v0.2</div>
-                <span class="roadmap-status status-shipped">✓ Shipped (2026-07-13)</span>
-                <div class="roadmap-description">Agent Failure Injector (3 agent faults, topology tracking, framework-agnostic wrap_tool()/wrap_node() helpers)</div>
-            </div>
-
-            <div class="roadmap-item">
-                <div class="roadmap-version">v0.3</div>
-                <span class="roadmap-status status-shipped">✓ Shipped</span>
-                <div class="roadmap-description">Fidelity Judges & Handoff Chaos (LLM-as-judge scoring, edge-scoped faults)</div>
-            </div>
-
-            <div class="roadmap-item">
-                <div class="roadmap-version">v0.4</div>
-                <span class="roadmap-status status-shipped">✓ Shipped (2026-08-15)</span>
-                <div class="roadmap-description">Prompt/Model Drift Detector (snapshot, compare, detect silent changes)</div>
-            </div>
-
-            <div class="roadmap-item">
-                <div class="roadmap-version">v0.5</div>
-                <span class="roadmap-status status-shipped">✓ Shipped (0.5.0–0.5.3)</span>
-                <div class="roadmap-description">Streaming Faults, Provider Patching, Chaos Profiles & Safety Rails</div>
-            </div>
-
-            <div class="roadmap-item">
-                <div class="roadmap-version">v0.6</div>
-                <span class="roadmap-status status-shipped">✓ Shipped (0.6.0)</span>
-                <div class="roadmap-description">Pytest Plugin & Contracts (pytest --chaos, 7 pass/fail contracts, CI gating)</div>
-            </div>
-
-            <div class="roadmap-item">
-                <div class="roadmap-version">v0.7</div>
-                <span class="roadmap-status status-shipped">✓ Shipped (0.7.0)</span>
-                <div class="roadmap-description">Fault Cascades, Adaptive Intensity & Response Poisoning</div>
-            </div>
-
-            <div class="roadmap-item">
-                <div class="roadmap-version">v0.8</div>
-                <span class="roadmap-status status-shipped">✓ Shipped (0.8.0)</span>
-                <div class="roadmap-description">Chaos Workflows, Declarative Experiments & Explosion Radius (gated campaigns, YAML lint, Scope, topology fuzzer)</div>
-            </div>
-
-            <div class="roadmap-item">
-                <div class="roadmap-version">v0.9</div>
-                <span class="roadmap-status status-shipped">✓ Shipped (0.9.0)</span>
-                <div class="roadmap-description">Resilience Probes & Resilience Score (pre/during/post probes, 0–100 score, trends with retention, --min-score CI gate)</div>
-            </div>
-
-            <div class="roadmap-item">
-                <div class="roadmap-version">v1.0</div>
-                <span class="roadmap-status status-planned">🚧 Planned</span>
-                <div class="roadmap-description">ChaosHub (Shared Experiment Registry)</div>
-            </div>
-        </div>
-
-        <p style="font-size: 14px; margin-top: 48px; line-height: 1.8; text-align: center;">
-            Each version is a minor bump on the same package — incremental PyPI releases with sustained activity. <br>
-            <strong><a href="https://github.com/DeepAgentLabs/agentic-chaos/blob/main/ROADMAP.md" target="_blank" style=" text-decoration: none;">View full roadmap →</a></strong>
-        </p>
-    </section>
-<section>
-        <h2>How agentic-chaos Compares</h2>
-        <p class="section-subtitle">What makes agentic-chaos unique in the market.</p>
-
-        <table class="comparison-table">
-            <thead>
-                <tr>
-                    <th>Feature</th>
-                    <th>ChaosEater</th>
-                    <th>Fault Injection FW</th>
-                    <th>Observability Tools</th>
-                    <th>agentic-chaos</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td><strong>Zero Dependencies</strong></td>
-                    <td>✗</td>
-                    <td>✗</td>
-                    <td>✗</td>
-                    <td>✅</td>
-                </tr>
-                <tr>
-                    <td><strong>LLM Faults</strong></td>
-                    <td>✗</td>
-                    <td>✓</td>
-                    <td>✓</td>
-                    <td>✅ (3 types)</td>
-                </tr>
-                <tr>
-                    <td><strong>Agent Faults</strong></td>
-                    <td>✗</td>
-                    <td>Limited</td>
-                    <td>Limited</td>
-                    <td>✅ (3 types)</td>
-                </tr>
-                <tr>
-                    <td><strong>Silent Degradation</strong></td>
-                    <td>Not mentioned</td>
-                    <td>Implicit</td>
-                    <td>Implicit</td>
-                    <td>✅ Explicit</td>
-                </tr>
-                <tr>
-                    <td><strong>Topology Tracking</strong></td>
-                    <td>✗</td>
-                    <td>✗</td>
-                    <td>Tracing only</td>
-                    <td>✅ Graph + cascades</td>
-                </tr>
-                <tr>
-                    <td><strong>Framework Agnostic</strong></td>
-                    <td>Kubernetes only</td>
-                    <td>Partially</td>
-                    <td>Framework-specific</td>
-                    <td>✅ Any Python callable</td>
-                </tr>
-                <tr>
-                    <td><strong>Production Ready</strong></td>
-                    <td>Research</td>
-                    <td>Emerging</td>
-                    <td>Mature</td>
-                    <td>✅ Shipped v0.3</td>
-                </tr>
-            </tbody>
-        </table>
     </section>
     </div>
     <section class="cta section-shell pp-cta product-end">
-      <div><p class="section-label">Start building</p><h2>Put Agentic Chaos to work.</h2><p>Start with the documentation, explore the examples, or contribute on GitHub.</p></div>
-      <div class="hero-actions"><a class="button button-primary" href="docs/">Read the docs →</a><a class="button button-secondary" href="https://github.com/DeepAgentLabs/agentic-chaos">View on GitHub ↗</a></div>
+      <div>
+        <p class="section-label">Alpha</p>
+        <h2>Put Agentic Chaos <span class="hl">to work.</span></h2>
+        <p>Start with the documentation, explore the fault catalog, or contribute on GitHub.</p>
+      </div>
+      <div class="hero-actions">
+        <a class="button button-primary" href="docs/">Docs →</a>
+        <a class="button button-secondary" href="https://github.com/DeepAgentLabs/agentic-chaos">GitHub ↗</a>
+        <a class="button button-secondary" href="https://pypi.org/project/agentic-chaos/">PyPI ↗</a>
+        <a class="button button-secondary" href="docs/roadmap/">Roadmap →</a>
+      </div>
     </section>
   </main>
   <footer class="site-footer">
