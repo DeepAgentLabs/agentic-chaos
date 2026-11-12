@@ -7,7 +7,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "agentic-chaos"
-version = "0.11.0"
+version = "1.0.0"
 description = "Standalone fault injection toolkit for LLM calls and agentic workflows, with an optional AgenticLens integration."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -33,7 +33,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-containment = ["agenticlens>=0.12.0,<1"]
+containment = ["agenticlens>=0.12.0,<2"]
 providers = ["openai>=1.0", "anthropic>=0.40", "google-genai>=1.0"]
 # YAML experiment files (`agentic-chaos experiment ...`); JSON and TOML need nothing extra.
 yaml = ["pyyaml>=6.0"]
