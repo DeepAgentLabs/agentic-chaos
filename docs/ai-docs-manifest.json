@@ -1,0 +1,97 @@
+{
+  "product": "Agentic Chaos",
+  "repository": "agentic-chaos",
+  "distribution": "agentic-chaos",
+  "document": "llms-full.txt",
+  "content_type": "text/markdown; charset=utf-8",
+  "sha256": "27d7d0d6474715aba6b0a50be8178dcdc8c1816129d72043f5112fc175bedd23",
+  "source_hash_normalization": "UTF-8 text with LF newlines",
+  "human_guide": "developer-guide.md",
+  "sources": [
+    {
+      "path": "pyproject.toml",
+      "kind": "package-metadata",
+      "sha256": "c97695be48c935ddb9704c38c99e6b469e5470287409d9a1c580bb5b678da6a7"
+    },
+    {
+      "path": "docs/ai-docs.json",
+      "kind": "source-selection",
+      "sha256": "c43b5f9b9d94500f1805c7358d79ff13ccd930aeb3b7d140ed138a2ac8fe7709"
+    },
+    {
+      "path": "docs/developer-guide.md",
+      "kind": "reference",
+      "sha256": "5e61b4c1768b379e8a4e5718322b093379ef3d39dfde2dec1ccf579f59c86380"
+    },
+    {
+      "path": "docs/api-reference.md",
+      "kind": "reference",
+      "sha256": "110424c66d482e5bddea6ba7f23e5d78a0cd14d9ad6edfe6e93ddaaacec9b46d"
+    },
+    {
+      "path": "docs/cli-reference.md",
+      "kind": "reference",
+      "sha256": "6344c559b5fb2443d130d87a812aebf823d58f65ca3209df348c23aae581d544"
+    },
+    {
+      "path": "docs/output-formats.md",
+      "kind": "reference",
+      "sha256": "940056f23593ae576ddac5eb39ac79e8f87d8e2fbe2140802e22951ed9492ab2"
+    },
+    {
+      "path": "docs/safety.md",
+      "kind": "reference",
+      "sha256": "38ff60f41d67a3737b0cab82ac300f2b1b565ebc0fae51c299aa7476bca1cc77"
+    },
+    {
+      "path": "docs/limitations.md",
+      "kind": "reference",
+      "sha256": "bdf326b429d8f3f4a2405e7ebe832a072aacf73a93fd718b9fd90965f36986c0"
+    },
+    {
+      "path": "src/agentic_chaos/__init__.py",
+      "kind": "source-contract",
+      "sha256": "5dc4c89a7068fe2c0093f7282185f3bdf5f66d3be6153f0d31d97e395fc0f20b"
+    },
+    {
+      "path": "src/agentic_chaos/models/__init__.py",
+      "kind": "source-contract",
+      "sha256": "ea566af6532973829010d787f9e15f4be2102615ef33383c4f436ed7a15db53e"
+    },
+    {
+      "path": "src/agentic_chaos/models/agent_topology.py",
+      "kind": "source-contract",
+      "sha256": "efed63c9c7337fa17a7fd5e228f233f169ef2a226c0b3177ebb88eb1f088cb93"
+    },
+    {
+      "path": "src/agentic_chaos/models/chaos_event.py",
+      "kind": "source-contract",
+      "sha256": "e16ea0c0398aaf4be1a0c4440f8fb4f8a87072b15f347adc04676a140ed86958"
+    },
+    {
+      "path": "src/agentic_chaos/models/report.py",
+      "kind": "source-contract",
+      "sha256": "4fe202caeb73aaf061e7c0ac83ff5e9ce35cb2e82dbb9d43f42c71d3c67205ac"
+    },
+    {
+      "path": "src/agentic_chaos/chaos/faults.py",
+      "kind": "source-contract",
+      "sha256": "24e6c13f28e22de3d2958efd52673f4d3f98309da757a22f83e1b24e74ebb84f"
+    },
+    {
+      "path": "src/agentic_chaos/agents/faults.py",
+      "kind": "source-contract",
+      "sha256": "db1b5e406dba13db206e7798201feabcc3407ab3bf4ceb1292753f0bb6a12390"
+    },
+    {
+      "path": "src/agentic_chaos/chaos/inject.py",
+      "kind": "source-contract",
+      "sha256": "7775ade28aa82f2c77261106c95e40ad745967ce86d09c744693ce91b0a9b9e6"
+    },
+    {
+      "path": "docs/guide/examples/chaos_quickstart.py",
+      "kind": "example",
+      "sha256": "4d1e9805645b3749d0e49931e45dce4411f5b169fa43071effc48ae64213636c"
+    }
+  ]
+}
