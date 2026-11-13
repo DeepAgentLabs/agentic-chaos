@@ -1,127 +1,79 @@
 # Agentic Chaos
 
-**Fault injection for LLM calls and agentic workflows.**
+## Agentic Chaos overview
 
-[![PyPI](https://img.shields.io/pypi/v/agentic-chaos.svg)](https://pypi.org/project/agentic-chaos/)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/DeepAgentLabs/agentic-chaos/blob/main/LICENSE)
-[![Python](https://img.shields.io/pypi/pyversions/agentic-chaos.svg)](https://pypi.org/project/agentic-chaos/)
+How does the application behave when a dependency fails?
 
-**Current version: 0.11.0**
+A wrapped callable or experiment target plus fault configuration. Fault events, experiment reports, and resilience evidence.
 
-`agentic-chaos` deliberately breaks your app, with hung completions, provider
-rate-limit storms and silently corrupted output, and reports what happened. It is
-a standalone toolkit with **no required dependency on any other package**, including
-[AgenticLens](https://deepagentlabs.io/agenticlens/docs/). Install it with
-`pip install agentic-chaos` and use it against any plain Python callable.
+**When to start here**
 
-Within the broader DeepAgentLabs architecture, Agentic Chaos is the resilience and
-failure-validation reference implementation for the **AI Operations Workflow
-Specification**. It injects, validates, tests and proves resilience, while keeping its
-workflow artifacts compatible with the shared operational model used by AgenticLens
-and the MCP layer.
+Inject a timeout into a local dummy search call.
 
-## What it does
+## Inputs and outputs
 
-| Capability | Introduced | What you get |
-| --- | --- | --- |
-| **LLM Chaos Toolkit** | v0.1 | Three LLM-level faults: `token_timeout`, `rate_limit_storm`, `silent_degradation` |
-| **Agent Failure Injector** | v0.2 | Agent-level faults: `tool_failure`, `memory_corruption`, `infinite_loop` |
-| **Fidelity Judges & Handoff Chaos** | v0.3.0 | Score whether corrupted output actually got worse; corrupt, drop or delay handoffs between agents; record workflow topology |
-| **Prompt/Model Drift Detector** | v0.4.0 | Snapshot and compare prompts, models, outputs and retrieval results; fail CI on silent change |
-| **AgenticLens integration** | optional extra | Merge chaos events into an AgenticLens `Workflow` so `agenticlens analyze` reports chaos impact |
+| You provide | You receive |
+| --- | --- |
+| A wrapped callable or experiment target plus fault configuration. | Fault events, experiment reports, and resilience evidence. |
 
-## Why it matters
+## Execution boundary
 
-Production agent systems fail in ways that ordinary logs rarely reveal. A provider
-returns 429s for thirty seconds. A completion hangs. A model update quietly changes
-answers while latency and token counts look perfect. Agentic Chaos lets you cause
-these failures on purpose, in a test or a staging run, and see whether your fallbacks,
-retries and guardrails actually work.
+A fault being injected does not prove successful recovery. Inspect application behavior and define recovery assertions.
 
-The hardest failure to catch is **silent degradation**: nothing in cost or latency
-telemetry looks wrong, but the output is worse. Fidelity judges and the drift detector
-exist for exactly this case.
+[Start the Agentic Chaos quickstart →](guide/quickstart.md)
 
-## A 30-second example
+## Capabilities
 
-```python
-from agentic_chaos.chaos import chaos_call, TokenTimeoutError
+Use these capabilities to address stress-test tasks in your application.
 
-try:
-    chunks = chaos_call(retriever.search, user_question, faults=["token_timeout"])
-except TokenTimeoutError:
-    chunks = []  # no fallback handled it -- this is exactly what we want to find
+| Capability | What it provides |
+| --- | --- |
+| Call-level faults | Inject timeouts, rate limiting, or output degradation around a selected callable. |
+| Agent-level faults | Exercise tool failure, memory corruption, forced continuation, and handoff failure. |
+| Explicit sessions | Activate faults within a bounded experiment instead of changing normal execution. |
+| Fidelity evaluation | Compare the quality implications of corrupted outputs with configured judges. |
+| Drift detection | Snapshot and compare prompts, outputs, model identity, and retrieval evidence. |
+| Integration evidence | Export recorded faults and optionally correlate them with Lens observations. |
+
+## Supported scope
+
+A fault being injected does not prove successful recovery. Inspect application behavior and define recovery assertions.
+
+## Core concepts
+
+| Concept | Meaning |
+| --- | --- |
+| Call wrapper | chaos_call forwards to the real function unless an active session selects a relevant fault. |
+| Fault configuration | Names use default settings; fault instances allow explicit parameter values. |
+| Event | A record of injected behavior and its outcome; not a declaration that recovery was adequate. |
+| Experiment target | The application path being stressed, including its error handling and fallback behavior. |
+| Fidelity vs drift | Fidelity concerns degraded-output quality; drift concerns changes between recorded snapshots. |
+
+## Recommended workflow
+
+## Establish a normal baseline
+
+Run the application without an active fault session. Record its useful output and the time/cost constraints you expect recovery to preserve.
+
+## Select a failure hypothesis
+
+For example: if retrieval times out, the application should return an explicit fallback within the allowed duration. Select the specific call site and fault rather than injecting unrelated failures everywhere.
+
+```
+agentic-chaos chaos list-faults
+agentic-chaos chaos run chaos_quickstart.py --inject token_timeout --save chaos_run.json
 ```
 
-Outside a `chaos_session(...)`, `chaos_call()` is a transparent pass-through, so the
-instrumented code path is safe to ship. Chaos only activates when you turn it on, in
-code or from the CLI:
+## Inspect recovery
 
-```bash
-agentic-chaos chaos run my_app.py --inject token_timeout,rate_limit_storm --save chaos_run.json
-```
+The recorded event establishes that the fault occurred. Separately check whether the caller retried, switched providers, returned useful fallback content, or surfaced a clear error.
 
-## Documentation map
+## Make the experiment repeatable
 
-| Page | Read it when you want to... |
-| --- | --- |
-| [Getting Started](getting-started.md) | Install the package and run your first experiment |
-| [Architecture](architecture.md) | Understand how sessions, faults, judges and drift fit together |
-| [Features](features.md) | See every capability with usage |
-| [Configuration](configuration.md) | Tune fault parameters, CLI flags and CI behavior |
-| [API Reference](api-reference.md) | Look up Python functions, classes and exceptions |
-| [CLI Reference](cli-reference.md) | Look up every `agentic-chaos` command and option |
-| [Integrations](integrations.md) | Connect to AgenticLens, eval frameworks, MCP and CI |
-| [Examples](examples.md) | Copy working recipes |
-| [Output Formats](output-formats.md) | Read or consume the JSON the tool writes |
-| [Troubleshooting](troubleshooting.md) | Fix common problems |
-| [Limitations](limitations.md) | Know what the package does not do yet |
-| [Roadmap](roadmap.md) | See what is planned |
+Use explicit fault parameters and seeds when available. Retain normal output, fault settings, the resulting report, and the recovery assertion. Add compound scenarios only after individual failure modes are understood.
 
-## The DeepAgentLabs ecosystem
+## Next steps
 
-Each DeepAgentLabs project answers a different operational question, and each can be
-adopted on its own.
+Inject a timeout into a local dummy search call.
 
-| Project | Question it answers |
-| --- | --- |
-| [AgenticLens](https://github.com/DeepAgentLabs/agenticlens) | What did the agent do, and what happened? |
-| **Agentic Chaos** | How does the agent behave when things go wrong? |
-| Agentic MCP | How does the agent interact with tools and external capabilities? |
-| AgenticOps Control Tower | What is deployed, and what governance posture exists across agents? |
-| Agentic Sidecar | Should the agent continue with this decision, and is it still acting according to intent? |
-
-## Current status
-
-`agentic-chaos` is **early-stage (alpha) software**. Every milestone through
-v0.9 has shipped. The latest is 0.9.0, which adds
-[resilience probes and the resilience score](v0.9.md). Earlier milestones
-added fault injection, agent faults, fidelity judges, drift detection,
-streaming faults, safety rails, contracts, cascades, workflows and
-experiments. APIs may change between minor versions. See the
-[Roadmap](roadmap.md) and the
-[changelog](https://github.com/DeepAgentLabs/agentic-chaos/blob/main/CHANGELOG.md).
-
-## License
-
-MIT. See the [LICENSE](https://github.com/DeepAgentLabs/agentic-chaos/blob/main/LICENSE).
-
-## AIOS v0.6 compatibility
-
-See [canonical examples and extension guidance](aios-v0.6.md) for draft
-artifact validation and unchanged dependency boundaries.
-
-## AIOS v0.6.1 compatibility
-
-See [provenance records and the portable conformance suite](aios-0.6.1.md);
-Chaos exports stay `0.4-draft` and dependency boundaries are unchanged.
-
-## ChaosHub 0.11
-
-[Discover offline recipes, exchange pinned GitHub experiments and load fault plugins](v0.11.md).
-
-## AIOS 0.8 operational artifacts
-
-See [optional operational artifact adoption](aios-0.8-operational-artifacts.md) for verification signals, audit events and investigation reports. Native contracts and supported markers remain unchanged.
-
-See [coordinated v1.0 engineering readiness](coordinated-v1-readiness.md) for candidate scope, migration and remaining acceptance gates.
+[Open the developer quickstart →](guide/quickstart.md)
