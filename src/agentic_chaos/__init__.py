@@ -83,7 +83,7 @@ for _fault in (
     FAULT_REGISTRY[_fault.name] = _fault
 
 
-__version__ = "1.0.1"
+__version__ = "1.0.2"
 
 __all__ = [
     "FunctionProbe",
