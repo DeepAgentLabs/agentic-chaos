@@ -5,6 +5,15 @@ All notable changes to this project are documented here.
 ## [Unreleased]
 
 
+
+## [1.0.2] - 2026-11-13
+
+### Changed
+
+- Provide a short product overview and one complete developer guide with five main sections.
+- Limit public navigation to the product guides and remove repetitive implementation and release-note listings.
+- Correct reviewed examples and configuration explanations; preserve runtime behavior and schema versions.
+
 ## [1.0.1] - 2026-11-12
 
 ### Changed
