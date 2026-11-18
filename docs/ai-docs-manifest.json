@@ -2,7 +2,7 @@
   "product": "Agentic Chaos",
   "repository": "agentic-chaos",
   "distribution": "agentic-chaos",
-  "document": "llms-full.txt",
+  "document": "llms-full.md",
   "content_type": "text/markdown; charset=utf-8",
   "sha256": "27d7d0d6474715aba6b0a50be8178dcdc8c1816129d72043f5112fc175bedd23",
   "source_hash_normalization": "UTF-8 text with LF newlines",
