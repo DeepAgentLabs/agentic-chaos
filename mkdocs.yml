@@ -54,6 +54,8 @@ plugins:
   - search
 
 nav:
+  - Developer Guide (simple): developer-guide.md
+  - AI Reference capability index: ai-reference-index.md
   - Coordinated v1 readiness: coordinated-v1-readiness.md
   - MCP 0.7 readiness: mcp-0.7-readiness.md
   - ChaosHub 0.11: v0.11.md

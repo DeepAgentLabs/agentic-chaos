@@ -3,36 +3,189 @@
   "scope": "Inject controlled faults into explicit execution boundaries and inspect resulting evidence. Fault injection alone does not demonstrate successful recovery.",
   "references": [
     {
+      "title": "AI Reference capability index",
+      "path": "docs/ai-reference-index.md"
+    },
+    {
       "title": "Setup and task workflows",
       "path": "docs/developer-guide.md"
     },
     {
-      "title": "Api Reference",
+      "title": "Core features",
+      "path": "docs/features.md"
+    },
+    {
+      "title": "Architecture",
+      "path": "docs/architecture.md"
+    },
+    {
+      "title": "API reference",
       "path": "docs/api-reference.md"
     },
     {
-      "title": "Cli Reference",
+      "title": "CLI reference",
       "path": "docs/cli-reference.md"
     },
     {
-      "title": "Output Formats",
+      "title": "Configuration",
+      "path": "docs/configuration.md"
+    },
+    {
+      "title": "Streaming, async calls, provider patches and profiles",
+      "path": "docs/v0.5.md"
+    },
+    {
+      "title": "Safety and accounting",
+      "path": "docs/safety.md"
+    },
+    {
+      "title": "Pytest plugin and contracts",
+      "path": "docs/v0.6.md"
+    },
+    {
+      "title": "Cascades, breaking points, poisoning and estimates",
+      "path": "docs/v0.7.md"
+    },
+    {
+      "title": "Scopes, workflows, declarative experiments and fuzzing",
+      "path": "docs/v0.8.md"
+    },
+    {
+      "title": "Probes, resilience scores and history",
+      "path": "docs/v0.9.md"
+    },
+    {
+      "title": "Authenticated containment",
+      "path": "docs/phase6-containment.md"
+    },
+    {
+      "title": "ChaosHub and fault plugins",
+      "path": "docs/v0.11.md"
+    },
+    {
+      "title": "Reports and export formats",
       "path": "docs/output-formats.md"
     },
     {
-      "title": "Safety",
-      "path": "docs/safety.md"
+      "title": "Integrations and ecosystem boundaries",
+      "path": "docs/integrations.md"
+    },
+    {
+      "title": "Examples",
+      "path": "docs/examples.md"
+    },
+    {
+      "title": "Troubleshooting",
+      "path": "docs/troubleshooting.md"
     },
     {
       "title": "Limitations",
       "path": "docs/limitations.md"
+    },
+    {
+      "title": "Coordinated readiness",
+      "path": "docs/coordinated-v1-readiness.md"
+    },
+    {
+      "title": "Historical integration note: AIOS v0.6.1 compatibility",
+      "path": "docs/aios-0.6.1.md"
+    },
+    {
+      "title": "Historical integration note: AIOS repository v0.7.0 compatibility",
+      "path": "docs/aios-0.7.0.md"
+    },
+    {
+      "title": "Historical integration note: AIOS 0.8.0 operational-artifact compatibility",
+      "path": "docs/aios-0.8-operational-artifacts.md"
+    },
+    {
+      "title": "Historical integration note: AIOS v0.6 compatibility",
+      "path": "docs/aios-v0.6.md"
+    },
+    {
+      "title": "Historical integration note: Control Tower 0.6.0 compatibility",
+      "path": "docs/control-tower-0.6.md"
+    },
+    {
+      "title": "Historical integration note: Evals 0.10.0 evaluation evidence on Chaos runs",
+      "path": "docs/evals-0.10-aios-evidence.md"
+    },
+    {
+      "title": "Historical integration note: Evals 0.11 containment compatibility",
+      "path": "docs/evals-0.11-containment.md"
+    },
+    {
+      "title": "Historical integration note: Evals 0.12 API and report readiness",
+      "path": "docs/evals-0.12.md"
+    },
+    {
+      "title": "Historical integration note: Evals 0.8.0 CLI interoperability",
+      "path": "docs/evals-0.8-cli.md"
+    },
+    {
+      "title": "Historical integration note: Evals 0.9.0 judge reliability and live resilience",
+      "path": "docs/evals-0.9-judge-reliability.md"
+    },
+    {
+      "title": "Historical integration note: Evals native contract compatibility",
+      "path": "docs/evals-report-contract.md"
+    },
+    {
+      "title": "Historical integration note: Lens routing integration boundary",
+      "path": "docs/lens-0.10-routing.md"
+    },
+    {
+      "title": "Historical integration note: Lens optimization and fault evidence",
+      "path": "docs/lens-0.11-optimization.md"
+    },
+    {
+      "title": "Historical integration note: Lens 0.13 readiness compatibility",
+      "path": "docs/lens-0.13.md"
+    },
+    {
+      "title": "Historical integration note: MCP 0.4.0 unified workflows",
+      "path": "docs/mcp-0.4-unified-workflows.md"
+    },
+    {
+      "title": "Historical integration note: MCP 0.5.0 hosted access control",
+      "path": "docs/mcp-0.5-access-control.md"
+    },
+    {
+      "title": "Historical integration note: MCP 0.7 integration readiness \u2014 Chaos 0.11.0",
+      "path": "docs/mcp-0.7-readiness.md"
+    },
+    {
+      "title": "Historical integration note: Sidecar 0.10 contract readiness",
+      "path": "docs/sidecar-0.10.md"
+    },
+    {
+      "title": "Historical integration note: Sidecar 0.9.0 compatibility",
+      "path": "docs/sidecar-0.9.md"
+    },
+    {
+      "title": "Historical integration note: Sidecar 0.8 integration boundary",
+      "path": "docs/sidecar-v0.8.md"
+    },
+    {
+      "title": "Historical integration note: Tower 0.10 capability contract compatibility",
+      "path": "docs/tower-0.10-compatibility.md"
+    },
+    {
+      "title": "Historical integration note: Tower 0.7.0 integration compatibility",
+      "path": "docs/tower-0.7-fleet-operations.md"
+    },
+    {
+      "title": "Historical integration note: Control Tower 0.8.0 live operations compatibility",
+      "path": "docs/tower-0.8-live-operations.md"
+    },
+    {
+      "title": "Historical integration note: Control Tower 0.9.0 runbooks compatibility",
+      "path": "docs/tower-0.9-runbooks.md"
     }
   ],
   "contracts": [
-    "src/agentic_chaos/__init__.py",
-    "src/agentic_chaos/models/*.py",
-    "src/agentic_chaos/chaos/faults.py",
-    "src/agentic_chaos/agents/faults.py",
-    "src/agentic_chaos/chaos/inject.py"
+    "src/agentic_chaos/**/*.py",
+    "src/pytest_agentic_chaos/*.py"
   ],
   "schemas": []
 }

@@ -4,8 +4,14 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [1.0.4] - 2026-11-20
 
+### Changed
 
+- Complete product-owned API, CLI, configuration, integration and developer documentation.
+- Add a capability index and comprehensive AI-readable source reference with verified source hashes.
+- Correct runnable examples and navigation for the existing supported behavior.
+- Keep runtime interfaces, artifact schema versions and documented maturity unchanged.
 
 ## [1.0.3] - 2026-11-13
 

@@ -202,3 +202,12 @@ A drift report saved with `drift compare --save drift_report.json` has these top
 | `current` | dict | Metadata from the current snapshot |
 
 Each `DriftFinding` has: `kind` (`"prompt"`, `"model"`, `"output"`, `"retrieval"`), `changed` (boolean), `score` (float or null), `threshold` (float or null), `message`, `detail`.
+
+
+## AIOS Run export
+
+Use Python `agentic_chaos.export.to_aios_run(report, *, status="completed", workflow_id=None, producer_version=None)` or script/workflow CLI `--save-aios`. The result is an AIOS `0.4-draft` Run, distinct from a native `ChaosReport`. Explicit `status` describes the caller-observed run outcome; `report.aborted` overrides it to `cancelled`. `workflow_id` adds an external `run-of` relationship.
+
+The mapping preserves native fault events, recorded calls, topology and producer-local evidence through AIOS steps, occurrences, events, evidence and relationships plus namespaced extensions. Safety accounting, planned events and native report detail remain producer-owned. Preview plans do not become observed fault occurrences. Native containment observations are separate from fault events and exported recovery evidence.
+
+Current export behavior and declared arguments are in `src/agentic_chaos/export/aios.py`; historical release notes describing export as future work predate this implementation. Normative draft schemas belong to `ai-operations-spec`, and package releases do not promote their maturity. Lens, Tower and MCP continue to preserve producer attribution and distinguish evidence from deployment health.

@@ -6,7 +6,7 @@
 
 **Symptom:** `uv sync` errors out about a missing sibling `agenticlens` directory.
 
-**Cause:** `pyproject.toml` points the (currently unpublished) `agenticlens` extra at a sibling checkout through `[tool.uv.sources]`. Without `--frozen`, `uv sync` validates the entire lock, including extras you did not ask for.
+**Cause:** `pyproject.toml` points the optional `agenticlens` extra at a sibling checkout through `[tool.uv.sources]`. Without `--frozen`, `uv sync` validates the entire lock, including extras you did not ask for.
 
 **Fix:** install from the committed lock file:
 
@@ -116,7 +116,7 @@ Prompt drift is based on a hash and inline diff of the file you pass with `--pro
 Strict mode treats warnings as errors. Common causes:
 
 - A page exists in `docs/` but is missing from `nav` in `mkdocs.yml`.
-- A relative link points at a file that does not exist (for example `[x](missing.md)`). Link to repository files outside `docs/` with absolute GitHub URLs.
+- A relative link points at a file that does not exist (for example, a link to a removed page). Link to repository files outside `docs/` with absolute GitHub URLs.
 - Mermaid blocks need the `pymdownx.superfences` custom fence from `mkdocs.yml`.
 
 ## Still stuck?
