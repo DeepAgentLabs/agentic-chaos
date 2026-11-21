@@ -4,7 +4,7 @@
   "distribution": "agentic-chaos",
   "document": "llms-full.md",
   "content_type": "text/markdown; charset=utf-8",
-  "sha256": "863c9ad2d529e2df7742f34ffa8936e890527eda8d7fc801870034f6ca335aeb",
+  "sha256": "99ca983ac532ee79008102467b62c41d92f680059687b0ad00666f5f72f9f80d",
   "source_hash_normalization": "UTF-8 text with LF newlines",
   "human_guide": "developer-guide.md",
   "sources": [
@@ -581,7 +581,7 @@
     {
       "path": "docs/guide/examples/test_chaos_recovery.py",
       "kind": "example",
-      "sha256": "aaa3f31131d44922dcccb91e2f69271e50eea34e25956adcd0bab3e7d6b466be"
+      "sha256": "13a1e9e777e3932618f79a9947eaf622ba0613a6aeabdf64c6e2d0889ad85f2a"
     }
   ]
 }
