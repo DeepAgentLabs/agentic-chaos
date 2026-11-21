@@ -26,11 +26,44 @@ agentic-chaos
 ├── drift
 │   ├── snapshot --name ... --save ...
 │   └── compare <baseline> ...
+├── hub
+│   ├── list [--repository REPO --ref COMMIT_SHA]
+│   ├── search <query>
+│   ├── pull <name> <output>
+│   └── push <source> <checkout>
 └── estimate
 ```
 
 Get help for any command with `--help`, for example
 `agentic-chaos drift compare --help`.
+
+## Complete command inventory
+
+Every registered command is listed below, including the two experiment/workflow `run` aliases registered through their shared implementation. Use `agentic-chaos COMMAND --help` for all options. Source declarations in the robust AI reference preserve exact options for public CLI functions; shared run options are documented below.
+
+| Command (after `agentic-chaos`) | Purpose |
+| --- | --- |
+| `agent fuzz` | Fuzz the agent graph: place one fault per trial, weighted by node fan-out. |
+| `agent run` | Run an agent script with agent-level faults active, then report what happened. |
+| `chaos list-faults` | List the fault types available to --inject. |
+| `chaos run` | Run a script with the requested faults active, then report what happened. |
+| `chaos workflow run` | Validate, then run an experiment or workflow and report every stage. |
+| `chaos workflow validate` | Lint workflow files without running them (same as `experiment validate`). |
+| `contracts check` | Check contracts against a saved chaos report; exits 1 unless all pass. |
+| `contracts list` | List the built-in contracts and their spec parameters. |
+| `drift compare` | Compare a current snapshot to a stored baseline, with cooldown-aware emission. |
+| `drift snapshot` | Capture a prompt/model/output/retrieval baseline snapshot. |
+| `estimate` | Estimate retry cost as JSON from explicit inputs, without executing the target. |
+| `experiment run` | Validate, then run an experiment or workflow and report every stage. |
+| `experiment schedule` | Show upcoming runs and print a crontab or GitHub Actions schedule snippet. |
+| `experiment validate` | Lint experiments without running them; exits 1 when any file is invalid. |
+| `hub list` | List recipes and installed plugin metadata. |
+| `hub pull` | Copy a validated bundled or commit-pinned remote recipe. |
+| `hub push` | Stage a validated contribution in a local registry checkout. |
+| `hub search` | Search recipe metadata. |
+| `score history` | List recorded resilience scores, oldest first, with run-over-run deltas. |
+| `score prune` | Apply retention to a run-history file now. |
+| `score show` | Recompute the resilience score of a saved report, offline. |
 
 ## `agentic-chaos chaos run`
 
@@ -149,15 +182,24 @@ agentic-chaos drift compare baseline.json \
 
 ## Fault names
 
-| Name | Family | Used with |
-| --- | --- | --- |
-| `token_timeout` | LLM | `chaos run` |
-| `rate_limit_storm` | LLM | `chaos run` |
-| `silent_degradation` | LLM | `chaos run` |
-| `tool_failure` | Agent | `agent run` |
-| `memory_corruption` | Agent | `agent run` |
-| `infinite_loop` | Agent | `agent run` |
-| `handoff_corruption` | Agent / edge | `agent run` |
+| Name | Family / intended wrapper |
+| --- | --- |
+| `token_timeout` | Call timeout/delay: `chaos_call` / `chaos_acall` |
+| `rate_limit_storm` | Initial call-error burst |
+| `silent_degradation` | Successful-response corruption |
+| `tool_failure` | Tool error, timeout or empty result |
+| `memory_corruption` | Memory transformation |
+| `infinite_loop` | Bounded forced continuation |
+| `handoff_corruption` | Selected agent edge |
+| `auth_error` | Provider-style authentication failure |
+| `context_length` | Provider-style context overflow |
+| `stream_cut` | Streaming only: early end |
+| `stream_hang` | Streaming only: bounded hang then error |
+| `slow_ttft` | Streaming only: first-token delay |
+| `slow_chunks` | Streaming only: subsequent-chunk delay |
+| `poisoned_response` | Synthetic adversarial response |
+
+Use `chaos list-faults` for the installed registry. Fault plugins are opt-in; cascades compose fault instances through the Python API. See [fault parameters](configuration.md), [stream/provider faults](v0.5.md) and [poisoning](v0.7.md).
 
 ## Resilience options (v0.9)
 
@@ -185,3 +227,96 @@ agentic-chaos score prune [--history ...] [--max-runs N] [--max-age-days D]
 `score show` recomputes the score from a saved native, merged or workflow
 report, so it works on CI artifacts. See the [v0.9 guide](v0.9.md).
 
+
+
+## Script-run selection, safety and reporting
+
+`chaos run` and `agent run` accept `--inject`, `--profile` with `--profile-file`, or a bundled ChaosHub recipe via `--experiment`. These are mutually exclusive selection modes. `--plugins` explicitly loads trusted installed fault plugins.
+
+| Options | Purpose |
+| --- | --- |
+| `--dry-run` | Execute targets unchanged and record planned faults |
+| `--max-cost-usd` | Limit explicitly recorded cost |
+| `--max-failure-rate`, `--failure-window`, `--min-calls` | Bound rolling wrapped-operation failures |
+| `--max-duration-seconds`, `--max-injections` | Cooperative elapsed-time and injection limits |
+| `--save`, `--save-aios` | Native report JSON and AIOS `0.4-draft` Run export |
+| `--contract`, `--save-contracts`, `--baseline` | Contract checks, their report and optional baseline evidence |
+| `--probe`, `--min-score`, `--history` | Steady-state probes, score gate and trend store |
+| `--history-max-runs`, `--history-max-age-days` | History retention limits |
+
+See [profiles and provider/stream wrappers](v0.5.md), [safety](safety.md), [contracts](v0.6.md), [probes/scores](v0.9.md) and [recipe/plugin selection](v0.11.md).
+
+## `agentic-chaos contracts`
+
+```bash
+agentic-chaos contracts list
+agentic-chaos contracts check chaos.json --contract no_unhandled_error \
+  --contract max_retries:3 --baseline baseline.json --save contracts.json
+```
+
+Contract specs are repeatable. Missing evidence produces `inconclusive`, which fails the gate. See [all seven definitions and call-log semantics](v0.6.md#contracts).
+
+## `agentic-chaos experiment` and `chaos workflow`
+
+```bash
+agentic-chaos experiment validate experiment.json [MORE_FILES...] \
+  [--json] [--strict] [--no-target-check] [--base-dir DIRECTORY]
+agentic-chaos chaos workflow validate workflow.json [MORE_FILES...] \
+  [--json] [--strict] [--no-target-check] [--base-dir DIRECTORY]
+agentic-chaos experiment run experiment.json [OPTIONS]
+agentic-chaos chaos workflow run workflow.json [OPTIONS]
+```
+
+The `run` commands share exactly these options:
+
+| Option | Purpose |
+| --- | --- |
+| `--save PATH` | Workflow report JSON |
+| `--save-report PATH` | Merged native ChaosReport |
+| `--save-aios PATH` | Merged AIOS draft Run |
+| `--dry-run` | Preview faults while executing targets and health checks |
+| `--approve NAME` | Approve a named Suspend gate; repeatable |
+| `--approve-all` | Approve all gates explicitly |
+| `--resume-from NAME` | Skip to after the named approved gate |
+| `--no-input` | Never prompt; stop at unapproved gates |
+| `--no-target-check`, `--base-dir DIRECTORY` | Control structural target checking and path resolution |
+| `--min-score N`, `--baseline PATH` | Score threshold and baseline evidence |
+| `--history PATH`, `--history-max-runs N`, `--history-max-age-days D` | Trend recording and retention |
+
+Exit 0 means passed, 3 means suspended at an unapproved gate, and 1 means failed (including an inconclusive/below-threshold score). Validation never executes targets; running executes host-supplied definitions. See [declarative syntax, approvals and target resolution](v0.8.md).
+
+```bash
+agentic-chaos experiment schedule experiment.json [--format crontab|github-actions] \
+  [--next 5] [--command "agentic-chaos experiment run experiment.json --no-input"]
+```
+
+Scheduling prints upcoming runs and snippets; it does not install or run a scheduler. GitHub Actions cron uses UTC; timezone handling is described in the [scheduling guide](v0.8.md#scheduling).
+
+## `agentic-chaos agent fuzz`
+
+```bash
+agentic-chaos agent fuzz my_agent.py --n 10 --seed 42 \
+  [--step NAME] [--exclude-step NAME] [--fault NAME] [--save fuzz.json]
+```
+
+Scope/fault options are repeatable. A fault-free baseline discovers topology, then single-fault trials test reached nodes. A reached trial that fails recovery produces exit 1. See [topology fuzzing](v0.8.md#topology-fuzzer).
+
+## `agentic-chaos estimate`
+
+```bash
+agentic-chaos estimate scenario.py --fault rate_limit_storm --retries 3 \
+  --calls 1 --cost-per-call-usd 0.04
+```
+
+Prints caller-assumption budget JSON without executing the path. See [estimate semantics](v0.7.md#explicit-cost-estimates).
+
+## `agentic-chaos hub`
+
+```bash
+agentic-chaos hub list
+agentic-chaos hub search rag
+agentic-chaos hub pull rag-context-poisoning recipe.json
+agentic-chaos hub push my-recipe.json /path/to/registry-checkout
+```
+
+`list`, `search` and `pull` optionally accept `--repository OWNER/REPO --ref COMMIT_SHA`; use a full 40-character lowercase commit SHA. `pull` refuses overwrite. `push` stages a local contribution and does not publish it. Installed fault-plugin code is only loaded when explicitly requested. See [ChaosHub recipes, exchange and plugins](v0.11.md).
