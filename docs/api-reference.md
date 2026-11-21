@@ -4,12 +4,7 @@ The Python API for `agentic-chaos`. The core is importable from `agentic_chaos` 
 `agentic_chaos.chaos`; the optional AgenticLens bridge lives in
 `agentic_chaos.integrations.agenticlens`.
 
-!!! note
-    The package is alpha. Names and signatures below reflect the 0.9.0 release and may
-    change between minor versions. Run `help(agentic_chaos)` in your environment for the
-    authoritative signatures.
-
-
+The current checkout is package **1.0.3**. Capability guides retain the versions in which features shipped; draft artifact markers have independent versions. The [robust reference](https://deepagentlabs.io/agentic-chaos/docs/llms-full.md) includes current declared signatures from both distributed packages. Historical compatibility notes do not certify current deployments.
 
 ## Imports
 
@@ -251,3 +246,46 @@ explicitly; the API does not guess that a verdict or native event was a dispatch
 Unknown kinds, malformed records, orphan completions and failed/unknown/incomplete
 Lens verification raise. Coverage remains producer-declared.
 See [the guide](phase6-containment.md) and `examples/containment_demo.py`.
+
+
+## Capability modules
+
+| Module | Detailed workflow and public contract |
+| --- | --- |
+| `agentic_chaos.chaos` | [Sessions, call faults and event capture](features.md) |
+| `chaos.async_call`, `chaos.streaming` | [Async/stream execution, cancellation and closure](v0.5.md) |
+| `integrations.providers`, `chaos.provider_faults`, `chaos.profiles` | [Explicit client patches, provider failures, seeds and TOML profiles](v0.5.md) |
+| `agentic_chaos.agents` | [Tool/node wrappers, topology and agent faults](features.md) |
+| `agentic_chaos.safety` | [CircuitBreaker, accounting, abort and dry runs](safety.md) |
+| `agentic_chaos.judges` | [Fidelity judges and adapter requirements](features.md#fidelity-judges) |
+| `agentic_chaos.drift` | [Snapshot, comparison and emission-state formats](output-formats.md#drift-report-and-state) |
+| `agentic_chaos.contracts` | [Seven built-ins, parsing, check/assert and inconclusive evidence](v0.6.md) |
+| `pytest_agentic_chaos.plugin` | [Markers, fixture, options, baseline and async support](v0.6.md) |
+| `chaos.advanced`, `chaos.poisoning`, `chaos.estimate` | [Cascades, breaking points, synthetic strategies and budget estimates](v0.7.md) |
+| `chaos.scope`, `agentic_chaos.workflows`, `agentic_chaos.experiments` | [Scope predicates, workflow nodes, fuzzing, compiler, target loading and schedules](v0.8.md) |
+| `agentic_chaos.probes`, `agentic_chaos.resilience` | [Probe lifecycle, scores, trend/retention and gates](v0.9.md) |
+| `agentic_chaos.containment` | [Authenticated stop/revocation assertions](phase6-containment.md) |
+| `agentic_chaos.hub`, `hub.plugins` | [Recipes, pinned exchange and explicit plugin loading](v0.11.md) |
+| `agentic_chaos.export.aios`, `integrations.agenticlens` | [Native exports and Lens correlation](integrations.md) |
+
+Names beginning `chaos.`, `integrations.` or `hub.` in this table are relative to `agentic_chaos`. The root `__all__` is a convenience surface, not the entire package capability set. Undocumented helpers remain internal even when source declarations are included for lookup.
+
+## Native report serialization and AIOS export
+
+`session.to_report(name, *, end_time=None, error=None, agent_topology=None)` builds a native `ChaosReport`. Pass an escaped exception as `error` when constructing it yourself. Unlike `WorkflowReport`, `ChaosReport` does not have `.save()`; use its Pydantic serialization:
+
+```python
+from pathlib import Path
+from agentic_chaos import chaos_session
+from agentic_chaos.export import to_aios_run
+import json
+
+with chaos_session([]) as session:
+    pass
+report = session.to_report("offline")
+Path("report.json").write_text(report.model_dump_json(indent=2), encoding="utf-8")
+aios = to_aios_run(report, status="completed", producer_version="1.0.3")
+Path("aios-run.json").write_text(json.dumps(aios, indent=2), encoding="utf-8")
+```
+
+`to_aios_run(report, *, status="completed", workflow_id=None, producer_version=None)` returns a `0.4-draft` Run dict, preserving producer-local evidence under extensions. The caller supplies observed run status; an aborted report maps to `cancelled`. It is an export mapping, not a claim of independent schema/semantic acceptance. See the [export mapping](output-formats.md#aios-run-export).
