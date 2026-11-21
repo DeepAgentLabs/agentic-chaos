@@ -97,7 +97,7 @@ wheels = [
 
 [[package]]
 name = "agenticlens"
-version = "1.0.3"
+version = "1.0.4"
 source = { editable = "../agenticlens" }
 dependencies = [
     { name = "agentic-evals" },
