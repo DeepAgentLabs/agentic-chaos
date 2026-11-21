@@ -6327,3 +6327,25 @@ def pytest_runtest_call(item: pytest.Item) -> Generator[None, object, object]: .
 def pytest_pyfunc_call(pyfuncitem: pytest.Function) -> Generator[None, object, object]: ...
 def pytest_terminal_summary(terminalreporter: Any, config: pytest.Config) -> None: ...
 ```
+
+---
+
+## Example file: test_chaos_recovery.py
+
+Source: [docs/guide/examples/test_chaos_recovery.py](https://github.com/DeepAgentLabs/agentic-chaos/blob/main/docs/guide/examples/test_chaos_recovery.py)
+
+```python
+import pytest
+
+from agentic_chaos import TokenTimeoutFault, chaos_call
+from agentic_chaos.chaos import TokenTimeoutError
+
+
+@pytest.mark.chaos(faults=[TokenTimeoutFault(hang_seconds=0)], must_recover=True)
+def test_timeout_fallback():
+    try:
+        result = chaos_call(lambda: "answer", faults=["token_timeout"], step_name="answer")
+    except TokenTimeoutError:
+        result = "fallback"
+    assert result in {"answer", "fallback"}
+```
