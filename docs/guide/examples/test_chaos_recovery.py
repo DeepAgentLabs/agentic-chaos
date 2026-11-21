@@ -1,4 +1,5 @@
 import pytest
+
 from agentic_chaos import TokenTimeoutFault, chaos_call
 from agentic_chaos.chaos import TokenTimeoutError
 
