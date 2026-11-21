@@ -20,4 +20,6 @@ Inject a timeout into a local dummy search call.
 
 A fault being injected does not prove successful recovery. Inspect application behavior and define recovery assertions.
 
-[Read the detailed developer guide](developer-guide.md).
+[Developer Guide (simple)](developer-guide.md#capability-index) · [AI Reference (robust)](https://deepagentlabs.io/agentic-chaos/docs/llms-full.md)
+
+Both include a capability index. The developer guide offers short workflows; the AI reference includes detailed guides and package/CLI declarations.
