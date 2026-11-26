@@ -11,6 +11,10 @@
       "path": "docs/developer-guide.md"
     },
     {
+      "title": "Overview and capabilities map",
+      "path": "docs/index.md"
+    },
+    {
       "title": "Core features",
       "path": "docs/features.md"
     },
