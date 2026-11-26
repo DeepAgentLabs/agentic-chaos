@@ -4,7 +4,7 @@
   "distribution": "agentic-chaos",
   "document": "llms-full.md",
   "content_type": "text/markdown; charset=utf-8",
-  "sha256": "26094bee1c8c2397a47aef38332874746a28a7bf05040ed94b3364732457f055",
+  "sha256": "8a5eca6cabd9e0f9604cdba2d24b6e6e8061ee6e0bdbeee9cd4462a2a9639b29",
   "source_hash_normalization": "UTF-8 text with LF newlines",
   "human_guide": "developer-guide.md",
   "sources": [
@@ -116,7 +116,7 @@
     {
       "path": "docs/limitations.md",
       "kind": "reference",
-      "sha256": "bdf326b429d8f3f4a2405e7ebe832a072aacf73a93fd718b9fd90965f36986c0"
+      "sha256": "5cd512652866df8724ce456695effff8e9e37c382316cd3191904750374af2d3"
     },
     {
       "path": "docs/coordinated-v1-readiness.md",
