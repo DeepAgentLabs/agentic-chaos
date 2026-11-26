@@ -8,6 +8,7 @@ This index opens the generated [AI Reference (robust)](https://deepagentlabs.io/
 | --- | --- | --- |
 | Core fault injection | Simulate timeouts, rate limits and degraded responses at explicit call boundaries. | <a href="#core-features">Full reference</a> · [Source](features.md) |
 | Agent faults and topology | Exercise tool, memory, loop and handoff failures; record agent/tool edges. | <a href="#core-features">Full reference</a> · [Source](features.md) |
+| LangGraph adapter | Wrap LangGraph tools and graph nodes with `wrap_tool()`/`wrap_node()`; no LangGraph dependency. | <a href="#api-reference">Full reference</a> · [Source](api-reference.md#langgraph-adapter) |
 | Async calls | Inject into async callables with cancellation-aware execution. | <a href="#streaming-async-calls-provider-patches-and-profiles">Full reference</a> · [Source](v0.5.md) |
 | Streaming faults | Cut or hang streams, delay first tokens or slow chunk delivery. | <a href="#streaming-async-calls-provider-patches-and-profiles">Full reference</a> · [Source](v0.5.md) |
 | Provider patching | Patch explicit OpenAI, Anthropic or Google Gen AI client instances. | <a href="#streaming-async-calls-provider-patches-and-profiles">Full reference</a> · [Source](v0.5.md) |
