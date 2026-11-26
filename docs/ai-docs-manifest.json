@@ -4,7 +4,7 @@
   "distribution": "agentic-chaos",
   "document": "llms-full.md",
   "content_type": "text/markdown; charset=utf-8",
-  "sha256": "8a5eca6cabd9e0f9604cdba2d24b6e6e8061ee6e0bdbeee9cd4462a2a9639b29",
+  "sha256": "d52c385974ce0431f4da1390b79befcba102fde7453594a2d8fdd1b703a006ac",
   "source_hash_normalization": "UTF-8 text with LF newlines",
   "human_guide": "developer-guide.md",
   "sources": [
@@ -16,7 +16,7 @@
     {
       "path": "docs/ai-docs.json",
       "kind": "source-selection",
-      "sha256": "95bedc2f01b2c6f66c9b83832712cb146d5ec7aa199fa399bc18cdd139992236"
+      "sha256": "167749b678c328dda60086eaaba9d6466a202fb93d611e81f31932ed10b20a1c"
     },
     {
       "path": "docs/ai-reference-index.md",
@@ -27,6 +27,11 @@
       "path": "docs/developer-guide.md",
       "kind": "reference",
       "sha256": "ec16674ec7508566ae2b51fee4c817c39fecc4d2a0737fc10119cdf3c6f6f55d"
+    },
+    {
+      "path": "docs/index.md",
+      "kind": "reference",
+      "sha256": "b55a7ec700c9ea02640add8dbc792842b82d81d82f92cb7652e5650f109c7038"
     },
     {
       "path": "docs/features.md",
