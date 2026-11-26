@@ -4,6 +4,17 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-25
+
+### Changed
+
+- Restructure the documentation like AgenticLens: the sidebar and top bar now list Overview, Developer Guide (simple), API Reference (detailed) and AI Readable Documentation.
+- Rewrite the overview page as a capability map of 14 areas, each linking to its guide.
+- Extend the API Reference with signatures for async and streaming calls, provider patching, profiles, safety rails, contracts, the pytest plugin, cascades, poisoning, estimates, `Scope`, workflows, experiments, fuzzing, drift, ChaosHub and fault plugins.
+- Document `wrap_tool()`/`wrap_node()` as the LangGraph adapter, and list the seven built-in contracts and six bundled recipes in the Developer Guide.
+- Regenerate the AI-readable reference and its manifest.
+- Keep runtime interfaces, artifact schema versions and documented maturity unchanged.
+
 ## [1.0.4] - 2026-11-20
 
 ### Changed

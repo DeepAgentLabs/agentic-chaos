@@ -4,14 +4,14 @@
   "distribution": "agentic-chaos",
   "document": "llms-full.md",
   "content_type": "text/markdown; charset=utf-8",
-  "sha256": "99ca983ac532ee79008102467b62c41d92f680059687b0ad00666f5f72f9f80d",
+  "sha256": "26094bee1c8c2397a47aef38332874746a28a7bf05040ed94b3364732457f055",
   "source_hash_normalization": "UTF-8 text with LF newlines",
   "human_guide": "developer-guide.md",
   "sources": [
     {
       "path": "pyproject.toml",
       "kind": "package-metadata",
-      "sha256": "207f9efba3c6ee1f61f4c1645ebeaec0aead7c261d253a638799a51a9ef0005d"
+      "sha256": "8354ef418ce7abb39964a14fb2d28e3435d5b771b089957a614142f7f1e91f0c"
     },
     {
       "path": "docs/ai-docs.json",
@@ -21,12 +21,12 @@
     {
       "path": "docs/ai-reference-index.md",
       "kind": "reference",
-      "sha256": "de3cf17e627c7842f7b66ca6049fdd6c2854b32521641d0d3deb959955a4e61f"
+      "sha256": "73ca38d65477797f8ecf8e04e7280d3fb04ab45803aa814ffedbdaf8d59349cc"
     },
     {
       "path": "docs/developer-guide.md",
       "kind": "reference",
-      "sha256": "e6368251beecc606fb4acb9605ea43fd0e79ed1a934b72594d9a4eccac2a712d"
+      "sha256": "ec16674ec7508566ae2b51fee4c817c39fecc4d2a0737fc10119cdf3c6f6f55d"
     },
     {
       "path": "docs/features.md",
@@ -41,7 +41,7 @@
     {
       "path": "docs/api-reference.md",
       "kind": "reference",
-      "sha256": "a427db44d988687462013955679371bba41c7d99a5598a007e23c87af852ce5f"
+      "sha256": "45da8775bc99025f26ce8649f79ce95f09d2ab3bb75072696a6966ca82be069d"
     },
     {
       "path": "docs/cli-reference.md",
@@ -246,7 +246,7 @@
     {
       "path": "src/agentic_chaos/__init__.py",
       "kind": "source-contract",
-      "sha256": "cc0d9cca6c926950227901306057ca2db5e604f116ffef81c4d96a61803d72dd"
+      "sha256": "889bb8f2c9f517d97dde2b2673fb2c39e69122d629a5ad4322f207c26a748c16"
     },
     {
       "path": "src/agentic_chaos/agents/__init__.py",
