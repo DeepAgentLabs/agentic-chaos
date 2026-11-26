@@ -12,6 +12,7 @@ Every capability links to a short workflow below, with a detailed reference for 
 | --- | --- |
 | [Core fault injection](#injection) | Simulate timeouts, rate limits and degraded responses at explicit call boundaries. |
 | [Agent faults and topology](#agent-faults) | Exercise tool, memory, loop and handoff failures; record agent/tool edges. |
+| [LangGraph adapter](#langgraph) | Wrap LangGraph tools and graph nodes for injection and topology capture, with no LangGraph dependency. |
 | [Async calls](#async) | Inject into async callables with cancellation-aware execution. |
 | [Streaming faults](#streaming) | Cut or hang streams, delay first tokens or slow chunk delivery. |
 | [Provider patching](#provider-patching) | Patch explicit OpenAI, Anthropic or Google Gen AI client instances. |
@@ -94,7 +95,13 @@ assert len(report.chaos_events) == 1
 Path("report.json").write_text(report.model_dump_json(indent=2), encoding="utf-8")
 ```
 
-`TokenTimeoutFault` raises or delays; `RateLimitStormFault` fails an initial burst; `SilentDegradationFault` corrupts a successful return. Select faults explicitly at each call site. See [core faults](features.md) and [fault parameters](configuration.md).
+`TokenTimeoutFault` raises or delays; `RateLimitStormFault` fails an initial burst; `SilentDegradationFault` corrupts a successful return. Select faults explicitly at each call site.
+
+- `TokenTimeoutFault(mode="delay")` lets the real call finish late instead of raising, and records the outcome `"delayed"`. Use it to test slow-but-successful calls.
+- `RateLimitStormFault(burst_count=3, retry_after=1.0)` raises `RateLimitStormError` with a `retry_after` hint for the first `burst_count` calls, then passes calls through.
+- `SilentDegradationFault(degrade_fn=my_fn)` replaces the built-in text garbler with your own corruption function (`my_fn(result) -> corrupted_result`).
+
+`examples/chaos_advanced_faults_demo.py` runs the `mode="delay"` and `degrade_fn` options. See [core faults](features.md) and [fault parameters](configuration.md).
 
 <span id="agent-faults"></span>
 
@@ -107,6 +114,31 @@ agentic-chaos agent run my_agent.py --inject tool_failure --save agent-report.js
 ```
 
 Your script must use the wrappers. See [agent faults and topology](features.md#tool-and-node-wrapping-and-topology) and [framework integrations](integrations.md).
+
+<span id="langgraph"></span>
+
+### LangGraph adapter
+
+`wrap_tool()` and `wrap_node()` live in `agentic_chaos.agents.langgraph`. Wrap your functions before you register them with a LangGraph graph; the wrappers keep each function's signature, so LangGraph calls them as usual.
+
+```python
+from langgraph.graph import StateGraph
+from agentic_chaos import ToolCallFailureFault, TopologyTracker, chaos_session, wrap_node, wrap_tool
+
+tracker = TopologyTracker()
+search = wrap_tool(search_fn, tool_name="search", tracker=tracker, caller_node="planner")
+
+graph = StateGraph(State)
+graph.add_node("planner", wrap_node(planner_fn, node_name="planner", tracker=tracker))
+graph.add_node("writer", wrap_node(writer_fn, node_name="writer", tracker=tracker, caller_node="planner"))
+# ... add edges and compile as usual
+
+with chaos_session([ToolCallFailureFault(tool_name="search")]):
+    app.invoke({"question": "refund policy"})
+print(tracker.topology.as_json())
+```
+
+LangGraph is not a dependency of `agentic-chaos`; the adapter imports nothing from it, and the same wrappers work with CrewAI, AutoGen or plain functions. `agent run --framework langgraph` is an informational hint only. See the [API reference](api-reference.md#langgraph-adapter).
 
 <span id="async"></span>
 
@@ -245,7 +277,19 @@ agentic-chaos contracts list
 agentic-chaos contracts check chaos_run.json --contract no_unhandled_error
 ```
 
-The seven built-ins check completion time, unhandled errors, per-step retries, recovery after failure, cost impact, retry storms and topology traversal. Use `check_contracts()` to inspect results or `assert_contracts()` to raise on failure. Missing evidence is inconclusive and does not pass. `--contract` and `--save-contracts` can also gate a script run. See [contract definitions and evidence requirements](v0.6.md#contracts).
+The seven built-ins are:
+
+| CLI spec | Class | Passes when |
+| --- | --- | --- |
+| `completes_within:30` | `CompletesWithin` | The run finished within the time limit (seconds) |
+| `no_unhandled_error` | `NoUnhandledError` | No exception escaped the run |
+| `max_retries:3` | `MaxRetries` | No step retried more than N times in a row (`max_retries:n=3,step=llm` targets one step) |
+| `recovered_after_failure` | `RecoveredAfterFailure` | Every injected failure was followed by recovery |
+| `max_cost_impact:1.5` | `MaxCostImpact` | Cost stayed within the factor × the baseline |
+| `no_retry_storm:10` | `NoRetryStorm` | Retries stayed under the limit in every window (default 60 s) |
+| `full_topology_traversal` | `FullTopologyTraversal` | Every expected or baseline node was still visited |
+
+Subclass `Contract` to add your own. Use `check_contracts()` to inspect results or `assert_contracts()` to raise on failure. Missing evidence is inconclusive and does not pass. `--contract` and `--save-contracts` can also gate a script run. See [contract definitions and evidence requirements](v0.6.md#contracts).
 
 <span id="advanced"></span>
 
@@ -287,7 +331,12 @@ Compose `Step`, `Parallel`, `HealthCheck`, `Suspend` and `Template` nodes inside
 ```bash
 agentic-chaos chaos workflow validate workflow.json
 agentic-chaos chaos workflow run workflow.json --no-input --save workflow-report.json
+# An unapproved Suspend gate exits 3. Approve it, or resume after it:
+agentic-chaos chaos workflow run workflow.json --approve approve-escalation --save workflow-report.json
+agentic-chaos experiment run workflow.json --resume-from approve-escalation
 ```
+
+In Python, pass `approve=` and `resume_from=` to `ChaosWorkflow.run()`.
 
 See [node semantics, approvals, reports and statuses](v0.8.md#chaos-workflows). Workflow files name executable targets supplied by the host.
 
@@ -368,7 +417,17 @@ agentic-chaos hub search rag
 agentic-chaos hub pull rag-context-poisoning recipe.json
 ```
 
-Six bundled recipes cover retriever failure, context poisoning, reasoning-loop resilience, coordinator failure, support escalation and rate-limit storms. Bind a bundled recipe to your instrumented script with `chaos run my_app.py --experiment RECIPE_NAME`, or customize a pulled file and validate/run it as an experiment. Remote exchange is opt-in and requires a full commit SHA; `hub push` stages a contribution in a local registry checkout without publishing it. See [recipe identities, pinned exchange and contribution workflow](v0.11.md).
+Six recipes are bundled:
+
+| Recipe | Scenario |
+| --- | --- |
+| `api-cascade-storm` | Tool API rate-limit outage |
+| `multi-agent-coordinator-down` | Multi-agent coordinator timeout |
+| `rag-context-poisoning` | Contradictory RAG context |
+| `rag-retriever-failure` | RAG retriever timeout |
+| `react-loop-resilience` | ReAct tool failure |
+| `support-escalation-failure` | Support escalation memory corruption |
+ Bind a bundled recipe to your instrumented script with `chaos run my_app.py --experiment RECIPE_NAME`, or customize a pulled file and validate/run it as an experiment. Remote exchange is opt-in and requires a full commit SHA; `hub push` stages a contribution in a local registry checkout without publishing it. See [recipe identities, pinned exchange and contribution workflow](v0.11.md).
 
 <span id="plugins"></span>
 
@@ -398,6 +457,6 @@ Check that the session is active, the fault is configured and selected, the scop
 
 ## Reference
 
-- [API reference](api-reference.md) and [CLI reference](cli-reference.md).
-- [AI Reference (robust)](https://deepagentlabs.io/agentic-chaos/docs/llms-full.md) and [capability/source index](ai-reference-index.md).
+- [API Reference (detailed)](api-reference.md) and [CLI reference](cli-reference.md).
+- [AI Readable Documentation](ai-reference-index.md) and the [AI Reference (robust)](https://deepagentlabs.io/agentic-chaos/docs/llms-full.md).
 - [Source manifest and checksums](ai-docs-manifest.json).
