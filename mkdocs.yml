@@ -54,8 +54,6 @@ plugins:
   - search
 
 nav:
-  - Developer Guide (simple): developer-guide.md
-  - AI Reference capability index: ai-reference-index.md
   - Coordinated v1 readiness: coordinated-v1-readiness.md
   - MCP 0.7 readiness: mcp-0.7-readiness.md
   - ChaosHub 0.11: v0.11.md
@@ -67,6 +65,9 @@ nav:
   - Evals 0.11 Containment Scoring: evals-0.11-containment.md
   - Sidecar 0.9 authority and privacy: sidecar-0.9.md
   - Home: index.md
+  - Developer Guide (simple): developer-guide.md
+  - API Reference (detailed): api-reference.md
+  - AI Readable Documentation: ai-reference-index.md
   - Getting started: getting-started.md
   - Architecture: architecture.md
   - Features: features.md
@@ -95,7 +96,6 @@ nav:
       - Lens routing: lens-0.10-routing.md
       - Lens optimization: lens-0.11-optimization.md
       - Sidecar: sidecar-v0.8.md
-  - API reference: api-reference.md
   - CLI reference: cli-reference.md
   - Integrations: integrations.md
   - Examples: examples.md
